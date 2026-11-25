@@ -74,8 +74,9 @@ build_site() { # api/index.php подключает сервер из $BASE/serv
   sed "s#__XS_SERVER_DIR__#$BASE/server#" "$SRC/server/public/api-stub.php" > "$SITE.new/api/index.php"
   # Служебные файлы панели и сертификатов (.well-known, .user.ini, .htaccess…) переносим из старого сайта.
   if [ -d "$SITE" ]; then
-    for f in "$SITE"/.[!.]*; do [ -e "$f" ] && [ ! -e "$SITE.new/$(basename "$f")" ] && cp -a "$f" "$SITE.new/"; done
+    for f in "$SITE"/.[!.]*; do if [ -e "$f" ] && [ ! -e "$SITE.new/$(basename "$f")" ]; then cp -a "$f" "$SITE.new/"; fi; done
   fi
+  return 0 # без служебных файлов цикл кончается «ложью», и set -e молча обрывал выкладку
 }
 swap_site() {
   chown -R $OWNER:$OWNER "$SITE.new"; find "$SITE.new" -type d -exec chmod 755 {} +; find "$SITE.new" -type f -exec chmod 644 {} +
