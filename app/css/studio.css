@@ -428,3 +428,22 @@ body.read-only .add-bar, body.read-only #addRowBtn, body.read-only #pasteBtn { o
 .row-form-inline .f.wide, .settings-grid2 .f.wide, .auth-form .f.wide { gap: 4px; min-height: 0; }
 .settings-grid2 { display: grid; }
 @media (max-width: 900px) { .dialog-head { flex-wrap: wrap; } .inline-tabs { order: 3; flex-basis: 100%; overflow-x: auto; } }
+
+/* ---------- мастер печати ---------- */
+.pm-tabs { border: 0; position: static; background: none; margin-left: 12px; }
+.pm-tabs .tab { flex: none; padding: 0 12px; height: 34px; }
+.pm-grid { margin-bottom: 14px; }
+.pm-passes-head { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 8px; }
+.pm-passes { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pm-pass, .pm-printer { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.pm-pass.next { border-color: var(--accent); background: var(--accent-soft); }
+.pm-pass.done { opacity: .62; }
+.pm-pass-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pm-num { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--soft); font-weight: 700; font-size: 13px; }
+.pm-pass.next .pm-num { background: var(--accent); color: #fff; }
+.pm-pass.done .pm-num { background: var(--ok, #2e9d5b); color: #fff; }
+.pm-hint { margin: 0; font-size: 13px; padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--soft); border-radius: 4px; }
+.pm-actions, .pm-body > .row, .pm-form .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dialog-body form.pm-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; padding-top: 8px; border-top: 1px solid var(--line); }
+.pm-form .wide { grid-column: 1 / -1; }
+@media (max-width: 720px) { .dialog-body form.pm-form { grid-template-columns: 1fr; } .pm-tabs { margin-left: 0; } }
