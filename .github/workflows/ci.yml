@@ -13,3 +13,29 @@ jobs:
         with:
           node-version: 22
       - run: node tests/core.test.cjs
+  api:
+    name: Сервер (PHP 8.4 + MariaDB)
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: xsatsu_test
+          MARIADB_USER: xsatsu
+          MARIADB_PASSWORD: testpass
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, zlib, sodium
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: for f in server/src/*.php server/bin/*.php server/public/*.php; do php -l "$f"; done
+      - run: node tests/api.test.cjs

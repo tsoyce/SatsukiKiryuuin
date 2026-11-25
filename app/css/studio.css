@@ -386,3 +386,45 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; font: 600 11px/1
 .inline-tabs .tab { flex: none; padding: 0 12px; height: 34px; }
 .warn-note { background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-line); display: flex; align-items: center; gap: 6px; margin: 0 0 12px; }
 .link { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
+
+/* ---------- Аккаунт, списки проектов, версии, доступ ---------- */
+.account-btn { gap: 6px; max-width: 220px; }
+.account-btn .acc-name { overflow: hidden; text-overflow: ellipsis; }
+.account-btn.compact .acc-name { max-width: 110px; }
+.account-menu { position: fixed; right: 12px; top: 56px; z-index: 300; }
+.menu-head { display: flex; flex-direction: column; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.scopes { display: flex; gap: 4px; flex-wrap: wrap; }
+.scope { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid var(--line-strong); background: var(--panel); color: var(--text); cursor: pointer; font-size: 13px; }
+.scope.active { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.home-h-row { flex-wrap: wrap; gap: 10px; }
+.project .thumb { position: relative; }
+.project .tag { position: absolute; left: 8px; top: 8px; display: inline-flex; gap: 4px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px; font-size: 11px; color: var(--muted); }
+.site-notice { margin: 16px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.save-state { display: inline-flex; align-items: center; gap: 5px; }
+.save-state.error { color: var(--danger); }
+.dialog-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.auth-form, .stack { display: flex; flex-direction: column; gap: 8px; }
+.error-text { color: var(--danger); margin: 0; }
+.settings-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 14px; }
+.row-form-inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.row-form-inline .f { flex: 1 1 140px; margin: 0; }
+.row-form-inline > input[type=text] { flex: 1 1 200px; }
+.plain-list { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.plain-list li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.users-table td, .users-table th { padding: 4px 6px; }
+.nowrap { white-space: nowrap; }
+.code { font: 600 16px ui-monospace, Consolas, monospace; letter-spacing: 1px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.stats > div { display: flex; flex-direction: column; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.choice-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.choice-list .btn { justify-content: flex-start; height: 38px; }
+.versions { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.versions li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.versions li > div { display: flex; flex-direction: column; }
+.copy-input { width: 100%; margin: 6px 0; }
+body.read-only .add-bar, body.read-only #addRowBtn, body.read-only #pasteBtn { opacity: .45; pointer-events: none; }
+.dialog-body form.row-form-inline { display: flex; }
+.dialog-body form.stack, .dialog-body form.auth-form { display: flex; }
+.row-form-inline .f.wide, .settings-grid2 .f.wide, .auth-form .f.wide { gap: 4px; min-height: 0; }
+.settings-grid2 { display: grid; }
+@media (max-width: 900px) { .dialog-head { flex-wrap: wrap; } .inline-tabs { order: 3; flex-basis: 100%; overflow-x: auto; } }
