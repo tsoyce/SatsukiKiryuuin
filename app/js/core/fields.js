@@ -33,12 +33,20 @@
     };
     if (doc.greeting?.enabled || !map.has('обращение')) builtins['обращение'] = row ? greetingFor(doc, values) : doc.greeting.neutral;
     for (const [k, v] of Object.entries({...builtins, ...extra})) if (!map.has(XS.key(k))) map.set(XS.key(k), String(v));
-    return {map, row, index, total, blank: !row || Object.values(values).every(v => !String(v ?? '').trim())};
+    const gender = doc.greeting?.genderField ? String(values[doc.greeting.genderField] ?? '') : '';
+    return {map, row, index, total, gender, blank: !row || Object.values(values).every(v => !String(v ?? '').trim())};
   }
 
+  /* {Поле} или {Поле:модификаторы} — склонение и формы имени, см. names.js. */
   function lookup(ctx, name) {
     const k = XS.key(name);
-    return ctx.map.has(k) ? ctx.map.get(k) : undefined;
+    if (ctx.map.has(k)) return ctx.map.get(k);
+    if (name.includes(':') && XS.Names) {
+      const {base, mods} = XS.Names.split(name), kb = XS.key(base);
+      if (!ctx.map.has(kb)) return undefined;
+      return XS.Names.apply(ctx.map.get(kb), mods, ctx.gender || '');
+    }
+    return undefined;
   }
 
   /* Текст → [{text, field}] — поле помечено, чтобы его можно было выделить другим стилем. */
@@ -51,7 +59,7 @@
       const value = lookup(ctx, m[1]);
       hasField = true;
       if (value === undefined) { missing.push(m[1]); if (keepUnknown) out.push({text: m[0], field: null}); }
-      else { if (value.trim()) allEmpty = false; out.push({text: value, field: m[1]}); }
+      else { if (value.trim()) allEmpty = false; out.push({text: value, field: m[1].split(':')[0].trim()}); }
       last = TOKEN.lastIndex;
     }
     if (last < template.length) out.push({text: template.slice(last), field: null});
@@ -64,7 +72,7 @@
     const out = [];
     let m;
     TOKEN.lastIndex = 0;
-    while ((m = TOKEN.exec(template || ''))) out.push(m[1]);
+    while ((m = TOKEN.exec(template || ''))) out.push(m[1].split(':')[0].trim());
     return out;
   }
 

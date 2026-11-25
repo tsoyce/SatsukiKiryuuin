@@ -57,11 +57,24 @@
     return c;
   }
 
+  /* Конструктор «поле + форма»: {ФИО:дат}, {ФИО:инициалы}, {Место:верх}. */
+  function formBuilder(ta) {
+    const wrap = h('div', 'form-builder');
+    const cols = UI.fieldNames().filter(n => !['№', 'Дата', 'Проект'].includes(n));
+    const field = h('select'); for (const n of cols) field.add(new Option('{' + n + '}', n));
+    const form = h('select'); for (const [m, label] of XS.Names.HINTS) form.add(new Option(label, m));
+    const go = h('button', 'btn small', 'Вставить'); go.type = 'button';
+    go.title = 'Склонение по падежам и формы имени работают для ФИО; пол берётся из столбца «Пол» или угадывается.';
+    go.onclick = () => { const t = '{' + field.value + ':' + form.value + '}'; const st = ta.selectionStart ?? ta.value.length; ta.setRangeText(t, st, ta.selectionEnd ?? st, 'end'); ta.dispatchEvent(new Event('input')); ta.focus(); };
+    wrap.append(h('span', 'muted small', 'Падеж / форма:'), field, form, go);
+    return wrap;
+  }
+
   /* ---------- элемент ---------- */
   function renderElement(el) {
     const key = p => el.id + ':' + p;
     const title = h('div', 'insp-title');
-    title.insertAdjacentHTML('beforeend', XS.Icons.icon({text: 'text', image: 'image', rect: el.shape === 'ellipse' ? 'ellipse' : 'rect', line: 'line', path: 'path'}[el.type], 18));
+    title.insertAdjacentHTML('beforeend', XS.Icons.icon({text: 'text', image: 'image', rect: el.shape === 'ellipse' ? 'ellipse' : 'rect', line: 'line', path: 'path', qr: 'qr'}[el.type], 18));
     const nameInput = textInput(el.name, v => { el.name = v; }, key('name'));
     nameInput.id = 'inspName'; nameInput.title = 'Название слоя (F2)';
     title.append(nameInput);
@@ -87,6 +100,7 @@
         chips.append(c);
       }
       box.append(chips);
+      box.append(formBuilder(ta));
       section('Шрифт');
       row('Гарнитура', select(fontOptions(), el.font, v => { el.font = v; }, key('font')));
       row('Размер, pt', numInput(el.size, v => { el.size = v; el.minSize = Math.min(el.minSize, v); }, key('size'), {step: 0.5, min: 2, max: 400}),
@@ -155,6 +169,31 @@
       row('Заливка', colorInput(el.fill, v => { el.fill = v; }, key('fill'), true));
       row('Обводка', colorInput(el.stroke, v => { el.stroke = v; }, key('stroke'), true));
       row('Толщина, мм', numInput(el.strokeWidth, v => { el.strokeWidth = v; }, key('sw'), {step: 0.05, min: 0, max: 20}));
+    }
+
+    if (el.type === 'qr') {
+      section('QR-код');
+      const ta = h('textarea'); ta.rows = 2; ta.value = el.data; ta.placeholder = 'https://… или {Ссылка}';
+      ta.oninput = () => apply(() => { el.data = ta.value; }, key('qrdata'));
+      box.append(ta);
+      const chips = h('div', 'chips');
+      chips.append(h('span', 'muted small', 'Поле:'));
+      for (const name of UI.fieldNames()) { const c = h('button', 'chip', '{' + XS.esc(name) + '}'); c.type = 'button'; c.onclick = () => { const st = ta.selectionStart ?? ta.value.length; ta.setRangeText('{' + name + '}', st, ta.selectionEnd ?? st, 'end'); ta.dispatchEvent(new Event('input')); }; chips.append(c); }
+      box.append(chips);
+      row('Цвет', colorInput(el.color, v => { el.color = v; }, key('qrcol')));
+      row('Подложка', colorInput(el.background, v => { el.background = v; }, key('qrbg'), true));
+      row('Надёжность', seg([['L', 'L', '7% — самый плотный'], ['M', 'M', '15%'], ['Q', 'Q', '25%'], ['H', 'H', '30% — выдержит потёртости']], el.level, v => { el.level = v; }, key('qrlvl')));
+      row('Поле, модулей', numInput(el.quiet, v => { el.quiet = Math.round(v); }, key('qrq'), {step: 1, min: 0, max: 8}));
+      box.append(h('p', 'note', 'QR остаётся вектором в PDF. Для печати сторона — от 15 мм; ссылка для каждой записи берётся из поля, например {Ссылка}.'));
+    }
+
+    section('Показывать, если');
+    const cond = el.showIf || (el.showIf = {field: '', op: 'filled', value: ''});
+    const condRow = row('Поле', select([['', '— всегда —'], ...UI.fieldNames().map(n => [n, '{' + n + '}'])], cond.field, v => { cond.field = v; UI.Inspector.render(); }, key('cf')));
+    condRow.title = 'Элемент печатается только для записей, где условие выполнено. Например, «Печать», если {Место} равно «1».';
+    if (cond.field) {
+      row('Условие', select(XS.Model.CONDITIONS, cond.op, v => { cond.op = v; UI.Inspector.render(); }, key('co')));
+      if (['eq', 'neq', 'contains'].includes(cond.op)) row('Значение', textInput(cond.value, v => { cond.value = v; }, key('cv')));
     }
 
     section('Положение, мм');

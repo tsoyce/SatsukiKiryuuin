@@ -36,15 +36,21 @@
   }
 
   async function runCheck() {
-    const problems = await UI.busy('Проверяем все записи…', () => XS.Export.check(S.doc));
+    const problems = await UI.busy('Проверяем список и все записи…', () => XS.Export.check(S.doc));
     const body = $('checkBody');
-    if (!problems.length) body.innerHTML = '<p class="ok-line">' + XS.Icons.icon('check', 18) + ' Всё в порядке: тексты помещаются, поля найдены, символы есть в шрифтах.</p>';
+    if (!problems.length) body.innerHTML = '<p class="ok-line">' + XS.Icons.icon('check', 18) + ' Всё в порядке: повторов и опечаток нет, тексты помещаются, поля найдены, символы есть в шрифтах.</p>';
     else {
-      body.innerHTML = `<p>Найдено замечаний: ${problems.length}. Нажмите, чтобы открыть запись.</p><ol class="check-list">${problems.slice(0, 300).map(p => `<li><a data-r="${p.record - 1}">Запись ${p.record}</a>${S.doc.sides.length > 1 ? ' · ' + XS.esc(p.side) : ''} · ${XS.esc(p.name)}: ${XS.esc(p.msg)}</li>`).join('')}</ol>`;
+      const fixes = new Set(problems.map(p => p.fix).filter(Boolean));
+      const data = problems.filter(p => p.kind === 'data').length;
+      body.innerHTML = `<p>Найдено замечаний: <b>${problems.length}</b>${data ? ' (в данных — ' + data + ', в макете — ' + (problems.length - data) + ')' : ''}. Нажмите, чтобы открыть запись.</p>
+        ${fixes.size ? `<div class="insp-actions">${fixes.has('spaces') ? '<button class="btn small" data-fix="spaces">Убрать лишние пробелы</button>' : ''}${fixes.has('latin') ? '<button class="btn small" data-fix="latin">Заменить латинские буквы на русские</button>' : ''}</div>` : ''}
+        <ol class="check-list">${problems.slice(0, 400).map(p => `<li class="${p.kind === 'data' ? 'is-data' : ''}"><a data-r="${p.record - 1}">Запись ${p.record}</a>${S.doc.sides.length > 1 || p.kind === 'data' ? ' · ' + XS.esc(p.side) : ''} · ${XS.esc(p.name)}: ${XS.esc(p.msg)}</li>`).join('')}</ol>${problems.length > 400 ? '<p class="muted small">Показаны первые 400.</p>' : ''}`;
       body.querySelectorAll('a[data-r]').forEach(a => { a.onclick = () => { $('checkDialog').close(); UI.setRow(+a.dataset.r); }; });
+      body.querySelectorAll('[data-fix]').forEach(b => { b.onclick = UI.safe(async () => { let n = 0; UI.edit(d => { n = XS.Check.fix(d, b.dataset.fix); }); UI.toast('Исправлено значений: ' + n + '.'); await runCheck(); }); });
     }
-    $('checkDialog').showModal();
+    if (!$('checkDialog').open) $('checkDialog').showModal();
   }
+  UI.runCheck = runCheck;
 
   async function route() {
     const m = /^#\/doc\/(.+)$/.exec(location.hash);
@@ -57,7 +63,7 @@
     if (!global.PDFLib || !global.fontkit) { document.body.innerHTML = '<p style="padding:24px;font:16px sans-serif">Не загрузились библиотеки из папки vendor/. Проверьте, что скопирована вся папка приложения.</p>'; return; }
     XS.Icons.hydrate();
     initTopbar();
-    UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init();
+    UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
     global.addEventListener('hashchange', UI.safe(route));
     UI.safe(route)();
   });

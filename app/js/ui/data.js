@@ -158,8 +158,7 @@
   }
 
   async function importFile(file) {
-    const text = await file.text();
-    const table = XS.Import.parseTable(text);
+    const table = XS.Import.readTableFile(new Uint8Array(await file.arrayBuffer()), file.name);
     if (!table.rows.length) throw new Error('В файле нет строк с данными.');
     UI.edit(d => XS.Import.applyTable(d, table));
     UI.toast('Добавлено записей: ' + table.rows.length + '.');

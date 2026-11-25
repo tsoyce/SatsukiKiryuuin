@@ -116,12 +116,12 @@
   /* Проверка всех записей без выгрузки: переполнения, нет символов, нет столбцов. */
   async function check(doc, {progress = () => {}} = {}) {
     await XS.Fonts.ensureForDoc(doc);
-    const recs = XS.Scene.records(doc, {scope: 'all'}), problems = [];
+    const recs = XS.Scene.records(doc, {scope: 'all'}), problems = XS.Check ? XS.Check.data(doc) : [];
     for (let i = 0; i < recs.length; i++) {
       for (let si = 0; si < doc.sides.length; si++) for (const w of XS.Scene.build(doc, si, recs[i].row, recs[i].index).warnings) problems.push({...w, record: recs[i].index + 1, side: doc.sides[si].name});
       if (i % 20 === 19) { progress(i, recs.length); await XS.pause(); }
     }
-    return problems;
+    return problems.sort((a, b) => a.record - b.record);
   }
 
   XS.Export = {run, check, previewNames, archiveName};
