@@ -13,7 +13,8 @@
     ['род', 'родительный: Иванова Ивана'], ['дат', 'дательный: Иванову Ивану'], ['вин', 'винительный: Иванова Ивана'],
     ['твор', 'творительный: Ивановым Иваном'], ['пред', 'предложный: об Иванове Иване'],
     ['фамилия', 'только фамилия'], ['имя', 'только имя'], ['отчество', 'только отчество'], ['имя отчество', 'Иван Иванович'],
-    ['инициалы', 'Иванов И. И.'], ['ио', 'И. И. Иванов'], ['иф', 'Иван Иванов'],
+    ['инициалы', 'Иванов И. И.'], ['ио', 'И. И. Иванов'], ['иф', 'Иван Иванов'], ['буквы', 'ИИ — для аватарки'],
+    ['принял/приняла', 'слово по полу: принял / приняла'], ['ый/ая', 'окончание по полу: Уважаем{ФИО:ый/ая}'],
     ['верх', 'ВСЕ ПРОПИСНЫЕ'], ['низ', 'все строчные'], ['заглав', 'С заглавной']
   ];
   const WORD = /^[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?$/;
@@ -63,10 +64,12 @@
     let person = null, form = '';
     let gramCase = '';
     const textMods = [];
+    let choice = null;
     for (const raw of mods) {
       const m = XS.key(raw).replace(/\s+/g, ' ');
       if (CASES[m]) gramCase = CASES[m];
-      else if (['фамилия', 'имя', 'отчество', 'имя отчество', 'инициалы', 'ио', 'иф', 'фи', 'фио'].includes(m)) form = m;
+      else if (['фамилия', 'имя', 'отчество', 'имя отчество', 'инициалы', 'ио', 'иф', 'фи', 'фио', 'буквы'].includes(m)) form = m;
+      else if (raw.includes('/')) choice = raw.split('/').map(s => s.trim());
       else if (['верх', 'низ', 'заглав'].includes(m)) textMods.push(m);
     }
     if (gramCase || form) {
@@ -84,9 +87,15 @@
           case 'ио': text = [[initial(person.first), initial(person.middle.split(' ')[0])].filter(Boolean).join(' '), person.last].filter(Boolean).join(' '); break;
           case 'иф': text = [person.first, person.last].join(' '); break;
           case 'фи': text = [person.last, person.first].join(' '); break;
+          case 'буквы': text = (person.first[0] || '') + (person.last[0] || ''); break;
           default: text = join(person, order);
         }
       }
+    }
+    // {ФИО:принял/приняла} — слово по полу человека (столбец «Пол» или угадывание по ФИО).
+    if (choice) {
+      const g = genderOf(String(value ?? ''), explicitGender), [a, b = '', c] = choice;
+      text = g === 'male' ? a : g === 'female' ? b : c ?? (b.startsWith(a) ? a + '(' + b.slice(a.length) + ')' : a + '/' + b);
     }
     for (const m of textMods) {
       if (m === 'верх') text = text.toLocaleUpperCase('ru-RU');

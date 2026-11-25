@@ -251,7 +251,7 @@
     const g = h('div', 'grid4');
     for (const [p, label] of [['width', 'Ширина'], ['height', 'Высота']]) { const l = h('label', '', label + ', мм'); l.append(numInput(doc.page[p], v => { doc.page[p] = v; }, 'page:' + p, {step: 1, min: 10, max: 2000})); g.append(l); }
     const rot = h('label', '', '&nbsp;'); rot.append(button('⟲ Повернуть', () => { UI.edit(() => { [doc.page.width, doc.page.height] = [doc.page.height, doc.page.width]; }); UI.Stage.fit(); }));
-    g.append(rot); box.append(g);
+    rot.style.gridColumn = 'span 2'; g.append(rot); box.append(g);
     box.append(h('p', 'note', 'Элементы не сдвигаются при смене размера — поправьте их положение мышью.'));
 
     section('Сторона «' + side.name + '»');

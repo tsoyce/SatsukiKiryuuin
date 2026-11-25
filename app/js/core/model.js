@@ -13,6 +13,11 @@
     diploma: {label: 'Дипломы', naming: '{№} Диплом {ФИО}'},
     bookmark: {label: 'Закладки', naming: '{№} {Автор}'},
     card: {label: 'Открытки', naming: '{№} {ФИО}'},
+    badge: {label: 'Бейджи', naming: '{№} Бейдж {ФИО}'},
+    certificate: {label: 'Сертификаты', naming: '{№:0000} Сертификат {ФИО}'},
+    letter: {label: 'Благодарности', naming: '{№} Благодарность {ФИО}'},
+    ticket: {label: 'Билеты', naming: 'Билет {№:0000}'},
+    tent: {label: 'Рассадка', naming: '{№} {ФИО}'},
     custom: {label: 'Свой макет', naming: '{№} {Проект}'}
   };
   const PAGE_PRESETS = [
@@ -22,7 +27,12 @@
     {id: 'a3', label: 'А3', width: 297, height: 420},
     {id: 'dl', label: 'Евро (DL)', width: 99, height: 210},
     {id: 'bookmark', label: 'Закладка 50×150', width: 50, height: 150},
-    {id: 'card', label: 'Визитка 90×50', width: 90, height: 50}
+    {id: 'card', label: 'Визитка 90×50', width: 90, height: 50},
+    {id: 'badge', label: 'Бейдж 70×100', width: 70, height: 100},
+    {id: 'badge-h', label: 'Бейдж 90×60', width: 90, height: 60},
+    {id: 'ticket', label: 'Билет 180×65', width: 180, height: 65},
+    {id: 'tent', label: 'Рассадка 210×99', width: 210, height: 99},
+    {id: 'square', label: 'Квадрат 120×120', width: 120, height: 120}
   ];
   const PAPER = {a4: [210, 297], a3: [297, 420], a5: [148, 210], sra3: [320, 450]};
 

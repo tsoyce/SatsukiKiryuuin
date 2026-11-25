@@ -277,7 +277,7 @@ i[data-icon] { display: inline-flex; font-style: normal; }
 
 /* вкладки и добавление */
 .tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-.add-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.add-bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 4px; }
 .add-bar button { height: auto; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; min-width: 0; overflow: hidden; border-style: solid; background: var(--soft); }
 .add-bar button:hover { background: var(--accent-soft); }
 
@@ -449,3 +449,9 @@ body.read-only .add-bar, body.read-only #addRowBtn, body.read-only #pasteBtn { o
 .dialog-body form.pm-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; padding-top: 8px; border-top: 1px solid var(--line); }
 .pm-form .wide { grid-column: 1 / -1; }
 @media (max-width: 720px) { .dialog-body form.pm-form { grid-template-columns: 1fr; } .pm-tabs { margin-left: 0; } }
+
+/* v4: превью шаблонов на главной */
+.preset.has-thumb { padding-top: 10px; }
+.preset .pthumb { display: grid; place-items: center; height: 108px; margin: 0 0 4px; border-radius: 6px; background: var(--stage); color: var(--muted); overflow: hidden; }
+.preset .pthumb img { max-width: 92%; max-height: 96px; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: #fff; }
+.preset .kind .new { font-style: normal; margin-left: 4px; padding: 1px 6px; border-radius: 8px; background: var(--brand); color: #fff; font-size: 10px; letter-spacing: .02em; text-transform: none; }

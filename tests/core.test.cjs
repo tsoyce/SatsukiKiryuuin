@@ -168,5 +168,53 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   r = await XS.PrintPlan.calibration(prof, {paper: 'a4'});
   assert.strictEqual(r.pages, 2);
   fs.writeFileSync(path.join(out, 'calibration.pdf'), new Uint8Array(await r.blob.arrayBuffer()));
+  // 14. v4: форматы значений, замена по умолчанию, слово по полу
+  const fd = XS.Model.blankDoc('certificate');
+  XS.Model.addRow(fd, {'ФИО': 'Петрова Анна Сергеевна', 'Дата': '26.11.2026', 'Сумма': '1250', 'Место': 'III место', 'Роль': ''});
+  XS.Model.addRow(fd, {'ФИО': 'Иванов Иван Иванович', 'Дата': '2026-03-08', 'Сумма': '21', 'Место': '2', 'Роль': 'Спикер'});
+  const f0 = XS.Fields.context(fd, fd.data.rows[0], 6), f1 = XS.Fields.context(fd, fd.data.rows[1], 1);
+  const eq = (t, c, v) => assert.strictEqual(XS.Fields.fill(t, c), v, t);
+  eq('{Дата:длинная}', f0, '26 ноября 2026 г.'); eq('{Дата:дм}', f1, '8 марта'); eq('{Дата:ДД.ММ.ГГ}', f1, '08.03.26'); eq('{Дата:день недели}', f0, 'четверг');
+  eq('{Сумма:прописью}', f1, 'двадцать один'); eq('{Сумма:число}', f0, '1\u00a0250'); eq('{Сумма:римское}', f1, 'XXI');
+  eq('{Место:порядковое} место', f0, 'третье место'); eq('{Место:порядковый}', f1, 'второй'); eq('{№:000}', f0, '007');
+  eq('{Роль|Участник}', f0, 'Участник'); eq('{Роль|Участник}', f1, 'Спикер'); eq('{Нет такого|—}', f0, '—');
+  eq('{ФИО:принял/приняла} участие', f0, 'приняла участие'); eq('Уважаем{ФИО:ый/ая}', f1, 'Уважаемый');
+  eq('{ФИО:буквы}', f0, 'АП'); eq('{ФИО:дат:верх}', f1, 'ИВАНОВУ ИВАНУ ИВАНОВИЧУ');
+  assert.strictEqual(XS.Formats.words(1001), 'одна тысяча один');
+  assert.strictEqual(XS.Formats.ordinal(43, 'f'), 'сорок третья');
+  assert.deepStrictEqual(XS.Fields.fieldsIn('{Роль|Участник} {ФИО:дат}'), ['Роль', 'ФИО']);
+  // 15. Штрихкод: таблица Code 128 (сумма модулей и чётность полос), контрольная сумма, EAN-13
+  XS.Barcode.PATTERNS.forEach((p, i) => { const w = p.split('').map(Number); assert.strictEqual(w.reduce((a, b) => a + b), i === 106 ? 13 : 11); assert.strictEqual(w.filter((_, j) => j % 2 === 0).reduce((a, b) => a + b) % 2, 0); });
+  assert.deepStrictEqual(XS.Barcode.code128('123456'), [105, 12, 34, 56, 44, 106]);
+  assert.strictEqual(XS.Barcode.eanCheck('400638133393'), 1);
+  assert.throws(() => XS.Barcode.path('Привет', 40, 10), /латиница/);
+  assert.throws(() => XS.Barcode.path('4006381333932', 40, 10, {type: 'ean13'}), /контрольная/);
+  assert.strictEqual(XS.Barcode.ean13Bits('400638133393').bits.length, 95);
+  // 16. Поворот: в сцене и в PDF
+  const rd = XS.Model.blankDoc('custom', 'Поворот', {width: 100, height: 60});
+  rd.sides[0].elements.push(XS.Model.element('text', {text: 'Наклон', x: 20, y: 20, w: 60, h: 20, rotate: 30}), XS.Model.element('line', {x: 0, y: 0, w: 10, h: 0, rotate: 45}));
+  const rn = XS.Model.normalizeDoc(JSON.parse(JSON.stringify(rd)));
+  assert.strictEqual(rn.sides[0].elements[0].rotate, 30); assert.strictEqual(rn.sides[0].elements[1].rotate, 0, 'линия не поворачивается');
+  const rs = XS.Scene.build(rn, 0, null, 0);
+  assert.ok(rs.ops[0].rot === 30 && rs.ops[0].cx === 50 && rs.ops[0].cy === 30);
+  const m = XS.PdfRender.rotation(90, 10, 10);
+  assert.ok(Math.abs(m[0]) < 1e-9 && Math.abs(m[1] + 1) < 1e-9, 'по часовой на экране = −90° в PDF');
+  // 17. Новые шаблоны v4 выгружаются без замечаний о шрифтах и переполнении
+  for (const id of ['badge', 'certificate', 'thanks', 'tent', 'ticket']) {
+    const pd = await XS.Presets.LIST.find(p => p.id === id).make();
+    await XS.Fonts.ensureForDoc(pd);
+    for (let i = 0; i < pd.data.rows.length; i++) {
+      const sc = XS.Scene.build(pd, 0, pd.data.rows[i], i);
+      const bad = sc.warnings.filter(w => !/Изображение не найдено/.test(w.msg));
+      assert.deepStrictEqual(bad, [], id + ' #' + (i + 1) + ': ' + JSON.stringify(bad));
+    }
+    r = await XS.Export.run(pd, {...pd.output, packaging: id === 'certificate' ? 'single' : pd.output.packaging});
+    fs.writeFileSync(path.join(out, 'v4-' + id + '.pdf'), Buffer.from(await r.blob.arrayBuffer()));
+    assert.ok(r.pages >= 1 || r.files >= 1, id + ': ' + JSON.stringify({pages: r.pages, files: r.files, name: r.name}));
+  }
+  const tk = await XS.Presets.ticket();
+  const tks = XS.Scene.build(tk, 0, tk.data.rows[0], 0);
+  assert.ok(tks.ops.some(o => o.op === 'path' && o.rot === 90), 'штрихкод на корешке повёрнут');
+  assert.ok(tks.ops.some(o => o.op === 'text' && o.lines.some(l => l.pieces.some(p => p.text.includes('000001')))), 'подпись штрихкода');
   console.log('Все проверки ядра пройдены. Файлы:', fs.readdirSync(out).join(', '));
 })().catch(e => { console.error(e); process.exit(1); });
