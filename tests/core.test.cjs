@@ -5,7 +5,10 @@ const app = path.join(__dirname, '..', 'app');
 global.window = global;
 global.PDFLib = require(path.join(app, 'vendor/pdf-lib.min.js'));
 global.fontkit = require(path.join(app, 'vendor/fontkit.umd.min.js'));
-for (const f of ['util', 'guest-data', 'model', 'fields', 'fonts', 'layout', 'scene', 'assets', 'render-canvas', 'render-pdf', 'zip', 'impose', 'export', 'presets', 'importers']) require(path.join(app, 'js/core', f + '.js'));
+global.fflate = require(path.join(app, 'vendor/fflate.min.js'));
+global.petrovich = require(path.join(app, 'vendor/petrovich.min.js'));
+global.qrcode = require(path.join(app, 'vendor/qrcode.js'));
+for (const f of ['util', 'guest-data', 'model', 'names', 'fields', 'fonts', 'layout', 'qr', 'scene', 'assets', 'render-canvas', 'render-pdf', 'zip', 'impose', 'check', 'export', 'presets', 'importers']) require(path.join(app, 'js/core', f + '.js'));
 const XS = global.XS;
 XS.fetchBytes = async url => new Uint8Array(fs.readFileSync(path.join(app, url)));
 XS.fetchDataUrl = async url => XS.bytesToDataUrl(new Uint8Array(fs.readFileSync(path.join(app, url))), {jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf'}[url.split('.').pop()]);
@@ -70,5 +73,66 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   const norm = XS.Model.normalizeDoc(JSON.parse(JSON.stringify(gd))).sides[0];
   assert.deepStrictEqual(norm.elements.map(e => e.name + ':' + e.group), ['b:', 'a:g1', 'c:g1', 'd:']);
   assert.deepStrictEqual(norm.groups.map(g => g.id), ['g1']);
+  // 8. Склонение и формы имени
+  const nd = XS.Model.blankDoc('diploma');
+  XS.Model.addRow(nd, {'ФИО': 'Петрова Анна Сергеевна', 'Место': 'I место'});
+  XS.Model.addRow(nd, {'ФИО': 'Иванов Иван Иванович'});
+  XS.Model.addRow(nd, {'ФИО': 'Команда «Социологические мысли»'});
+  const c0 = XS.Fields.context(nd, nd.data.rows[0], 0), c1 = XS.Fields.context(nd, nd.data.rows[1], 1), c2 = XS.Fields.context(nd, nd.data.rows[2], 2);
+  assert.strictEqual(XS.Fields.fill('{ФИО:дат}', c0), 'Петровой Анне Сергеевне');
+  assert.strictEqual(XS.Fields.fill('{ФИО:род}', c1), 'Иванова Ивана Ивановича');
+  assert.strictEqual(XS.Fields.fill('{ФИО:твор}', c1), 'Ивановым Иваном Ивановичем');
+  assert.strictEqual(XS.Fields.fill('{ФИО:инициалы}', c0), 'Петрова А. С.');
+  assert.strictEqual(XS.Fields.fill('{ФИО:ио}', c1), 'И. И. Иванов');
+  assert.strictEqual(XS.Fields.fill('{ФИО:дат:имя отчество}', c0), 'Анне Сергеевне');
+  assert.strictEqual(XS.Fields.fill('{ФИО:дат}', c2), 'Команда «Социологические мысли»'); // не ФИО — без изменений
+  assert.strictEqual(XS.Fields.fill('{Место:верх}', c0), 'I МЕСТО');
+  assert.deepStrictEqual(XS.Fields.fieldsIn('{ФИО:дат} {Место}'), ['ФИО', 'Место']);
+  // 9. QR-код и «показывать, если»
+  const qd = XS.Model.blankDoc('custom', 'QR', {width: 100, height: 100});
+  qd.sides[0].elements.push(XS.Model.element('qr', {data: 'https://o.utmns.ru/v/{№}', x: 10, y: 10, w: 30, h: 30}));
+  qd.sides[0].elements.push(XS.Model.element('text', {text: 'Победитель', showIf: {field: 'Место', op: 'eq', value: '1'}}));
+  XS.Model.addRow(qd, {'ФИО': 'А', 'Место': '1'}); XS.Model.addRow(qd, {'ФИО': 'Б', 'Место': '2'});
+  const s0 = XS.Scene.build(qd, 0, qd.data.rows[0], 0), s1 = XS.Scene.build(qd, 0, qd.data.rows[1], 1);
+  assert.ok(s0.ops.some(o => o.op === 'path' && o.d.length > 100), 'QR-контур');
+  assert.ok(s0.ops.some(o => o.op === 'text') && !s1.ops.some(o => o.op === 'text'), 'условие показа');
+  assert.strictEqual(XS.QR.matrix('https://o.utmns.ru/v/1').size, 25);
+  r = await XS.Export.run(qd, {...qd.output, packaging: 'single'});
+  fs.writeFileSync(path.join(out, 'qr.pdf'), Buffer.from(await r.blob.arrayBuffer()));
+  assert.strictEqual(r.pages, 2);
+  // 10. XLSX и ODS без сторонних парсеров
+  const enc = t => new TextEncoder().encode(t);
+  const xlsx = fflate.zipSync({
+    'xl/workbook.xml': enc('<workbook><sheets><sheet name="Список" sheetId="1" r:id="rId1"/></sheets></workbook>'),
+    'xl/_rels/workbook.xml.rels': enc('<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>'),
+    'xl/sharedStrings.xml': enc('<sst><si><t>ФИО</t></si><si><t>Дата</t></si><si><r><t>Иванов </t></r><r><t>Иван</t></r></si><si><t>A&amp;B</t></si></sst>'),
+    'xl/styles.xml': enc('<styleSheet><cellXfs count="2"><xf numFmtId="0"/><xf numFmtId="14"/></cellXfs></styleSheet>'),
+    'xl/worksheets/sheet1.xml': enc('<worksheet><sheetData><row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="inlineStr"><is><t>Балл</t></is></c></row><row r="2"><c r="A2" t="s"><v>2</v></c><c r="B2" s="1"><v>46000</v></c><c r="C2"><v>0.30000000000000004</v></c></row><row r="4"><c r="A4" t="s"><v>3</v></c></row></sheetData></worksheet>')
+  });
+  const xt = XS.Import.readTableFile(xlsx, 'список.xlsx');
+  assert.deepStrictEqual(xt.headers, ['ФИО', 'Дата', 'Балл']);
+  assert.deepStrictEqual(xt.rows, [['Иванов Иван', '09.12.2025', '0.3'], ['A&B', '', '']]);
+  const ods = fflate.zipSync({'content.xml': enc('<office:document-content><table:table table:name="Л1"><table:table-row><table:table-cell office:value-type="string"><text:p>ФИО</text:p></table:table-cell><table:table-cell><text:p>Место</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Петрова<text:s/>Анна</text:p></table:table-cell><table:table-cell office:value-type="float" office:value="1"><text:p>1</text:p></table:table-cell></table:table-row><table:table-row table:number-rows-repeated="1000"><table:table-cell table:number-columns-repeated="1000"/></table:table-row></table:table></office:document-content>')});
+  const ot = XS.Import.readTableFile(ods, 'a.ods');
+  assert.deepStrictEqual(ot, {headers: ['ФИО', 'Место'], rows: [['Петрова Анна', '1']]});
+  const cp = new Uint8Array([0xd4, 0xc8, 0xce, 0x0a, 0xc8, 0xe2, 0xe0, 0xed, 0xee, 0xe2]); // «ФИО\nИванов» в cp1251
+  assert.deepStrictEqual(XS.Import.readTableFile(cp, 'a.csv'), {headers: ['ФИО'], rows: [['Иванов']]});
+  // 11. Проверка списка
+  const ck = XS.Model.blankDoc('diploma');
+  ck.sides[0].elements.push(XS.Model.element('text', {text: 'Награждается {ФИО:твор} {Место}'}));
+  XS.Model.addRow(ck, {'ФИО': 'Ивaнов Иван', 'Место': ''}); // латинская «a»
+  XS.Model.addRow(ck, {'ФИО': 'Ивaнов Иван ', 'Место': '2'});
+  const issues = XS.Check.data(ck);
+  assert.ok(issues.some(p => /Латинские/.test(p.msg)), 'латиница');
+  assert.ok(issues.some(p => /Повтор/.test(p.msg)), 'повтор');
+  assert.ok(issues.some(p => /Пустое поле \{Место\}/.test(p.msg)), 'пустое поле');
+  assert.ok(issues.some(p => /пробелы/.test(p.msg)), 'пробелы');
+  assert.strictEqual(XS.Check.fix(ck, 'latin'), 2);
+  assert.strictEqual(ck.data.rows[0].cells[ck.data.columns[0].id], 'Иванов Иван');
+  // 12. Сжатый ZIP читается обратно
+  const zb = new Uint8Array(await (await XS.Zip.zip([{name: 'Диплом 1.pdf', blob: new Blob([enc('%PDF '.repeat(500))])}, {name: 'фото.jpg', blob: new Blob([enc('jpg')])}])).arrayBuffer());
+  const back = XS.Zip.unzip(zb);
+  assert.deepStrictEqual(Object.keys(back), ['Диплом 1.pdf', 'фото.jpg']);
+  assert.ok(zb.length < 600, 'PDF сжат: ' + zb.length);
   console.log('Все проверки ядра пройдены. Файлы:', fs.readdirSync(out).join(', '));
 })().catch(e => { console.error(e); process.exit(1); });

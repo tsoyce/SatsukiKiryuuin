@@ -6,39 +6,47 @@
   <title>XSatsu Студия</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="stylesheet" href="css/studio.css?v=2">
+  <link rel="stylesheet" href="css/studio.css?v=3">
   <script defer src="vendor/pdf-lib.min.js"></script>
   <script defer src="vendor/fontkit.umd.min.js"></script>
   <script defer src="vendor/pdf.min.js"></script>
-  <script defer src="js/core/util.js?v=2"></script>
-  <script defer src="js/core/guest-data.js?v=2"></script>
-  <script defer src="js/core/model.js?v=2"></script>
-  <script defer src="js/core/fields.js?v=2"></script>
-  <script defer src="js/core/fonts.js?v=2"></script>
-  <script defer src="js/core/layout.js?v=2"></script>
-  <script defer src="js/core/assets.js?v=2"></script>
-  <script defer src="js/core/scene.js?v=2"></script>
-  <script defer src="js/core/render-canvas.js?v=2"></script>
-  <script defer src="js/core/render-pdf.js?v=2"></script>
-  <script defer src="js/core/zip.js?v=2"></script>
-  <script defer src="js/core/impose.js?v=2"></script>
-  <script defer src="js/core/export.js?v=2"></script>
-  <script defer src="js/core/store.js?v=2"></script>
-  <script defer src="js/core/history.js?v=2"></script>
-  <script defer src="js/core/presets.js?v=2"></script>
-  <script defer src="js/core/importers.js?v=2"></script>
-  <script defer src="js/ui/app.js?v=2"></script>
-  <script defer src="js/ui/icons.js?v=2"></script>
-  <script defer src="js/ui/selection.js?v=2"></script>
-  <script defer src="js/ui/context-menu.js?v=2"></script>
-  <script defer src="js/ui/keys.js?v=2"></script>
-  <script defer src="js/ui/stage.js?v=2"></script>
-  <script defer src="js/ui/layers.js?v=2"></script>
-  <script defer src="js/ui/data.js?v=2"></script>
-  <script defer src="js/ui/inspector.js?v=2"></script>
-  <script defer src="js/ui/export-dialog.js?v=2"></script>
-  <script defer src="js/ui/home.js?v=2"></script>
-  <script defer src="js/ui/boot.js?v=2"></script>
+  <script defer src="vendor/fflate.min.js"></script>
+  <script defer src="vendor/petrovich.min.js"></script>
+  <script defer src="vendor/qrcode.js"></script>
+  <script defer src="js/core/util.js?v=3"></script>
+  <script defer src="js/core/guest-data.js?v=3"></script>
+  <script defer src="js/core/model.js?v=3"></script>
+  <script defer src="js/core/names.js?v=3"></script>
+  <script defer src="js/core/fields.js?v=3"></script>
+  <script defer src="js/core/fonts.js?v=3"></script>
+  <script defer src="js/core/layout.js?v=3"></script>
+  <script defer src="js/core/assets.js?v=3"></script>
+  <script defer src="js/core/qr.js?v=3"></script>
+  <script defer src="js/core/scene.js?v=3"></script>
+  <script defer src="js/core/render-canvas.js?v=3"></script>
+  <script defer src="js/core/render-pdf.js?v=3"></script>
+  <script defer src="js/core/zip.js?v=3"></script>
+  <script defer src="js/core/impose.js?v=3"></script>
+  <script defer src="js/core/check.js?v=3"></script>
+  <script defer src="js/core/export.js?v=3"></script>
+  <script defer src="js/core/store.js?v=3"></script>
+  <script defer src="js/core/history.js?v=3"></script>
+  <script defer src="js/core/presets.js?v=3"></script>
+  <script defer src="js/core/importers.js?v=3"></script>
+  <script defer src="js/ui/app.js?v=3"></script>
+  <script defer src="js/ui/icons.js?v=3"></script>
+  <script defer src="js/ui/prefs.js?v=3"></script>
+  <script defer src="js/ui/settings.js?v=3"></script>
+  <script defer src="js/ui/selection.js?v=3"></script>
+  <script defer src="js/ui/context-menu.js?v=3"></script>
+  <script defer src="js/ui/keys.js?v=3"></script>
+  <script defer src="js/ui/stage.js?v=3"></script>
+  <script defer src="js/ui/layers.js?v=3"></script>
+  <script defer src="js/ui/data.js?v=3"></script>
+  <script defer src="js/ui/inspector.js?v=3"></script>
+  <script defer src="js/ui/export-dialog.js?v=3"></script>
+  <script defer src="js/ui/home.js?v=3"></script>
+  <script defer src="js/ui/boot.js?v=3"></script>
 </head>
 <body>
   <!-- ГЛАВНАЯ: создать / открыть проект -->
@@ -46,6 +54,8 @@
     <header class="home-top">
       <div class="brand"><span data-logo="36"></span><span class="brand-name">XSatsu <b>Студия</b></span></div>
       <nav class="home-nav">
+        <button id="themeBtn" class="btn icon" type="button" title="Тёмная тема"></button>
+        <button class="btn icon" type="button" data-open-settings title="Настройки"><i data-icon="settings" data-size="17"></i></button>
         <label class="btn"><input id="openProjectFile" type="file" accept=".json,application/json" hidden><i data-icon="folderOpen"></i>Открыть файл проекта</label>
       </nav>
     </header>
@@ -77,6 +87,7 @@
       </div>
       <span id="saveState" class="save-state">Сохранено</span>
       <button id="keysBtn" class="btn icon" title="Горячие клавиши (? или F1)"><i data-icon="keyboard" data-size="17"></i></button>
+      <button class="btn icon" type="button" data-open-settings title="Настройки"><i data-icon="settings" data-size="17"></i></button>
       <div class="menu-wrap">
         <button id="projectMenuBtn" class="btn">Проект<i data-icon="chevronDown" data-size="14"></i></button>
         <div id="projectMenu" class="menu" hidden>
@@ -104,6 +115,7 @@
             <button data-add="image" title="Картинка или логотип (I)"><i data-icon="image"></i>Картинка</button>
             <button data-add="rect" title="Прямоугольник или овал (R)"><i data-icon="rect"></i>Фигура</button>
             <button data-add="line" title="Линия (L)"><i data-icon="line"></i>Линия</button>
+            <button data-add="qr" title="QR-код из поля (Q)"><i data-icon="qr"></i>QR</button>
           </div>
           <ol id="layerList" class="layer-list"></ol>
           <p class="muted small hint">Shift/Ctrl-клик — несколько слоёв, двойной клик — переименовать, перетаскивание — порядок. Правая кнопка — меню.</p>
@@ -112,7 +124,7 @@
           <div class="data-bar">
             <button id="addRowBtn" class="btn small"><i data-icon="plus" data-size="14"></i>Запись</button>
             <button id="pasteBtn" class="btn small" title="Вставить таблицу из Excel или Google Таблиц"><i data-icon="paste" data-size="14"></i>Из Excel</button>
-            <label class="btn small"><input id="importTableFile" type="file" accept=".csv,.tsv,.txt" hidden><i data-icon="upload" data-size="14"></i>CSV</label>
+            <label class="btn small" title="Excel (.xlsx), LibreOffice (.ods) или CSV"><input id="importTableFile" type="file" accept=".xlsx,.ods,.csv,.tsv,.txt" hidden><i data-icon="upload" data-size="14"></i>Файл</label>
             <button id="tableBtn" class="btn small" title="Вся таблица"><i data-icon="table" data-size="14"></i>Таблица</button>
           </div>
           <label class="search-wrap"><i data-icon="search"></i><input id="rowSearch" class="search" type="search" placeholder="Поиск"></label>
@@ -156,6 +168,12 @@
       </aside>
     </div>
   </section>
+
+  <!-- Настройки -->
+  <dialog id="settingsDialog" class="dialog wide">
+    <header class="dialog-head"><h2>Настройки</h2><div id="settingsTabs" class="tabs inline-tabs"></div><button class="btn icon" id="settingsClose" aria-label="Закрыть"><i data-icon="close"></i></button></header>
+    <div id="settingsBody" class="dialog-body"></div>
+  </dialog>
 
   <!-- Горячие клавиши -->
   <dialog id="keysDialog" class="dialog wide">

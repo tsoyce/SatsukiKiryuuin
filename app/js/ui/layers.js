@@ -4,7 +4,7 @@
   'use strict';
   const XS = global.XS, UI = XS.UI, S = UI.S, $ = UI.$;
   const I = (n, s) => XS.Icons.icon(n, s);
-  const TYPE_ICON = {text: 'text', image: 'image', rect: 'rect', line: 'line', path: 'path'};
+  const TYPE_ICON = {text: 'text', image: 'image', rect: 'rect', line: 'line', path: 'path', qr: 'qr'};
   let anchor = null; // для Shift-клика диапазоном
 
   function typeIcon(el) { return el.type === 'rect' && el.shape === 'ellipse' ? 'ellipse' : el.type === 'text' && /\{[^}]+\}/.test(el.text) ? 'field' : TYPE_ICON[el.type]; }
@@ -40,7 +40,7 @@
     const li = document.createElement('li');
     li.className = 'layer' + (sel.has(el.id) ? ' active' : '') + (el.visible ? '' : ' hidden-el') + (nested ? ' nested' : '') + (el.locked ? ' is-locked' : '');
     li.draggable = true; li.dataset.id = el.id;
-    const preview = el.type === 'text' ? el.text.replace(/\s+/g, ' ').slice(0, 40) : el.type === 'image' && /^\{/.test(el.src) ? el.src : '';
+    const preview = el.type === 'text' ? el.text.replace(/\s+/g, ' ').slice(0, 40) : el.type === 'qr' ? el.data.slice(0, 40) : el.type === 'image' && /^\{/.test(el.src) ? el.src : '';
     li.innerHTML = `<span class="type">${I(typeIcon(el), 15)}</span><span class="name">${XS.esc(el.name)}${preview && preview !== el.name ? '<small>' + XS.esc(preview) + '</small>' : ''}</span>` +
       (warn.has(el.id) ? `<span class="warn-dot" title="Есть предупреждения">${I('warn', 14)}</span>` : '') + tools(el.locked, !el.visible);
     return li;
@@ -58,6 +58,11 @@
     }
     if (type === 'rect') return insert(M.element('rect', {...center(W * 0.4, H * 0.2), fill: '#eef0ff', stroke: '#4f46e5'}));
     if (type === 'line') return insert(M.element('line', {...center(W * 0.5, 0)}));
+    if (type === 'qr') {
+      const link = S.doc.data.columns.find(c => /ссылк|url|link|qr/i.test(c.name));
+      const side = Math.max(15, Math.round(Math.min(W, S.doc.page.height) * 0.18));
+      return insert(M.element('qr', {...center(side, side), name: 'QR-код', data: link ? '{' + link.name + '}' : 'https://o.utmns.ru'}));
+    }
     if (type === 'image') {
       const input = document.createElement('input');
       input.type = 'file'; input.accept = 'image/*,.pdf';

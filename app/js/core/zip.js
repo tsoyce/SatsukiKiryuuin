@@ -126,5 +126,38 @@
   }
 
 
-  global.XS.Zip = {sanitizeFilename, uniqueFilename, zip};
+  /* Сжатый архив через fflate (vendor/fflate.min.js): PDF и тексты сжимаются, JPEG/PNG — как есть.
+   * Архив собирается по частям (поток fflate.Zip), без лишней копии всего архива в памяти. */
+  const STORED = /\.(jpe?g|png|webp|gif|zip|gz|woff2?|mp4)$/i;
+  async function zipDeflate(files, onProgress) {
+    const F = global.fflate;
+    if (!F || !F.Zip) return zip(files, onProgress);
+    if (files.length > 65535) throw new Error('В одном архиве может быть не более 65535 файлов.');
+    const chunks = [];
+    let failure = null;
+    const archive = new F.Zip((err, chunk) => { if (err) failure = err; else chunks.push(chunk); });
+    const used = new Set();
+    for (let i = 0; i < files.length; i++) {
+      const name = uniqueFilename(files[i].name, used);
+      const bytes = await toBytes(files[i].blob);
+      const entry = STORED.test(name) ? new F.ZipPassThrough(name) : new F.ZipDeflate(name, {level: 6});
+      entry.mtime = new Date();
+      archive.add(entry);
+      entry.push(bytes, true);
+      if (failure) throw failure;
+      if (typeof onProgress === 'function') onProgress(i + 1, files.length, files[i].name);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    archive.end();
+    if (failure) throw failure;
+    return new Blob(chunks, {type: 'application/zip'});
+  }
+  /* Чтение ZIP (XLSX, ODS, .xsatsu): {имя: Uint8Array}. */
+  function unzip(bytes, filter) {
+    const F = global.fflate;
+    if (!F) throw new Error('Не загружена библиотека fflate (vendor/fflate.min.js).');
+    return F.unzipSync(bytes, filter ? {filter: f => filter(f.name)} : undefined);
+  }
+
+  global.XS.Zip = {sanitizeFilename, uniqueFilename, zip: zipDeflate, zipStore: zip, unzip, crc32};
 })(typeof window !== 'undefined' ? window : globalThis);

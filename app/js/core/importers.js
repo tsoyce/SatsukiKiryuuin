@@ -31,6 +31,123 @@
     return {headers, rows: rows.filter(r => r.some(c => c.trim())).map(r => headers.map((_, i) => (r[i] ?? '').trim()))};
   }
 
+  /* ---- XLSX / ODS без сторонних парсеров: распаковка fflate + разбор XML ---- */
+  const ENT = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'"};
+  const unxml = t => String(t).replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1)) : (ENT[e] ?? m));
+  const attr = (tag, name) => { const m = new RegExp('\\b' + name + '="([^"]*)"').exec(tag); return m ? unxml(m[1]) : null; };
+  const textOf = bytes => new TextDecoder('utf-8').decode(bytes);
+  function colIndex(ref) { let n = 0; for (const ch of /^[A-Z]+/.exec(ref)[0]) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; }
+  function serialDate(v) {
+    const ms = Math.round((v - 25569) * 86400000), d = new Date(ms);
+    if (isNaN(d)) return String(v);
+    const p = n => String(n).padStart(2, '0');
+    const date = p(d.getUTCDate()) + '.' + p(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear();
+    return v % 1 ? date + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) : date;
+  }
+  const cleanNumber = v => { const n = Number(v); return Number.isFinite(n) ? String(+n.toPrecision(12)) : String(v); };
+
+  function grid(cells) {
+    // cells: массив строк (массивов) → {headers, rows} как у parseTable
+    const rows = cells.map(r => r.map(c => String(c ?? '').trim()));
+    while (rows.length && !rows[0].some(Boolean)) rows.shift();
+    if (!rows.length) return {headers: [], rows: []};
+    let width = 0;
+    for (const r of rows) for (let i = r.length - 1; i >= 0; i--) if (r[i]) { width = Math.max(width, i + 1); break; }
+    const headers = Array.from({length: width}, (_, i) => rows[0][i] || 'Столбец ' + (i + 1));
+    return {headers, rows: rows.slice(1).filter(r => r.some(Boolean)).map(r => headers.map((_, i) => r[i] ?? ''))};
+  }
+
+  function readXlsx(bytes) {
+    const files = XS.Zip.unzip(bytes, n => /^xl\/(workbook\.xml|_rels\/workbook\.xml\.rels|sharedStrings\.xml|styles\.xml|worksheets\/[^/]+\.xml)$/.test(n));
+    const wb = files['xl/workbook.xml'] ? textOf(files['xl/workbook.xml']) : '';
+    const rels = files['xl/_rels/workbook.xml.rels'] ? textOf(files['xl/_rels/workbook.xml.rels']) : '';
+    const firstSheet = /<sheet\b[^>]*>/.exec(wb);
+    let path = 'xl/worksheets/sheet1.xml';
+    if (firstSheet) {
+      const rid = attr(firstSheet[0], 'r:id');
+      const rel = [...rels.matchAll(/<Relationship\b[^>]*>/g)].map(m => m[0]).find(t => attr(t, 'Id') === rid);
+      if (rel) { const target = attr(rel, 'Target').replace(/^\/?xl\//, '').replace(/^\//, ''); path = 'xl/' + target; }
+    }
+    const sheet = files[path] || Object.entries(files).find(([n]) => /^xl\/worksheets\//.test(n))?.[1];
+    if (!sheet) throw new Error('В книге Excel не найден лист.');
+    const shared = [];
+    if (files['xl/sharedStrings.xml']) for (const m of textOf(files['xl/sharedStrings.xml']).matchAll(/<si>([\s\S]*?)<\/si>/g)) {
+      shared.push(unxml([...m[1].replace(/<rPh\b[\s\S]*?<\/rPh>/g, '').matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(t => t[1]).join('')));
+    }
+    // Форматы дат: встроенные 14–22, 45–47 и свои с d/m/y.
+    const dateStyles = new Set();
+    if (files['xl/styles.xml']) {
+      const st = textOf(files['xl/styles.xml']), custom = new Map();
+      for (const m of st.matchAll(/<numFmt\b[^>]*>/g)) custom.set(attr(m[0], 'numFmtId'), attr(m[0], 'formatCode') || '');
+      const xfs = /<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/.exec(st);
+      if (xfs) [...xfs[1].matchAll(/<xf\b[^>]*>/g)].forEach((m, i) => {
+        const id = +attr(m[0], 'numFmtId');
+        const code = (custom.get(String(id)) || '').replace(/"[^"]*"|\[[^\]]*\]/g, '');
+        if ((id >= 14 && id <= 22) || (id >= 45 && id <= 47) || (custom.has(String(id)) && /[dy]/i.test(code))) dateStyles.add(i);
+      });
+    }
+    const out = [];
+    for (const rm of textOf(sheet).matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/g)) {
+      const r = +(attr(rm[1], 'r') || out.length + 1) - 1;
+      if (r > 20000) break;
+      const row = out[r] = out[r] || [];
+      for (const cm of rm[2].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+        const ref = attr(cm[1], 'r'), t = attr(cm[1], 't'), s = +(attr(cm[1], 's') || 0), inner = cm[2] || '';
+        const c = ref ? colIndex(ref) : row.length;
+        if (c > 500) continue;
+        const v = /<v>([\s\S]*?)<\/v>/.exec(inner)?.[1];
+        let value = '';
+        if (t === 's') value = shared[+v] ?? '';
+        else if (t === 'inlineStr') value = unxml([...inner.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(x => x[1]).join(''));
+        else if (t === 'b') value = v === '1' ? 'да' : 'нет';
+        else if (t === 'str' || t === 'e') value = unxml(v ?? '');
+        else if (v != null) value = dateStyles.has(s) ? serialDate(+v) : cleanNumber(v);
+        row[c] = value;
+      }
+    }
+    return grid(Array.from(out, r => r || []));
+  }
+
+  function readOds(bytes) {
+    const files = XS.Zip.unzip(bytes, n => n === 'content.xml');
+    if (!files['content.xml']) throw new Error('Это не таблица OpenDocument (.ods).');
+    const xml = textOf(files['content.xml']);
+    const table = /<table:table\b[^>]*>([\s\S]*?)<\/table:table>/.exec(xml);
+    if (!table) throw new Error('В файле нет листа.');
+    const out = [];
+    for (const rm of table[1].matchAll(/<table:table-row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/table:table-row>)/g)) {
+      const row = [];
+      for (const cm of (rm[2] || '').matchAll(/<table:(table-cell|covered-table-cell)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/table:\1>)/g)) {
+        const rep = Math.min(+(attr(cm[2], 'table:number-columns-repeated') || 1), 500 - row.length);
+        const type = attr(cm[2], 'office:value-type');
+        let value = [...(cm[3] || '').matchAll(/<text:p\b[^>]*>([\s\S]*?)<\/text:p>/g)].map(p => unxml(p[1].replace(/<text:s\b[^>]*\/>/g, ' ').replace(/<text:line-break\/>/g, '\n').replace(/<[^>]+>/g, ''))).join('\n');
+        if (type === 'float' || type === 'percentage') value = cleanNumber(attr(cm[2], 'office:value') ?? value) || value;
+        if (type === 'date' && attr(cm[2], 'office:date-value')) { const d = attr(cm[2], 'office:date-value').split('T')[0].split('-'); value = d[2] + '.' + d[1] + '.' + d[0]; }
+        for (let i = 0; i < rep; i++) row.push(value);
+      }
+      const rep = Math.min(+(attr(rm[1], 'table:number-rows-repeated') || 1), 20000 - out.length);
+      if (!row.some(Boolean) && rep > 1) { for (let i = 0; i < Math.min(rep, 3); i++) out.push([]); continue; }
+      for (let i = 0; i < rep; i++) out.push(row);
+      if (out.length >= 20000) break;
+    }
+    return grid(out);
+  }
+
+  /* Текст CSV: UTF-8, а если не читается — Windows-1251 (старый Excel). */
+  function decodeText(bytes) {
+    try { return new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
+    catch (e) { return new TextDecoder('windows-1251').decode(bytes); }
+  }
+  /* Любой табличный файл → {headers, rows}. */
+  function readTableFile(bytes, name = '') {
+    const ext = String(name).toLowerCase().split('.').pop();
+    const zipped = bytes[0] === 0x50 && bytes[1] === 0x4b;
+    if (ext === 'xls' && !zipped) throw new Error('Старый формат .xls не поддерживается: сохраните файл в Excel как .xlsx или CSV.');
+    if (zipped && ext === 'ods') return readOds(bytes);
+    if (zipped) return readXlsx(bytes);
+    return parseTable(decodeText(bytes));
+  }
+
   /* Добавляет/заменяет записи в документе. Столбцы сопоставляются по названию. */
   function applyTable(doc, table, {replace = false} = {}) {
     if (replace) doc.data.rows = [];
@@ -136,5 +253,5 @@
     throw new Error('Не узнаю формат файла. Поддерживаются проекты Студии и проекты v25 (пригласительные, дипломы, закладки).');
   }
 
-  XS.Import = {parseTable, applyTable, toCsv, projectFromJson, fromInvitation, fromDiploma, fromBookmarks};
+  XS.Import = {readTableFile, readXlsx, readOds, decodeText, parseTable, applyTable, toCsv, projectFromJson, fromInvitation, fromDiploma, fromBookmarks};
 })(typeof window !== 'undefined' ? window : globalThis);

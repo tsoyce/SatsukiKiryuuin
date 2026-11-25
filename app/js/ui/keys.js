@@ -33,7 +33,7 @@
     {group: 'Слои', keys: ['F2'], show: 'F2', label: 'Переименовать слой', need: 'sel', run: () => { switchTab('layers'); UI.Layers.rename(); }},
     {group: 'Слои', keys: ['Enter', 'NumpadEnter'], show: 'Enter', label: 'Редактировать текст', need: 'sel', run: () => UI.Inspector.focusText()},
     {group: 'Положение', keys: ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Shift+ArrowLeft', 'Shift+ArrowRight', 'Shift+ArrowUp', 'Shift+ArrowDown'], show: 'Стрелки · Shift+стрелки', label: 'Сдвиг на 0,5 мм · на 5 мм', need: 'sel', run: e => {
-      const st = e.shiftKey ? 5 : 0.5, d = {ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st]}[e.code];
+      const st = e.shiftKey ? UI.Prefs.get('nudgeBig') : UI.Prefs.get('nudge'), d = {ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st]}[e.code];
       Sel().nudge(d[0], d[1]);
     }},
     {group: 'Положение', keys: [], show: 'Shift при перетаскивании', label: 'Только по горизонтали или вертикали; за угол — с сохранением пропорций'},
@@ -43,6 +43,7 @@
     {group: 'Добавить', keys: ['KeyI'], show: 'I', label: 'Картинку', run: () => UI.Layers.add('image')},
     {group: 'Добавить', keys: ['KeyR'], show: 'R', label: 'Фигуру', run: () => UI.Layers.add('rect')},
     {group: 'Добавить', keys: ['KeyL'], show: 'L', label: 'Линию', run: () => UI.Layers.add('line')},
+    {group: 'Добавить', keys: ['KeyQ'], show: 'Q', label: 'QR-код', run: () => UI.Layers.add('qr')},
     {group: 'Вид', keys: ['Mod+Digit0', 'Mod+Numpad0'], show: 'Ctrl+0', label: 'Вписать в окно', input: true, run: () => UI.Stage.fit()},
     {group: 'Вид', keys: ['Mod+Digit1', 'Mod+Numpad1'], show: 'Ctrl+1', label: 'Масштаб 100 %', input: true, run: () => UI.Stage.setZoom(1)},
     {group: 'Вид', keys: ['Mod+Equal', 'Mod+NumpadAdd', 'Mod+Shift+Equal'], show: 'Ctrl+=', label: 'Крупнее', input: true, run: () => UI.Stage.setZoom(UI.Stage.zoom() * 1.25)},

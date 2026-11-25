@@ -178,7 +178,7 @@
       const kk = k(), dx = (ev.clientX - px) / kk, dy = (ev.clientY - py) / kk;
       if (!moved && Math.hypot(ev.clientX - px, ev.clientY - py) < 3) return;
       if (!moved) { S.history.record(S.doc); moved = true; }
-      const th = 6 / kk, free = ev.altKey;
+      const th = UI.Prefs.get('snapPx') / kk, free = ev.altKey || !UI.Prefs.get('snap');
       let gx = null, gy = null;
       if (!handle) {
         let ddx = dx, ddy = dy;

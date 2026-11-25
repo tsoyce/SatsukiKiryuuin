@@ -6,7 +6,20 @@
 
   function elementLayer(el) {
     if (el.layer === 'color' || el.layer === 'text') return el.layer;
-    return el.type === 'text' || el.type === 'line' ? 'text' : 'color';
+    return el.type === 'text' || el.type === 'line' || el.type === 'qr' ? 'text' : 'color';
+  }
+  /* «Показывать, если»: без записи (макет-бланк) элемент виден всегда. */
+  function visibleFor(el, ctx) {
+    const c = el.showIf;
+    if (!c || !c.field || !ctx.row) return true;
+    const v = XS.key(XS.Fields.lookup(ctx, c.field) ?? ''), want = XS.key(c.value);
+    switch (c.op) {
+      case 'empty': return !v;
+      case 'eq': return v === want;
+      case 'neq': return v !== want;
+      case 'contains': return !!want && v.includes(want);
+      default: return !!v;
+    }
   }
   function passes(layer, wanted) { return wanted === 'all' || !wanted || layer === wanted; }
 
@@ -34,7 +47,7 @@
       else warn(null, 'Файл фона не найден в проекте.');
     }
     for (const el of side.elements) {
-      if (!el.visible) continue;
+      if (!el.visible || !visibleFor(el, ctx)) continue;
       const elLayer = elementLayer(el);
       if (!passes(elLayer, layer)) continue;
       const base = {id: el.id, opacity: el.opacity ?? 1};
@@ -65,6 +78,15 @@
         ops.push({...base, op: 'rect', x: el.x, y: el.y, w: el.w, h: el.h, fill: color(el.fill), stroke: color(el.stroke), sw: el.strokeWidth, radius: el.radius, shape: el.shape});
       } else if (el.type === 'line') {
         ops.push({...base, op: 'line', x1: el.x, y1: el.y, x2: el.x + el.w, y2: el.y + el.h, stroke: color(el.stroke), sw: el.strokeWidth, dash: el.dash});
+      } else if (el.type === 'qr') {
+        const text = XS.Fields.fill(el.data, ctx, {keepUnknown: false}).trim();
+        if (!text) { if (row) warn(el, 'Нет данных для QR-кода.'); continue; }
+        const side = Math.min(el.w, el.h), x = el.x + (el.w - side) / 2, y = el.y + (el.h - side) / 2;
+        let q;
+        try { q = XS.QR.path(text, side, {level: el.level, quiet: el.quiet}); } catch (e) { warn(el, 'QR-код: ' + e.message); continue; }
+        if (q.module < 0.25) warn(el, 'QR-код слишком мелкий для печати (модуль ' + q.module.toFixed(2) + ' мм): увеличьте его или сократите текст.');
+        if (el.background) ops.push({...base, op: 'rect', x, y, w: side, h: side, fill: black ? '#ffffff' : el.background, stroke: '', sw: 0, radius: 0, shape: 'rect'});
+        ops.push({...base, op: 'path', d: q.d, x, y, fill: color(el.color), stroke: '', sw: 0});
       } else if (el.type === 'path' && el.d) {
         ops.push({...base, op: 'path', d: el.d, x: el.x, y: el.y, fill: color(el.fill), stroke: color(el.stroke), sw: el.strokeWidth});
       }
@@ -90,5 +112,5 @@
     return out;
   }
 
-  XS.Scene = {build, records, elementLayer, resolveImage};
+  XS.Scene = {build, records, elementLayer, resolveImage, visibleFor};
 })(typeof window !== 'undefined' ? window : globalThis);

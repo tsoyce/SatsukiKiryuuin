@@ -27,7 +27,7 @@
   const PAPER = {a4: [210, 297], a3: [297, 420], a5: [148, 210], sra3: [320, 450]};
 
   const ELEMENT_DEFAULTS = {
-    common: {name: '', x: 10, y: 10, w: 60, h: 20, visible: true, locked: false, layer: 'auto', opacity: 1, group: ''},
+    common: {name: '', x: 10, y: 10, w: 60, h: 20, visible: true, locked: false, layer: 'auto', opacity: 1, group: '', showIf: {field: '', op: 'filled', value: ''}},
     text: {text: 'Текст', font: 'PT Sans', size: 14, bold: false, italic: false, color: '#222222', align: 'center', valign: 'middle',
       lineHeight: 1.2, letterSpacing: 0, uppercase: false, autoFit: true, minSize: 6,
       accent: {enabled: false, fields: 'ФИО', font: '', size: 0, bold: true, italic: false, color: ''},
@@ -35,13 +35,17 @@
     image: {src: '', fit: 'cover', shape: 'rect', radius: 0},
     rect: {fill: '#ffffff', stroke: '#222222', strokeWidth: 0.3, radius: 0, shape: 'rect'},
     line: {stroke: '#222222', strokeWidth: 0.3, dash: 0},
-    path: {d: '', fill: '', stroke: '#222222', strokeWidth: 0.3}
+    path: {d: '', fill: '', stroke: '#222222', strokeWidth: 0.3},
+    qr: {data: '{Ссылка}', color: '#000000', background: '#ffffff', level: 'M', quiet: 1}
   };
-  const TYPE_LABELS = {text: 'Текст', image: 'Изображение', rect: 'Фигура', line: 'Линия', path: 'Контур'};
+  const TYPE_LABELS = {text: 'Текст', image: 'Изображение', rect: 'Фигура', line: 'Линия', path: 'Контур', qr: 'QR-код'};
+  /* Условия показа элемента: «показывать, если {Поле} …». */
+  const CONDITIONS = [['filled', 'заполнено'], ['empty', 'пустое'], ['eq', 'равно'], ['neq', 'не равно'], ['contains', 'содержит']];
 
   function element(type, props = {}) {
     const base = clone({...ELEMENT_DEFAULTS.common, ...ELEMENT_DEFAULTS[type]});
     const el = Object.assign(base, clone(props), {id: props.id || uid('el'), type});
+    el.showIf = Object.assign({field: '', op: 'filled', value: ''}, props.showIf || {});
     if (type === 'text') {
       el.accent = Object.assign(clone(ELEMENT_DEFAULTS.text.accent), props.accent || {});
       el.empty = Object.assign(clone(ELEMENT_DEFAULTS.text.empty), props.empty || {});
@@ -56,6 +60,12 @@
     for (const k of ['x', 'y']) el[k] = num(el[k], 0, -1000, 2000);
     for (const k of ['w', 'h']) el[k] = num(el[k], 10, input.type === 'line' ? 0 : 1, 2000);
     el.opacity = num(el.opacity, 1, 0, 1);
+    const si = input.showIf && typeof input.showIf === 'object' ? input.showIf : {};
+    el.showIf = {field: String(si.field || '').slice(0, 100), op: CONDITIONS.some(c => c[0] === si.op) ? si.op : 'filled', value: String(si.value ?? '').slice(0, 200)};
+    if (el.type === 'qr') {
+      el.data = String(el.data ?? ''); el.quiet = Math.round(num(el.quiet, 1, 0, 8));
+      if (!['L', 'M', 'Q', 'H'].includes(el.level)) el.level = 'M';
+    }
     if (!['auto', 'color', 'text'].includes(el.layer)) el.layer = 'auto';
     if (el.type === 'text') {
       el.size = num(el.size, 14, 2, 400); el.minSize = num(el.minSize, 6, 2, el.size);
@@ -181,5 +191,5 @@
     for (const id of Object.keys(doc.assets)) if (!used.has(id)) delete doc.assets[id];
   }
 
-  XS.Model = {KINDS, PAGE_PRESETS, PAPER, TYPE_LABELS, ELEMENT_DEFAULTS, element, normalizeElement, side, cleanGroups, blankDoc, defaultOutput, normalizeDoc, columnByName, addColumn, addRow, rowValues, addAsset, usedAssets, pruneAssets};
+  XS.Model = {KINDS, PAGE_PRESETS, PAPER, TYPE_LABELS, CONDITIONS, ELEMENT_DEFAULTS, element, normalizeElement, side, cleanGroups, blankDoc, defaultOutput, normalizeDoc, columnByName, addColumn, addRow, rowValues, addAsset, usedAssets, pruneAssets};
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -11,7 +11,8 @@
     const tokens = ['№', ...doc.data.columns.filter(c => c.type !== 'image').map(c => c.name), 'Проект', 'Дата'];
     let plan = '';
     try { const p = XS.Impose.plan({w: doc.page.width, h: doc.page.height}, o); plan = 'Раскладка: ' + p.label + (p.rotated ? ', макеты повёрнуты' : '') + '.'; } catch (e) { plan = '⚠ ' + e.message; }
-    return `<div class="ex-grid">
+    const issues = UI.Prefs.get('autoCheck') && XS.Check ? XS.Check.data(doc).length : 0;
+    return `${issues ? `<p class="note warn-note">${XS.Icons.icon('warn', 15)} В списке замечаний: ${issues} (повторы, пустые поля, опечатки). <button type="button" class="link" data-run-check>Посмотреть</button></p>` : ''}<div class="ex-grid">
       <div class="ex-block"><b>Что выгрузить</b><div class="choices">
         ${radio('scope', 'all', 'Все записи' + (n ? ' (' + n + ')' : ''))}
         ${radio('scope', 'current', 'Только текущую', n ? '№ ' + (S.row + 1) : '')}
@@ -147,6 +148,7 @@
     b.addEventListener('change', onChange);
     b.addEventListener('input', e => { if (e.target.type === 'text' || e.target.type === 'number') onChange(e); });
     b.addEventListener('click', e => {
+      if (e.target.closest('[data-run-check]')) { $('exportDialog').close(); UI.runCheck(); return; }
       const t = e.target.dataset.token; if (!t) return;
       const input = b.querySelector('input[name=naming]:not([disabled])') || b.querySelector('input[name=archive]');
       const s = input.selectionStart ?? input.value.length;
