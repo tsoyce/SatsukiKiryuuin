@@ -1,0 +1,4 @@
+Встроенные шрифты (лицензия SIL Open Font License 1.1, файлы OFL-*.txt):
+- PT Sans, PT Serif, PT Sans Narrow — ParaType, https://github.com/google/fonts/tree/main/ofl
+- Montserrat Regular/SemiBold — из v25 (fonts/)
+- Marck Script, Bad Script, Lobster — https://github.com/google/fonts/tree/main/ofl
