@@ -74,7 +74,7 @@
   function renderElement(el) {
     const key = p => el.id + ':' + p;
     const title = h('div', 'insp-title');
-    title.insertAdjacentHTML('beforeend', XS.Icons.icon({text: 'text', image: 'image', rect: el.shape === 'ellipse' ? 'ellipse' : 'rect', line: 'line', path: 'path', qr: 'qr'}[el.type], 18));
+    title.insertAdjacentHTML('beforeend', XS.Icons.icon({text: 'text', image: 'image', rect: el.shape === 'ellipse' ? 'ellipse' : 'rect', line: 'line', path: 'path', qr: 'qr', barcode: 'barcode'}[el.type], 18));
     const nameInput = textInput(el.name, v => { el.name = v; }, key('name'));
     nameInput.id = 'inspName'; nameInput.title = 'Название слоя (F2)';
     title.append(nameInput);
@@ -187,6 +187,22 @@
       box.append(h('p', 'note', 'QR остаётся вектором в PDF. Для печати сторона — от 15 мм; ссылка для каждой записи берётся из поля, например {Ссылка}.'));
     }
 
+    if (el.type === 'barcode') {
+      section('Штрихкод');
+      row('Вид', seg(XS.Barcode.TYPES, el.symbology, v => { el.symbology = v; UI.Inspector.render(); }, key('bctype')));
+      const ta = h('textarea'); ta.rows = 2; ta.value = el.data; ta.placeholder = el.symbology === 'ean13' ? '12 цифр или {Код}' : '{№:000000} или {Номер билета}';
+      ta.oninput = () => apply(() => { el.data = ta.value; }, key('bcdata'));
+      box.append(ta);
+      const chips = h('div', 'chips');
+      chips.append(h('span', 'muted small', 'Поле:'));
+      for (const name of UI.fieldNames()) { const c = h('button', 'chip', '{' + XS.esc(name) + '}'); c.type = 'button'; c.onclick = () => { const st = ta.selectionStart ?? ta.value.length; ta.setRangeText('{' + name + '}', st, ta.selectionEnd ?? st, 'end'); ta.dispatchEvent(new Event('input')); }; chips.append(c); }
+      box.append(chips);
+      row('Цвет', colorInput(el.color, v => { el.color = v; }, key('bccol')));
+      row('Подложка', colorInput(el.background, v => { el.background = v; }, key('bcbg'), true));
+      row('Подпись', check('цифры под кодом', el.showText, v => { el.showText = v; UI.Inspector.render(); }, key('bctext')), el.showText ? numInput(el.textSize, v => { el.textSize = v; }, key('bcts'), {step: 0.5, min: 3, max: 72, width: '64px'}) : h('span'), el.showText ? h('span', 'muted small', 'pt') : h('span'));
+      box.append(h('p', 'note', 'Code 128 — латиница и цифры (номер билета, табельный номер); EAN-13 — 12–13 цифр товарного кода. {№:000000} даёт сквозной номер с нулями. Штрихкод остаётся вектором в PDF; ширина модуля — от 0,19 мм.'));
+    }
+
     section('Показывать, если');
     const cond = el.showIf || (el.showIf = {field: '', op: 'filled', value: ''});
     const condRow = row('Поле', select([['', '— всегда —'], ...UI.fieldNames().map(n => [n, '{' + n + '}'])], cond.field, v => { cond.field = v; UI.Inspector.render(); }, key('cf')));
@@ -204,6 +220,12 @@
       i.dataset.geo = p; l.append(i); g.append(l);
     }
     box.append(g);
+    if (el.type !== 'line') {
+      const rot = numInput(el.rotate || 0, v => { el.rotate = v; }, key('rot'), {step: 1, min: -360, max: 360, width: '72px'});
+      rot.dataset.geo = 'rotate';
+      const turn = d => () => UI.edit(() => { let v = ((el.rotate || 0) + d) % 360; if (v > 180) v -= 360; if (v <= -180) v += 360; el.rotate = v; });
+      row('Поворот, °', rot, button('⟲ 90°', turn(-90)), button('⟳ 90°', turn(90)), button('0°', () => UI.edit(() => { el.rotate = 0; })));
+    }
     box.append(alignBar('Выровнять по странице'));
 
     section('Печать');
@@ -324,7 +346,7 @@
   }
   function updateGeometry() {
     const el = UI.element(); if (!el) return;
-    $('inspector').querySelectorAll('[data-geo]').forEach(i => { if (document.activeElement !== i) i.value = +(+el[i.dataset.geo]).toFixed(2); });
+    $('inspector').querySelectorAll('[data-geo]').forEach(i => { if (document.activeElement !== i) i.value = +(+(el[i.dataset.geo] || 0)).toFixed(2); });
   }
   function focusText() { const t = $('inspText'); if (t) { t.focus(); t.select(); } }
 

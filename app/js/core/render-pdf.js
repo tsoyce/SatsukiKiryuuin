@@ -35,6 +35,12 @@
     return `M${r} 0H${w - r}Q${w} 0 ${w} ${r}V${h - r}Q${w} ${h} ${w - r} ${h}H${r}Q0 ${h} 0 ${h - r}V${r}Q0 0 ${r} 0Z`;
   }
 
+  /* Поворот на deg по часовой стрелке (как на экране) вокруг точки (px, py) в системе PDF (ось Y вверх). */
+  function rotation(deg, px, py) {
+    const t = -deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+    return [c, s, -s, c, px - c * px + s * py, py - s * px - c * py];
+  }
+
   /* Рисует сцену на странице. matrix — преобразование из системы карточки (pt, начало внизу слева). */
   async function draw(page, scene, cache, matrix = [1, 0, 0, 1, 0, 0]) {
     const P = L(), H = scene.height;
@@ -44,6 +50,7 @@
     page.pushOperators(P.rectangle(0, 0, scene.width * K, H * K), P.clip(), P.endPath());
     for (const op of scene.ops) {
       const opacity = op.opacity ?? 1;
+      if (op.rot) page.pushOperators(P.pushGraphicsState(), P.concatTransformationMatrix(...rotation(op.rot, X(op.cx), Y(op.cy))));
       if (op.op === 'bg' || op.op === 'image') {
         const pic = await picture(cache, op.asset, op.page || 1);
         const src = pic.kind === 'pdf' ? {w: pic.obj.width, h: pic.obj.height} : {w: pic.obj.width, h: pic.obj.height};
@@ -71,9 +78,10 @@
         }
         if (ls) page.pushOperators(P.setCharacterSpacing(0));
       }
+      if (op.rot) page.pushOperators(P.popGraphicsState());
     }
     page.pushOperators(P.popGraphicsState());
   }
 
-  XS.PdfRender = {K, createCache, draw};
+  XS.PdfRender = {K, createCache, draw, rotation};
 })(typeof window !== 'undefined' ? window : globalThis);

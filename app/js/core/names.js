@@ -59,6 +59,7 @@
   /* value — подставленное значение; mods — ['дат', 'верх']; explicitGender — значение столбца «Пол». */
   function apply(value, mods, explicitGender = '') {
     let text = String(value ?? '');
+    if (XS.Formats) ({text, rest: mods} = XS.Formats.apply(text, mods));
     let person = null, form = '';
     let gramCase = '';
     const textMods = [];

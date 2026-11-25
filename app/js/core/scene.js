@@ -6,7 +6,7 @@
 
   function elementLayer(el) {
     if (el.layer === 'color' || el.layer === 'text') return el.layer;
-    return el.type === 'text' || el.type === 'line' || el.type === 'qr' ? 'text' : 'color';
+    return el.type === 'text' || el.type === 'line' || el.type === 'qr' || el.type === 'barcode' ? 'text' : 'color';
   }
   /* «Показывать, если»: без записи (макет-бланк) элемент виден всегда. */
   function visibleFor(el, ctx) {
@@ -50,7 +50,9 @@
       if (!el.visible || !visibleFor(el, ctx)) continue;
       const elLayer = elementLayer(el);
       if (!passes(elLayer, layer)) continue;
-      const base = {id: el.id, opacity: el.opacity ?? 1};
+      // Поворот — вокруг центра рамки (по часовой стрелке, градусы); линии задаются концами и не поворачиваются.
+      const rot = el.type !== 'line' && el.rotate ? el.rotate : 0;
+      const base = {id: el.id, opacity: el.opacity ?? 1, ...(rot ? {rot, cx: el.x + el.w / 2, cy: el.y + el.h / 2} : {})};
       if (el.type === 'text') {
         const r = XS.Fields.runs(el.text, ctx);
         if (r.missing.length && row) warn(el, 'Нет столбца ' + r.missing.map(m => '{' + m + '}').join(', ') + '.');
@@ -87,6 +89,20 @@
         if (q.module < 0.25) warn(el, 'QR-код слишком мелкий для печати (модуль ' + q.module.toFixed(2) + ' мм): увеличьте его или сократите текст.');
         if (el.background) ops.push({...base, op: 'rect', x, y, w: side, h: side, fill: black ? '#ffffff' : el.background, stroke: '', sw: 0, radius: 0, shape: 'rect'});
         ops.push({...base, op: 'path', d: q.d, x, y, fill: color(el.color), stroke: '', sw: 0});
+      } else if (el.type === 'barcode') {
+        const text = XS.Fields.fill(el.data, ctx, {keepUnknown: false}).trim();
+        if (!text) { if (row) warn(el, 'Нет данных для штрихкода.'); continue; }
+        const textH = el.showText ? Math.min(el.h * 0.4, el.textSize * XS.MM_PER_PT * 1.35) : 0, barH = el.h - textH;
+        let b;
+        try { b = XS.Barcode.path(text, el.w, barH, {type: el.symbology}); } catch (e) { warn(el, 'Штрихкод: ' + e.message + '.'); continue; }
+        if (b.module < 0.19) warn(el, 'Штрихкод слишком узкий для печати (модуль ' + b.module.toFixed(2) + ' мм): растяните его или сократите данные.');
+        if (el.background) ops.push({...base, op: 'rect', x: el.x, y: el.y, w: el.w, h: el.h, fill: black ? '#ffffff' : el.background, stroke: '', sw: 0, radius: 0, shape: 'rect'});
+        ops.push({...base, op: 'path', d: b.d, x: el.x, y: el.y, fill: color(el.color), stroke: '', sw: 0});
+        if (textH > 0) {
+          const label = XS.Model.element('text', {text: b.label, x: el.x, y: el.y + barH, w: el.w, h: textH, size: el.textSize, font: el.font, color: color(el.color), align: 'center', valign: 'middle', autoFit: true, minSize: 3, letterSpacing: 0.5});
+          const t = XS.Layout.layoutText(doc, label, [{text: b.label, field: null}]);
+          ops.push({...base, op: 'text', lines: t.lines, letterSpacing: t.letterSpacing, overflow: t.overflow});
+        }
       } else if (el.type === 'path' && el.d) {
         ops.push({...base, op: 'path', d: el.d, x: el.x, y: el.y, fill: color(el.fill), stroke: color(el.stroke), sw: el.strokeWidth});
       }

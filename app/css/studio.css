@@ -135,6 +135,8 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 .box .h[data-h=sw] { left: -5px; bottom: -5px; cursor: nesw-resize; } .box .h[data-h=se] { right: -5px; bottom: -5px; cursor: nwse-resize; }
 .box .h[data-h=n] { left: calc(50% - 5px); top: -5px; cursor: ns-resize; } .box .h[data-h=s] { left: calc(50% - 5px); bottom: -5px; cursor: ns-resize; }
 .box .h[data-h=w] { top: calc(50% - 5px); left: -5px; cursor: ew-resize; } .box .h[data-h=e] { top: calc(50% - 5px); right: -5px; cursor: ew-resize; }
+.box .h[data-h=rot] { left: calc(50% - 6px); top: -26px; width: 12px; height: 12px; border-radius: 50%; cursor: grab; }
+.box .h[data-h=rot]::after { content: ''; position: absolute; left: 4px; top: 11px; width: 1.5px; height: 12px; background: var(--sel); }
 .guide { position: absolute; background: #e11d8f; pointer-events: none; }
 .guide.v { width: 1px; top: 0; bottom: 0; } .guide.hz { height: 1px; left: 0; right: 0; }
 .drop-hint { position: absolute; inset: 12px; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(79,70,229,.08); display: grid; place-items: center; font-weight: 600; color: var(--accent); pointer-events: none; }
@@ -275,7 +277,7 @@ i[data-icon] { display: inline-flex; font-style: normal; }
 
 /* вкладки и добавление */
 .tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-.add-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.add-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .add-bar button { height: auto; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; min-width: 0; overflow: hidden; border-style: solid; background: var(--soft); }
 .add-bar button:hover { background: var(--accent-soft); }
 

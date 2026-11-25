@@ -8,7 +8,7 @@ global.fontkit = require(path.join(app, 'vendor/fontkit.umd.min.js'));
 global.fflate = require(path.join(app, 'vendor/fflate.min.js'));
 global.petrovich = require(path.join(app, 'vendor/petrovich.min.js'));
 global.qrcode = require(path.join(app, 'vendor/qrcode.js'));
-for (const f of ['util', 'guest-data', 'model', 'names', 'fields', 'fonts', 'layout', 'qr', 'scene', 'assets', 'render-canvas', 'render-pdf', 'zip', 'impose', 'check', 'export', 'print-plan', 'presets', 'importers']) require(path.join(app, 'js/core', f + '.js'));
+for (const f of ['util', 'guest-data', 'model', 'formats', 'names', 'fields', 'fonts', 'layout', 'qr', 'barcode', 'scene', 'assets', 'render-canvas', 'render-pdf', 'zip', 'impose', 'check', 'export', 'print-plan', 'presets', 'importers']) require(path.join(app, 'js/core', f + '.js'));
 const XS = global.XS;
 XS.fetchBytes = async url => new Uint8Array(fs.readFileSync(path.join(app, url)));
 XS.fetchDataUrl = async url => XS.bytesToDataUrl(new Uint8Array(fs.readFileSync(path.join(app, url))), {jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf'}[url.split('.').pop()]);

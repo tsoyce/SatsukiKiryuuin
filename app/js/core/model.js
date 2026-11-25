@@ -27,7 +27,7 @@
   const PAPER = {a4: [210, 297], a3: [297, 420], a5: [148, 210], sra3: [320, 450]};
 
   const ELEMENT_DEFAULTS = {
-    common: {name: '', x: 10, y: 10, w: 60, h: 20, visible: true, locked: false, layer: 'auto', opacity: 1, group: '', showIf: {field: '', op: 'filled', value: ''}},
+    common: {name: '', x: 10, y: 10, w: 60, h: 20, visible: true, locked: false, layer: 'auto', opacity: 1, rotate: 0, group: '', showIf: {field: '', op: 'filled', value: ''}},
     text: {text: 'Текст', font: 'PT Sans', size: 14, bold: false, italic: false, color: '#222222', align: 'center', valign: 'middle',
       lineHeight: 1.2, letterSpacing: 0, uppercase: false, autoFit: true, minSize: 6,
       accent: {enabled: false, fields: 'ФИО', font: '', size: 0, bold: true, italic: false, color: ''},
@@ -36,9 +36,10 @@
     rect: {fill: '#ffffff', stroke: '#222222', strokeWidth: 0.3, radius: 0, shape: 'rect'},
     line: {stroke: '#222222', strokeWidth: 0.3, dash: 0},
     path: {d: '', fill: '', stroke: '#222222', strokeWidth: 0.3},
-    qr: {data: '{Ссылка}', color: '#000000', background: '#ffffff', level: 'M', quiet: 1}
+    qr: {data: '{Ссылка}', color: '#000000', background: '#ffffff', level: 'M', quiet: 1},
+    barcode: {data: '{№:000000}', symbology: 'code128', color: '#000000', background: '#ffffff', showText: true, textSize: 8, font: 'PT Sans'}
   };
-  const TYPE_LABELS = {text: 'Текст', image: 'Изображение', rect: 'Фигура', line: 'Линия', path: 'Контур', qr: 'QR-код'};
+  const TYPE_LABELS = {text: 'Текст', image: 'Изображение', rect: 'Фигура', line: 'Линия', path: 'Контур', qr: 'QR-код', barcode: 'Штрихкод'};
   /* Условия показа элемента: «показывать, если {Поле} …». */
   const CONDITIONS = [['filled', 'заполнено'], ['empty', 'пустое'], ['eq', 'равно'], ['neq', 'не равно'], ['contains', 'содержит']];
 
@@ -60,11 +61,16 @@
     for (const k of ['x', 'y']) el[k] = num(el[k], 0, -1000, 2000);
     for (const k of ['w', 'h']) el[k] = num(el[k], 10, input.type === 'line' ? 0 : 1, 2000);
     el.opacity = num(el.opacity, 1, 0, 1);
+    el.rotate = input.type === 'line' ? 0 : +num(el.rotate, 0, -360, 360).toFixed(2);
     const si = input.showIf && typeof input.showIf === 'object' ? input.showIf : {};
     el.showIf = {field: String(si.field || '').slice(0, 100), op: CONDITIONS.some(c => c[0] === si.op) ? si.op : 'filled', value: String(si.value ?? '').slice(0, 200)};
     if (el.type === 'qr') {
       el.data = String(el.data ?? ''); el.quiet = Math.round(num(el.quiet, 1, 0, 8));
       if (!['L', 'M', 'Q', 'H'].includes(el.level)) el.level = 'M';
+    }
+    if (el.type === 'barcode') {
+      el.data = String(el.data ?? ''); el.textSize = num(el.textSize, 8, 3, 72);
+      if (!['code128', 'ean13'].includes(el.symbology)) el.symbology = 'code128';
     }
     if (!['auto', 'color', 'text'].includes(el.layer)) el.layer = 'auto';
     if (el.type === 'text') {

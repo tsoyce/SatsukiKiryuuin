@@ -29,6 +29,7 @@
       'проект': doc.title,
       'мероприятие': doc.title,
       'дата': today(),
+      'год': String(new Date().getFullYear()),
       'всего': String(total)
     };
     if (doc.greeting?.enabled || !map.has('обращение')) builtins['обращение'] = row ? greetingFor(doc, values) : doc.greeting.neutral;
@@ -39,6 +40,12 @@
 
   /* {Поле} или {Поле:модификаторы} — склонение и формы имени, см. names.js. */
   function lookup(ctx, name) {
+    // {Поле|по умолчанию}: если значение пустое — подставляется текст после «|».
+    const bar = name.indexOf('|');
+    if (bar >= 0) {
+      const value = lookup(ctx, name.slice(0, bar));
+      return value === undefined || !value.trim() ? name.slice(bar + 1) : value;
+    }
     const k = XS.key(name);
     if (ctx.map.has(k)) return ctx.map.get(k);
     if (name.includes(':') && XS.Names) {
@@ -59,7 +66,7 @@
       const value = lookup(ctx, m[1]);
       hasField = true;
       if (value === undefined) { missing.push(m[1]); if (keepUnknown) out.push({text: m[0], field: null}); }
-      else { if (value.trim()) allEmpty = false; out.push({text: value, field: m[1].split(':')[0].trim()}); }
+      else { if (value.trim()) allEmpty = false; out.push({text: value, field: m[1].split(/[:|]/)[0].trim()}); }
       last = TOKEN.lastIndex;
     }
     if (last < template.length) out.push({text: template.slice(last), field: null});
@@ -72,7 +79,7 @@
     const out = [];
     let m;
     TOKEN.lastIndex = 0;
-    while ((m = TOKEN.exec(template || ''))) out.push(m[1].split(':')[0].trim());
+    while ((m = TOKEN.exec(template || ''))) out.push(m[1].split(/[:|]/)[0].trim());
     return out;
   }
 

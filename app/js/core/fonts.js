@@ -68,6 +68,7 @@
       jobs.push(ensure(doc, el.font, el.bold, el.italic));
       if (el.accent?.enabled) jobs.push(ensure(doc, el.accent.font || el.font, el.accent.bold, el.accent.italic));
     }
+    for (const s of doc.sides) for (const el of s.elements) if (el.type === 'barcode' && el.showText) jobs.push(ensure(doc, el.font || 'PT Sans', false, false));
     await Promise.all(jobs);
   }
 

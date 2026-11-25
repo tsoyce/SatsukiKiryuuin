@@ -31,8 +31,9 @@
   async function draw(ctx, scene, k) {
     for (const op of scene.ops) {
       ctx.save();
+      if (op.rot) { ctx.translate(op.cx * k, op.cy * k); ctx.rotate(op.rot * Math.PI / 180); ctx.translate(-op.cx * k, -op.cy * k); }
       ctx.globalAlpha = op.opacity ?? 1;
-      if (op.op === 'bg' || op.op === 'image') { ctx.restore(); await drawPicture(ctx, op, k); continue; }
+      if (op.op === 'bg' || op.op === 'image') { await drawPicture(ctx, op, k); ctx.restore(); continue; }
       if (op.op === 'rect') {
         shapePath(ctx, op, k);
         if (op.fill) { ctx.fillStyle = op.fill; ctx.fill(); }
