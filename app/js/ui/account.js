@@ -281,7 +281,7 @@
     await loadSettings();
     paint();
     if (st.setupNeeded && st.setupAllowed) authDialog('setup');
-    else if (!st.user && Api.state.system?.localMode === false && !/^#\/link\//.test(location.hash)) authDialog('login', {locked: true});
+    else if (!st.user && Api.state.system?.localMode === false && !/^#\/(link|form)\//.test(location.hash)) authDialog('login', {locked: true});
   }
 
   const Account = UI.Account = {init, authDialog, conflict, versions, share, openLink, paint, saveUserSetting, userSettings: {}, user: () => Api.user()};

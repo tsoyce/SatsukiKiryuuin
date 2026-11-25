@@ -56,6 +56,9 @@
   UI.runCheck = runCheck;
 
   async function route() {
+    const form = /^#\/form\/(.+)$/.exec(location.hash);
+    if (form) { if (S.doc) await UI.goHome(); await UI.Forms.openPublic(decodeURIComponent(form[1])); return; }
+    UI.Forms?.closePublic();
     const link = /^#\/link\/(.+)$/.exec(location.hash);
     if (link) { if (S.link !== link[1]) await UI.Account.openLink(decodeURIComponent(link[1])); return; }
     const m = /^#\/doc\/(.+)$/.exec(location.hash);

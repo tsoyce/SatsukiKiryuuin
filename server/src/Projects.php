@@ -21,7 +21,7 @@ final class Projects
         if (!$p) throw new HttpError(404, 'Проект не найден.');
         return $p;
     }
-    private static function need(string $id, string $level, bool $withDeleted = false): array
+    public static function need(string $id, string $level, bool $withDeleted = false): array
     {
         $u = Auth::user();
         $p = self::find($id, $withDeleted);
