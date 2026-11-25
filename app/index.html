@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XSatsu Студия</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234f46e5'/%3E%3Cpath d='M9 8h14v4H9zM9 14h10v3H9zM9 19h14v5H9z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/studio.css?v=1">
+  <script defer src="vendor/pdf-lib.min.js"></script>
+  <script defer src="vendor/fontkit.umd.min.js"></script>
+  <script defer src="vendor/pdf.min.js"></script>
+  <script defer src="js/core/util.js?v=1"></script>
+  <script defer src="js/core/guest-data.js?v=1"></script>
+  <script defer src="js/core/model.js?v=1"></script>
+  <script defer src="js/core/fields.js?v=1"></script>
+  <script defer src="js/core/fonts.js?v=1"></script>
+  <script defer src="js/core/layout.js?v=1"></script>
+  <script defer src="js/core/assets.js?v=1"></script>
+  <script defer src="js/core/scene.js?v=1"></script>
+  <script defer src="js/core/render-canvas.js?v=1"></script>
+  <script defer src="js/core/render-pdf.js?v=1"></script>
+  <script defer src="js/core/zip.js?v=1"></script>
+  <script defer src="js/core/impose.js?v=1"></script>
+  <script defer src="js/core/export.js?v=1"></script>
+  <script defer src="js/core/store.js?v=1"></script>
+  <script defer src="js/core/history.js?v=1"></script>
+  <script defer src="js/core/presets.js?v=1"></script>
+  <script defer src="js/core/importers.js?v=1"></script>
+  <script defer src="js/ui/app.js?v=1"></script>
+  <script defer src="js/ui/stage.js?v=1"></script>
+  <script defer src="js/ui/layers.js?v=1"></script>
+  <script defer src="js/ui/data.js?v=1"></script>
+  <script defer src="js/ui/inspector.js?v=1"></script>
+  <script defer src="js/ui/export-dialog.js?v=1"></script>
+  <script defer src="js/ui/home.js?v=1"></script>
+  <script defer src="js/ui/boot.js?v=1"></script>
+</head>
+<body>
+  <!-- ГЛАВНАЯ: создать / открыть проект -->
+  <section id="home" class="home" hidden>
+    <header class="home-head">
+      <div class="brand"><span class="brand-mark">X</span> XSatsu <b>Студия</b></div>
+      <p class="home-sub">Пригласительные, дипломы, закладки и открытки — в одном редакторе. Шаблон, список людей, выгрузка.</p>
+    </header>
+    <h2 class="home-h">Создать</h2>
+    <div id="presetGrid" class="preset-grid"></div>
+    <div class="home-actions">
+      <label class="btn"><input id="openProjectFile" type="file" accept=".json,application/json" hidden>Открыть файл проекта…</label>
+      <span class="muted">Подходят файлы этой Студии и проекты старой версии (пригласительные, дипломы, закладки .json).</span>
+    </div>
+    <h2 class="home-h">Мои проекты <span id="projectCount" class="muted"></span></h2>
+    <input id="projectSearch" class="search" type="search" placeholder="Поиск по названию">
+    <div id="projectGrid" class="project-grid"></div>
+    <p class="muted small">Проекты хранятся в этом браузере. Для переноса и резервной копии — «Проект → Сохранить файл проекта». <a href="../" title="Если Студия размещена в папке /studio/ рядом со старой версией">Старая версия (v25)</a></p>
+  </section>
+
+  <!-- РЕДАКТОР -->
+  <section id="editor" class="editor" hidden>
+    <header class="topbar">
+      <button id="backHome" class="btn ghost" title="К списку проектов">← Проекты</button>
+      <input id="docTitle" class="title-input" aria-label="Название проекта">
+      <select id="docKind" class="kind-select" title="Тип проекта: влияет только на подсказки и имя файлов по умолчанию"></select>
+      <span class="spacer"></span>
+      <button id="undoBtn" class="btn icon" title="Отменить (Ctrl+Z)">↶</button>
+      <button id="redoBtn" class="btn icon" title="Повторить (Ctrl+Shift+Z)">↷</button>
+      <span id="saveState" class="save-state">Сохранено</span>
+      <div class="menu-wrap">
+        <button id="projectMenuBtn" class="btn">Проект ▾</button>
+        <div id="projectMenu" class="menu" hidden>
+          <button data-act="saveFile">Сохранить файл проекта (.json)</button>
+          <button data-act="duplicate">Сделать копию</button>
+          <button data-act="exportCsv">Скачать таблицу (CSV)</button>
+          <hr>
+          <button data-act="check">Проверить все записи</button>
+        </div>
+      </div>
+      <button id="printBtn" class="btn" title="Листы для печати в PDF — откроются в новой вкладке">Печать</button>
+      <button id="exportBtn" class="btn primary">Выгрузить…</button>
+    </header>
+
+    <div class="workspace">
+      <aside class="panel left">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="layers">Слои</button>
+          <button class="tab" data-tab="data">Данные <span id="rowCount" class="badge"></span></button>
+        </div>
+        <div id="tabLayers" class="tab-body">
+          <div class="add-bar">
+            <button data-add="text" title="Текст">＋ Текст</button>
+            <button data-add="field" title="Текст с полем из таблицы">＋ Поле</button>
+            <button data-add="image" title="Картинка или логотип">＋ Картинка</button>
+            <button data-add="rect" title="Прямоугольник или овал">＋ Фигура</button>
+            <button data-add="line" title="Линия">＋ Линия</button>
+          </div>
+          <ol id="layerList" class="layer-list"></ol>
+          <p class="muted small hint">Сверху — ближе к зрителю. Перетаскивайте, чтобы поменять порядок.</p>
+        </div>
+        <div id="tabData" class="tab-body" hidden>
+          <div class="data-bar">
+            <button id="addRowBtn" class="btn small">＋ Запись</button>
+            <button id="pasteBtn" class="btn small" title="Вставить таблицу из Excel или Google Таблиц">Вставить из Excel</button>
+            <label class="btn small"><input id="importTableFile" type="file" accept=".csv,.tsv,.txt" hidden>CSV…</label>
+            <button id="tableBtn" class="btn small" title="Вся таблица">Таблица ⤢</button>
+          </div>
+          <input id="rowSearch" class="search" type="search" placeholder="Поиск">
+          <div class="rows-head"><label><input id="selectAllRows" type="checkbox"> выбрать все</label><span id="selCount" class="muted small"></span></div>
+          <ol id="rowList" class="row-list"></ol>
+          <div id="rowForm" class="row-form"></div>
+          <details class="greeting">
+            <summary>Обращение по полу — {Обращение}</summary>
+            <div id="greetingForm"></div>
+          </details>
+        </div>
+      </aside>
+
+      <section class="stage">
+        <div class="stagebar">
+          <div id="sideTabs" class="side-tabs"></div>
+          <div class="record-nav">
+            <button id="prevRow" class="btn icon" title="Предыдущая запись">‹</button>
+            <span id="rowLabel" class="row-label"></span>
+            <button id="nextRow" class="btn icon" title="Следующая запись">›</button>
+          </div>
+          <div class="zoom">
+            <button id="zoomOut" class="btn icon">−</button>
+            <button id="zoomFit" class="btn small" title="Вписать (Ctrl+0)">100%</button>
+            <button id="zoomIn" class="btn icon">+</button>
+          </div>
+        </div>
+        <div id="viewport" class="viewport">
+          <div id="page" class="page">
+            <canvas id="pageCanvas"></canvas>
+            <div id="overlay" class="overlay"></div>
+          </div>
+          <div id="dropHint" class="drop-hint" hidden>Отпустите: PDF или картинка станет фоном, шрифт добавится в проект</div>
+        </div>
+        <div id="warnings" class="warnings" hidden></div>
+      </section>
+
+      <aside class="panel right">
+        <div id="inspector" class="inspector"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Выгрузка -->
+  <dialog id="exportDialog" class="dialog wide">
+    <form method="dialog" id="exportForm">
+      <header class="dialog-head"><h2>Выгрузка</h2><button class="btn icon" value="cancel" aria-label="Закрыть">✕</button></header>
+      <div id="exportBody" class="dialog-body"></div>
+      <footer class="dialog-foot">
+        <div id="exportProgress" class="progress" hidden><div class="bar"></div><span class="label"></span></div>
+        <span class="spacer"></span>
+        <button type="button" id="exportCancel" class="btn" hidden>Остановить</button>
+        <button type="button" id="exportGo" class="btn primary">Выгрузить</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Таблица целиком -->
+  <dialog id="tableDialog" class="dialog full">
+    <header class="dialog-head"><h2>Данные</h2>
+      <div class="data-bar">
+        <button id="tAddRow" class="btn small">＋ Запись</button>
+        <button id="tAddCol" class="btn small">＋ Столбец</button>
+        <button id="tDelRows" class="btn small danger">Удалить выбранные</button>
+      </div>
+      <button class="btn icon" id="tableClose" aria-label="Закрыть">✕</button></header>
+    <div class="dialog-body table-wrap"><table id="dataTable" class="data-table"></table></div>
+  </dialog>
+
+  <!-- Вставка таблицы -->
+  <dialog id="pasteDialog" class="dialog">
+    <header class="dialog-head"><h2>Вставить таблицу</h2><button class="btn icon" id="pasteClose" aria-label="Закрыть">✕</button></header>
+    <div class="dialog-body">
+      <p class="muted">Скопируйте ячейки в Excel или Google Таблицах вместе со строкой заголовков и вставьте сюда. Столбцы сопоставятся по названию, новые — добавятся.</p>
+      <textarea id="pasteArea" rows="10" placeholder="ФИО&#9;Место&#9;Основание&#10;Иванов Иван&#9;I место&#9;за победу"></textarea>
+      <div id="pastePreview" class="muted small"></div>
+      <label class="check"><input id="pasteReplace" type="checkbox"> Заменить текущие записи</label>
+    </div>
+    <footer class="dialog-foot"><span class="spacer"></span><button id="pasteGo" class="btn primary">Добавить</button></footer>
+  </dialog>
+
+  <!-- Проверка -->
+  <dialog id="checkDialog" class="dialog">
+    <header class="dialog-head"><h2>Проверка записей</h2><button class="btn icon" id="checkClose" aria-label="Закрыть">✕</button></header>
+    <div id="checkBody" class="dialog-body"></div>
+  </dialog>
+
+  <div id="busy" class="busy" hidden><div class="busy-box"><div class="spinner"></div><div id="busyText">Подождите…</div></div></div>
+  <div id="toast" class="toast" hidden></div>
+</body>
+</html>

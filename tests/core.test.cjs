@@ -33,6 +33,8 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   assert.strictEqual(plan.slots.length, 6, plan.label);
   const planA6 = XS.Impose.plan({w: 105, h: 148}, {paper: 'a4', margin: 0});
   assert.strictEqual(planA6.slots.length, 4);
+  const planA4 = XS.Impose.plan({w: 210, h: 297}, {paper: 'a4', margin: 5});
+  assert.strictEqual(planA4.slots.length, 1); // А4 на А4 — без полей, а не ошибка
   // 5. Выгрузка
   const base = {...doc.output};
   let r = await XS.Export.run(doc, {...base, packaging: 'single', format: 'pdf'});

@@ -145,6 +145,7 @@
     const w = page.width * 0.8;
     doc.sides[0].elements = [T({name: 'ФИО', text: '{ФИО}', font: 'PT Serif', bold: true, size: Math.max(14, Math.round(page.width / 8)), x: (page.width - w) / 2, y: page.height * 0.42, w, h: page.height * 0.12})];
     M().addRow(doc, {'ФИО': 'Иванов Иван Иванович'});
+    doc.output.naming = '{№} {ФИО}';
     return doc;
   }
 

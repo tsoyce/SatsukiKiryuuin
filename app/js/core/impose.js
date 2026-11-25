@@ -23,6 +23,13 @@
       if (!count) continue;
       if (!best || count > best.count) best = {SW, SH, cw, ch, rotated, count, ...g};
     }
+    if (!best) {
+      // Макет размером с лист (А4 на А4): кладём один на лист без полей.
+      for (const [SW, SH] of orientations) for (const rotated of [false, true]) {
+        const cw = rotated ? card.h : card.w, ch = rotated ? card.w : card.h;
+        if (cw <= SW + 0.5 && ch <= SH + 0.5) return {sheetW: SW, sheetH: SH, slots: [{x: (SW - cw) / 2, y: (SH - ch) / 2, w: cw, h: ch, rot: rotated ? 90 : 0, col: 0, row: 0}], cols: 1, rows: 1, margin: 0, gap, rotated, label: '1 на листе ' + Math.round(SW) + '×' + Math.round(SH) + ' мм, без полей'};
+      }
+    }
     if (!best) throw new Error('Макет ' + Math.round(card.w) + '×' + Math.round(card.h) + ' мм не помещается на лист ' + (opt.paper || 'a4').toUpperCase() + ' с полями ' + margin + ' мм. Выберите лист больше или «по размеру макета».');
     const gridW = best.cols * best.cw + (best.cols - 1) * gap, gridH = best.rows * best.ch + (best.rows - 1) * gap;
     const x0 = (best.SW - gridW) / 2, y0 = (best.SH - gridH) / 2, slots = [];
