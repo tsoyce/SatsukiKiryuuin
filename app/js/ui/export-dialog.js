@@ -38,6 +38,7 @@
             <div class="f"><span>Ориентация</span><select name="paperOrientation"><option value="auto">Как больше влезет</option><option value="portrait">Книжная</option><option value="landscape">Альбомная</option></select></div>
             <div class="f"><span>Поля / зазор</span><div class="row"><input type="number" name="margin" min="0" max="50" step="1" value="${o.margin}"> <input type="number" name="gap" min="0" max="50" step="1" value="${o.gap}"> <span class="muted small">мм</span></div></div>
             <p class="note">${XS.esc(plan)}</p>
+            <p class="muted small">Два принтера, ручной переворот, пакеты по 100 листов, профили и лист совмещения — <button type="button" class="link" data-print-master>мастер печати</button>.</p>
           </div>
           <div class="ex-block">
             <label class="check"><input type="checkbox" name="cutMarks" ${o.cutMarks ? 'checked' : ''}> Метки реза</label>
@@ -149,6 +150,7 @@
     b.addEventListener('input', e => { if (e.target.type === 'text' || e.target.type === 'number') onChange(e); });
     b.addEventListener('click', e => {
       if (e.target.closest('[data-run-check]')) { $('exportDialog').close(); UI.runCheck(); return; }
+      if (e.target.closest('[data-print-master]')) { $('exportDialog').close(); UI.PrintMaster.open(); return; }
       const t = e.target.dataset.token; if (!t) return;
       const input = b.querySelector('input[name=naming]:not([disabled])') || b.querySelector('input[name=archive]');
       const s = input.selectionStart ?? input.value.length;

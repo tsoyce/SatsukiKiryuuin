@@ -55,6 +55,7 @@
     {group: 'Проект', keys: ['Mod+KeyS'], show: 'Ctrl+S', label: 'Сохранить', input: true, run: async () => { await UI.flush(); UI.toast('Сохранено в браузере. Файл проекта — «Проект → Сохранить файл проекта».'); }},
     {group: 'Проект', keys: ['Mod+KeyE'], show: 'Ctrl+E', label: 'Выгрузить…', input: true, run: () => UI.ExportDialog.open()},
     {group: 'Проект', keys: ['Mod+KeyP'], show: 'Ctrl+P', label: 'Печать (листы в PDF)', input: true, run: () => $('printBtn').click()},
+    {group: 'Проект', keys: ['Mod+Shift+KeyP'], show: 'Ctrl+Shift+P', label: 'Мастер печати: проходы, два принтера, профили', input: true, run: () => UI.PrintMaster.open()},
     {group: 'Проект', keys: ['F1', 'Shift+Slash'], show: '? · F1', label: 'Эта справка', run: () => help()}
   ];
 

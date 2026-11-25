@@ -93,22 +93,28 @@
     const p = XS.Impose.plan(card, o);
     const per = p.slots.length, sheets = Math.ceil(recs.length / per);
     const K = XS.PdfRender.K;
-    const front = {x: XS.num(o.offsetX, 0), y: XS.num(o.offsetY, 0)}, back = {x: XS.num(o.backOffsetX, 0), y: XS.num(o.backOffsetY, 0)};
-    for (let s = 0; s < sheets; s++) {
-      for (const si of sides) {
-        check(); progress(s, sheets, 'Лист ' + (s + 1) + ' из ' + sheets);
-        const page = pdf.addPage([p.sheetW * K, p.sheetH * K]);
-        const isBack = si > 0 && sides.length > 1;
-        const offset = isBack ? back : front;
-        for (let k = 0; k < per; k++) {
-          const r = recs[s * per + k];
-          if (!r) break;
-          const slot = isBack ? XS.Impose.backSlot(p, p.slots[k], o.duplex || 'long') : p.slots[k];
-          await XS.PdfRender.draw(page, scene(si, r), cache, XS.Impose.matrix(p, slot, card, offset));
-        }
-        if (o.cutMarks && !(isBack && o.duplex !== 'none')) XS.Impose.cutMarks(page, p, offset);
-        await XS.pause();
+    const front = {x: XS.num(o.offsetX, 0), y: XS.num(o.offsetY, 0)}, backOff = {x: XS.num(o.backOffsetX, 0), y: XS.num(o.backOffsetY, 0)};
+    // Порядок страниц: по умолчанию лист за листом, все стороны; мастер печати передаёт свой (o.pageList).
+    let list = o.pageList;
+    if (!list) {
+      list = [];
+      for (let s = 0; s < sheets; s++) for (const si of sides) { const back = si > 0 && sides.length > 1; list.push({sheet: s, side: si, back, mirror: back, offset: back ? backOff : front}); }
+    }
+    for (let n = 0; n < list.length; n++) {
+      const it = list[n];
+      if (it.sheet >= sheets) continue;
+      check(); progress(n, list.length, 'Страница ' + (n + 1) + ' из ' + list.length + ' (лист ' + (it.sheet + 1) + ')');
+      const page = pdf.addPage([p.sheetW * K, p.sheetH * K]);
+      const duplex = it.mirror ? (it.duplex || o.duplex || 'long') : 'none';
+      const offset = it.offset || (it.back ? backOff : front);
+      for (let k = 0; k < per; k++) {
+        const r = recs[it.sheet * per + k];
+        if (!r) break;
+        const slot = it.back ? XS.Impose.backSlot(p, p.slots[k], duplex) : p.slots[k];
+        await XS.PdfRender.draw(page, scene(it.side, r), cache, XS.Impose.matrix(p, slot, card, offset));
       }
+      if (o.cutMarks && !(it.back && duplex !== 'none')) XS.Impose.cutMarks(page, p, offset);
+      await XS.pause();
     }
     return {blob: new Blob([await pdf.save()], {type: 'application/pdf'}), name: archiveName(doc, o, ' — печать.pdf'), files: 1, pages: pdf.getPageCount(), plan: p, warnings};
   }

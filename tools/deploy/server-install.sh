@@ -72,6 +72,10 @@ sudo -u $OWNER XS_CONFIG="$BASE/config.php" "$PHP" "$BASE/server/bin/migrate.php
 build_site() { # api/index.php подключает сервер из $BASE/server; config.php ищется рядом с server/ — это $BASE/config.php
   rm -rf "$SITE.new"; cp -r "$SRC/app" "$SITE.new"; mkdir -p "$SITE.new/api"
   sed "s#__XS_SERVER_DIR__#$BASE/server#" "$SRC/server/public/api-stub.php" > "$SITE.new/api/index.php"
+  # Служебные файлы панели и сертификатов (.well-known, .user.ini, .htaccess…) переносим из старого сайта.
+  if [ -d "$SITE" ]; then
+    for f in "$SITE"/.[!.]*; do [ -e "$f" ] && [ ! -e "$SITE.new/$(basename "$f")" ] && cp -a "$f" "$SITE.new/"; done
+  fi
 }
 swap_site() {
   chown -R $OWNER:$OWNER "$SITE.new"; find "$SITE.new" -type d -exec chmod 755 {} +; find "$SITE.new" -type f -exec chmod 644 {} +
