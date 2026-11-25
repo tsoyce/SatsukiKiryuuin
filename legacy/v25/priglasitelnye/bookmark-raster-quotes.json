@@ -1,0 +1,290 @@
+{
+  "format": "bookmark-raster-quote-catalog",
+  "version": 1,
+  "sourceDocument": "Цитаты ученых (ко дню социолога).docx",
+  "entries": [
+    {
+      "id": "docx-raster-24",
+      "name": "Винсент ван Гог",
+      "quote": "Изучать и анализировать общество - это побольше, чем читать ему мораль",
+      "authorPrinted": "Винсент Ван Гог",
+      "photoId": "raster-photo-24",
+      "sourceImageName": "image24.png",
+      "sourceParagraph": 94,
+      "sha256": "93fcef6dea923050ea72989530f5139650012d8573805329b739a8755b8b16fc",
+      "portraitCrop": {
+        "left": 599,
+        "top": 36,
+        "right": 933,
+        "bottom": 438
+      },
+      "commentary": [
+        {
+          "text": "Да, эта цитата не социолога, но человека, труды которого оказали влияние на целые поколения и до сих пор вызывают восхищения. И его фраза о важности и в то же время трудностях, с которыми сталкиваются ученые в изучении общества, нашла отклик в наше время.",
+          "authorPrinted": null,
+          "role": "supporting_commentary"
+        }
+      ],
+      "notes": [
+        "Вспомогательный абзац не имеет отдельной напечатанной подписи.",
+        "Сохранено напечатанное слово «восхищения»."
+      ]
+    },
+    {
+      "id": "docx-raster-25",
+      "name": "Карл Густав Юнг",
+      "quote": "Быть сумасшедшим — это социальное понятие",
+      "authorPrinted": "Карл Густав Юнг",
+      "photoId": "raster-photo-25",
+      "sourceImageName": "image25.png",
+      "sourceParagraph": 96,
+      "sha256": "c04fd343a553ea544c6ed97bbb240b82c2a4c06c86e4515ea10762f07d409d7e",
+      "portraitCrop": {
+        "left": 606,
+        "top": 53,
+        "right": 933,
+        "bottom": 463
+      },
+      "commentary": [
+        {
+          "text": "Мир знал таких прекрасных, сумасшедших людей, и действительно, все великие люди на земле были немного сумасшедшими - сумасшедшими в глазах толпы, где они измерялись по социальным меркам.",
+          "authorPrinted": null,
+          "role": "supporting_commentary"
+        }
+      ],
+      "notes": [
+        "Вспомогательный абзац не имеет отдельной напечатанной подписи."
+      ]
+    },
+    {
+      "id": "docx-raster-26",
+      "name": "Питер Людвиг Бергер и Томас Лукман",
+      "quote": "То, что реально \"извне\", соответствует тому, что реально \"внутри\"",
+      "authorPrinted": "П. Бергер и Т. Лукман",
+      "photoId": "raster-photo-26",
+      "sourceImageName": "image26.png",
+      "sourceParagraph": 98,
+      "sha256": "82aca1217e205a793e38fe9b61d81040b058f302783a9d12297b27079738e330",
+      "portraitCrop": {
+        "left": 544,
+        "top": 73,
+        "right": 937,
+        "bottom": 391
+      },
+      "commentary": [
+        {
+          "text": "Отличная цитата, которая вписалась бы в любую современную книгу и напоминала бы нам о важности мировоззренческой позиции каждого человека, о которой мы так часто забываем, проектируя свои взгляды на взгляды других.",
+          "authorPrinted": null,
+          "role": "supporting_commentary"
+        }
+      ],
+      "notes": [
+        "Прямоугольник портрета охватывает обе фотографии исходной композиции.",
+        "Вспомогательный абзац не имеет отдельной напечатанной подписи.",
+        "Сохранено напечатанное слово «проектируя»."
+      ]
+    },
+    {
+      "id": "docx-raster-27",
+      "name": "Эрих Фромм",
+      "quote": "«ЧЕЛОВЕК ПРЕВРАТИЛСЯ В ТОВАР И РАССМАТРИВАЕТ СВОЮ ЖИЗНЬ КАК КАПИТАЛ, КОТОРЫЙ СЛЕДУЕТ ВЫГОДНО ВЛОЖИТЬ. ЕСЛИ ОН В ЭТОМ ПРЕУСПЕЛ, ТО ЖИЗНЬ ЕГО ИМЕЕТ СМЫСЛ, А ЕСЛИ НЕТ - ОН НЕУДАЧНИК. ЕГО ЦЕННОСТЬ ОПРЕДЕЛЯЕТСЯ СПРОСОМ, А НЕ ЕГО ЧЕЛОВЕЧЕСКИМИ ДОСТОИНСТВАМИ: ДОБРОТОЙ, УМОМ, АРТИСТИЧЕСКИМИ СПОСОБНОСТЯМИ.»",
+      "authorPrinted": "ЭРИХ ФРОММ",
+      "photoId": "raster-photo-27",
+      "sourceImageName": "image27.png",
+      "sourceParagraph": 100,
+      "sha256": "0a286d3046a8eb67b3b1ee0b7b739d25e4baf003a3b9391b14640344d9bb6ce7",
+      "portraitCrop": {
+        "left": 3,
+        "top": 7,
+        "right": 419,
+        "bottom": 541
+      },
+      "commentary": [],
+      "notes": [
+        "Регистр, внешние кавычки и точка перед закрывающей кавычкой сохранены."
+      ]
+    },
+    {
+      "id": "docx-raster-28",
+      "name": "Огюст Конт",
+      "quote": "«Любовь как принцип, порядок как основа, прогресс как цель»",
+      "authorPrinted": "Огюст Конт",
+      "photoId": "raster-photo-28",
+      "sourceImageName": "image28.png",
+      "sourceParagraph": 102,
+      "sha256": "b75169528184c6502bcb71efc91fc13d7448a80bae46b74a75f4caeef58fa0ed",
+      "portraitCrop": {
+        "left": 37,
+        "top": 14,
+        "right": 527,
+        "bottom": 391
+      },
+      "commentary": [
+        {
+          "text": "Цитата понравилась тем, что откликается в моей философии ценностей. Действовать согласно своим чувствам, а не выгодам, уважать свои возможности, дисциплинируя себя, и всё во благо результата – личностного роста.",
+          "authorPrinted": "Сабов К (2 курс)",
+          "role": "student_commentary"
+        }
+      ],
+      "notes": [
+        "Верхний абзац является отдельным студенческим комментарием с собственной подписью."
+      ]
+    },
+    {
+      "id": "docx-raster-29",
+      "name": "Георг Зиммель",
+      "quote": "«Человек образованный — тот, кто знает, где найти то, чего он не знает»",
+      "authorPrinted": "Георг Зиммель",
+      "photoId": "raster-photo-29",
+      "sourceImageName": "image29.png",
+      "sourceParagraph": 104,
+      "sha256": "055326f719b43d033701e69c2d1ac2d27a2d22c3ba195a0ad767f3d73b5540a4",
+      "portraitCrop": {
+        "left": 35,
+        "top": 55,
+        "right": 394,
+        "bottom": 332
+      },
+      "commentary": [
+        {
+          "text": "Считаю, что по истине мудрый и эрудированный человек только тот, кто способен усомниться в своих убеждениях, постоянно подвергать их внешним обстоятельствам. Тем самым узнавать новую информацию, укреплять силы в существующих знаниях. Знание в опыте.",
+          "authorPrinted": "Сабов Кристина (2 курс)",
+          "role": "student_commentary"
+        }
+      ],
+      "notes": [
+        "Верхний абзац является отдельным студенческим комментарием с собственной подписью.",
+        "Сохранено напечатанное раздельное написание «по истине»."
+      ],
+      "coveredByOriginalCards": [
+        "source-card-11",
+        "source-card-20"
+      ]
+    },
+    {
+      "id": "docx-raster-31",
+      "name": "Джейн Аддамс",
+      "quote": "Суть аморальности – сделанное для себя исключение.",
+      "authorPrinted": "ДЖЕЙН АДДАМС",
+      "photoId": "raster-photo-31",
+      "sourceImageName": "image31.png",
+      "sourceParagraph": 111,
+      "sha256": "36cfccd5029f44114c91244f90ddcf95faa14c34afa09039c235b4b3f6f9e87e",
+      "portraitCrop": {
+        "left": 604,
+        "top": 0,
+        "right": 954,
+        "bottom": 499
+      },
+      "commentary": [],
+      "notes": [
+        "Author transcribed from printed name; no identity inferred from portrait.",
+        "The dash after аморальности is visibly a short dash; transcribed as an en dash."
+      ]
+    },
+    {
+      "id": "docx-raster-32",
+      "name": "Айн Рэнд",
+      "quote": "Изучая человека, можно очень много узнать об обществе, изучая общество, нельзя изучить человека.",
+      "authorPrinted": "Айн Рэнд",
+      "photoId": "raster-photo-32",
+      "sourceImageName": "image32.jpeg",
+      "sourceParagraph": 113,
+      "sha256": "9ad8796bf6f09964d6e5a1eab91a4f8cefe4ce7750389fdeeb8f99c32005c909",
+      "portraitCrop": {
+        "left": 40,
+        "top": 202,
+        "right": 571,
+        "bottom": 733
+      },
+      "commentary": [],
+      "notes": [
+        "Author transcribed from printed name; no identity inferred from portrait."
+      ]
+    },
+    {
+      "id": "docx-raster-33",
+      "name": "Николай Яковлевич Данилевский",
+      "quote": "„Самопожертвование есть высший нравственный закон.“",
+      "authorPrinted": "Данилевский Н.Я.",
+      "photoId": "raster-photo-33",
+      "sourceImageName": "image33.jpeg",
+      "sourceParagraph": 115,
+      "sha256": "e4278222e9b57930193c906407e11172f2d2c92f3a096fdfbb200d68b2d7b03c",
+      "portraitCrop": {
+        "left": 54,
+        "top": 229,
+        "right": 774,
+        "bottom": 1047
+      },
+      "commentary": [],
+      "notes": [
+        "Source uses a low opening double quotation mark and a high closing double quotation mark."
+      ]
+    },
+    {
+      "id": "docx-raster-34",
+      "name": "Карл Маркс",
+      "quote": "„...В суете этого мира дружба — единственное, что имеет важное значение в личной жизни...“",
+      "authorPrinted": "К. Маркс",
+      "photoId": "raster-photo-34",
+      "sourceImageName": "image34.jpeg",
+      "sourceParagraph": 117,
+      "sha256": "aff8c63fe5fffc4107394057d4520f289752d52949a268d76139c399eaf4738d",
+      "portraitCrop": {
+        "left": 58,
+        "top": 215,
+        "right": 680,
+        "bottom": 1022
+      },
+      "commentary": [],
+      "notes": [
+        "The low opening double quotation mark is visible at the beginning of the source, followed by three periods before В; the ending has three periods and a high closing double quotation mark.",
+        "Crop excludes the bright frame along the right and bottom portrait edges."
+      ]
+    },
+    {
+      "id": "docx-raster-38",
+      "name": "Питирим Александрович Сорокин",
+      "quote": "«Всякая длительная и жестокая война, как и всякая революция, деградирует людей в морально-правовом отношении.»",
+      "authorPrinted": "Питирим Сорокин",
+      "photoId": "raster-photo-38",
+      "sourceImageName": "image38.png",
+      "sourceParagraph": 128,
+      "sha256": "25453cb59193b1c74be4e2329d83996f078f5bc0b4f44ff5260720c6cebff9b1",
+      "portraitCrop": {
+        "left": 536,
+        "top": 0,
+        "right": 867,
+        "bottom": 460
+      },
+      "commentary": [],
+      "notes": [
+        "A hyphen (-) separates the closing quotation mark from the attribution, on the quote's final displayed line.",
+        "Red spellcheck underlines are present in the source and are not text characters."
+      ]
+    },
+    {
+      "id": "docx-raster-39",
+      "name": "Георг Зиммель",
+      "quote": "„ Человек никогда не является ни существом сугубо коллективным, ни существом сугубо индивидуальным.“",
+      "authorPrinted": "Георг Зиммель",
+      "photoId": "raster-photo-39",
+      "sourceImageName": "image39.png",
+      "sourceParagraph": 130,
+      "sha256": "6e2f1a40f40367f5ee34bca79ce6016ba268387c27908171f4a29dab59796680",
+      "portraitCrop": {
+        "left": 0,
+        "top": 0,
+        "right": 340,
+        "bottom": 485
+      },
+      "commentary": [],
+      "notes": [
+        "The source visibly has a space between the low opening double quotation mark and Человек.",
+        "An em dash (—) separates the closing quotation mark from the attribution, on the quote's final displayed line.",
+        "A red spellcheck underline is present beneath Зиммель and is not a text character."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "format": "diploma-studio",
+  "version": 1,
+  "id": "diploma-project-4e7999d6-32bc-4951-b30b-3414ade48563",
+  "title": "Дипломы · День социолога",
+  "entries": [
+    {
+      "id": "award-b349fcb4-3cd0-4c46-a153-1f47739afc01",
+      "recipient": "",
+      "reason": "",
+      "place": "1",
+      "copies": 1,
+      "handRecipient": true,
+      "handReason": true
+    },
+    {
+      "id": "award-0a784d36-fcc8-4a5f-93d4-e2e7c61265eb",
+      "recipient": "",
+      "reason": "",
+      "place": "2",
+      "copies": 1,
+      "handRecipient": true,
+      "handReason": true
+    },
+    {
+      "id": "award-6e3c6d60-dd0d-4a08-bc56-6297f6b9545c",
+      "recipient": "",
+      "reason": "",
+      "place": "3",
+      "copies": 1,
+      "handRecipient": true,
+      "handReason": true
+    },
+    {
+      "id": "award-2109183c-9954-4e28-a7eb-ddc130ed4637",
+      "recipient": "",
+      "reason": "",
+      "place": "none",
+      "copies": 1,
+      "handRecipient": true,
+      "handReason": true
+    }
+  ],
+  "selectedId": "award-b349fcb4-3cd0-4c46-a153-1f47739afc01",
+  "settings": {
+    "theme": "frost",
+    "heading": "ДИПЛОМ",
+    "recipientLabel": "Награждается",
+    "eventName": "День социолога в ТюмГУ · 2026",
+    "eventSubtitle": "40 лет кафедре общей и экономической социологии",
+    "date": "",
+    "city": "Тюмень",
+    "showEvent": true,
+    "showEventSubtitle": true,
+    "showDate": true,
+    "showCity": true,
+    "showLogo": true,
+    "showReason": true,
+    "signatureMode": "both",
+    "departmentRole": "Руководитель кафедры",
+    "departmentName": "",
+    "committeeRole": "Оргкомитет",
+    "committeeName": "",
+    "fontSize": 16,
+    "nameSize": 28,
+    "printLayer": "all",
+    "laserBlack": true
+  },
+  "updatedAt": "2026-11-08T20:52:39.544Z"
+}

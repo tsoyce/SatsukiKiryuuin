@@ -1,0 +1,23 @@
+Bundled offline fonts
+
+Montserrat: https://github.com/google/fonts/tree/main/ofl/montserrat
+Source download 2026-11-02. Weight axis instantiated at 400 and 600 using fontTools.
+Static instance names changed to Bookmark Montserrat to identify these generated instances.
+License: SIL Open Font License 1.1, see OFL-Montserrat.txt.
+
+PT Sans Narrow: https://github.com/google/fonts/tree/main/ofl/ptsansnarrow
+Regular and Bold source TrueType files downloaded 2026-11-02.
+The bundled modified subset uses the internal family name Bookmark Compact,
+respecting the original font's reserved names. UI label: Compact.
+License: SIL Open Font License 1.1, see OFL-PTSansNarrow.txt.
+
+v9 subsets generated with fontTools, retaining the original fonts' characters
+within Latin, Cyrillic, combining marks, Greek, punctuation and symbol ranges.
+Original character coverage varies by family; not every character in these
+ranges exists in each source font. All Russian letters and all source quotes
+were checked. Advance widths of retained characters are unchanged.
+Glyph data is padded to four-byte boundaries for compatible PDF embedding.
+The four binaries total 816284 bytes instead of 1633100 bytes.
+bookmark-fonts.js contains losslessly WOFF-compressed versions of these four
+font binaries as base64 for file:// and offline use (v12: about 0.55 MB).
+Glyph outlines, character coverage, shaping and advance widths are unchanged.

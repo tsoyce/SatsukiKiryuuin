@@ -1,0 +1,13 @@
+Browser PDF dependencies, bundled locally
+
+pdf-lib 1.17.1, MIT License
+https://github.com/Hopding/pdf-lib
+File: pdf-lib.min.js from the configured Codex workspace dependency bundle.
+License: pdf-lib-LICENSE.txt
+
+@pdf-lib/fontkit 1.1.1, MIT License
+https://github.com/Hopding/fontkit
+File: fontkit.umd.min.js from https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js
+License: fontkit-LICENSE.txt
+
+All files are local. Opening or exporting bookmarks makes no requests to a CDN.

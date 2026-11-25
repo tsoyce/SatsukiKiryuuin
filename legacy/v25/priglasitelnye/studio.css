@@ -1,0 +1,78 @@
+/* Shared chrome for the editing workspaces. Artwork and print renderers are independent. */
+.studio-app,.studio-home{--ink:#292c33;--muted:#575d68;--purple:#756184;--purple-dark:#604b72;--purple-light:#ede7f2;--paper:#fff;--bg:#eef0f3;--line:#d6d9df;--control-border:#a1a6b0;--control-hover:#746383;--focus:#604b72;--studio-left:232px;--studio-right:304px;font-family:"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:13px}
+.studio-app h1,.studio-app h2,.studio-app .brand,.studio-app .bm-brand,.studio-home .brand,.studio-home h1,.studio-home h2{font-family:"Segoe UI",Arial,sans-serif;letter-spacing:0;font-weight:600}
+.studio-app [hidden],.studio-home [hidden]{display:none!important}
+.studio-app .button,.studio-home .button{border-radius:5px;box-shadow:none;font-weight:500;transition:background-color .12s,border-color .12s}
+.studio-app .button:hover:not(:disabled),.studio-home .button:hover:not(:disabled){box-shadow:none}
+.studio-app .button.primary,.studio-home .button.primary{background:var(--purple-dark);border-color:var(--purple-dark);font-weight:600}
+.studio-app .button.primary:hover:not(:disabled),.studio-home .button.primary:hover:not(:disabled){background:#51405f}
+.studio-app .button.outline,.studio-home .button.outline{background:#fff;border-color:var(--control-border)}
+.studio-app .button.quiet:hover,.studio-home .button.quiet:hover{background:#e4e5eb}
+.studio-app .panel{border-radius:0;box-shadow:none;background:#f9f9fb}
+.studio-app .panel h2{font-size:13px}
+.studio-app input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.studio-app select,.studio-app textarea,.studio-home input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.studio-home select{border-radius:4px;box-shadow:none;color:var(--ink)}
+.studio-app input:focus,.studio-app textarea:focus,.studio-app select:focus,.studio-home input:focus,.studio-home select:focus{box-shadow:none;border-color:var(--focus)}
+.studio-app input:focus-visible,.studio-app select:focus-visible,.studio-app textarea:focus-visible,.studio-home input:focus-visible,.studio-home select:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.studio-app .project-menu-items{border-radius:8px;box-shadow:0 8px 24px #20233024;background:#fff;z-index:100}
+.studio-app .project-menu-items .button{min-height:32px;padding:7px 9px!important}
+.studio-app .modal,.studio-app .bm-modal{border-radius:12px}
+.studio-app dialog::backdrop{background:#272c3659;backdrop-filter:none}
+.studio-app .step,.studio-app .small-spark{display:none}
+.studio-tools{display:flex;align-items:center;gap:4px;min-width:0}
+.studio-tools .button{gap:5px;white-space:nowrap}
+.studio-tools .button svg{width:15px;height:15px}
+.studio-tools [data-studio-toggle][aria-pressed=true]{background:#e7dfee;color:#503e62;border-color:#b4a5c0}
+.studio-tools [data-studio-toggle=focus][aria-pressed=true]{background:var(--purple-dark);color:#fff;border-color:var(--purple-dark)}
+.studio-app [data-studio-canvas]{outline:none}
+.studio-app [data-studio-canvas]:focus-visible{outline:2px solid var(--focus);outline-offset:-3px}
+.studio-app .studio-tools-label{font-size:12px;color:var(--muted);margin-right:4px}
+.studio-app .hint{font-size:12px;line-height:1.5}
+.studio-app .count{font-size:12px;background:#e9eaf0;border-radius:4px}
+.studio-app label,.studio-home label{color:var(--muted)}
+.studio-app input[type=checkbox],.studio-home input[type=checkbox]{width:16px;height:16px;min-width:16px;min-height:0;flex-shrink:0}
+.studio-app .brand small{display:none}
+.studio-app .studio-workspace{min-width:0}
+.studio-app .studio-workspace{position:relative}
+.studio-app{--studio-left-default:232px;--studio-right-default:304px}
+@media(min-width:1000px) and (max-width:1350px) and (min-height:600px){.studio-app[data-studio-tool=bookmarks]{--studio-left-default:216px;--studio-right-default:288px}}
+.studio-app .studio-workspace>*{min-width:0}
+.studio-app .studio-resizer{position:absolute;top:0;bottom:0;z-index:15;width:12px;margin-left:-6px;cursor:col-resize;touch-action:none;user-select:none;outline:none}
+.studio-app .studio-resizer::before{content:"";position:absolute;inset:0 5px;background:transparent}
+.studio-app .studio-resizer:hover::before,.studio-app .studio-resizer.is-resizing::before,.studio-app .studio-resizer:focus-visible::before{background:var(--purple-dark)}
+.studio-app .studio-resizer:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.studio-app .studio-pan-mode,.studio-app .studio-pan-mode *{cursor:grab!important}
+.studio-app .studio-panning,.studio-app .studio-panning *{cursor:grabbing!important}
+body.studio-app.studio-resizing,body.studio-app.studio-resizing *{cursor:col-resize!important}
+.studio-app .studio-hand-tool[aria-pressed=true]{background:var(--purple-light);color:var(--purple-dark);border-color:var(--control-hover)}
+@media(pointer:coarse){.studio-app .studio-resizer{width:24px;margin-left:-12px}.studio-app .studio-resizer::before{inset:0 11px}}
+@media(min-width:1000px) and (min-height:600px) and (pointer:fine){
+ .studio-app .button,.studio-home .button{min-height:30px;padding:6px 9px;font-size:12px}
+ .studio-app button:not(.resize-handle),.studio-app summary,.studio-app .text-button{min-height:28px}
+ .studio-app .icon-button,.studio-app .round-button{min-width:28px;min-height:28px}
+ .studio-app input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.studio-app select,.studio-home input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.studio-home select{font-size:13px;min-height:30px;padding:5px 7px}
+ .studio-app textarea{font-size:13px;line-height:1.5;padding:7px 8px}
+ .studio-app label{font-size:12px}
+ .studio-app .check-label{min-height:27px;font-size:12px;line-height:1.4;gap:6px}
+ .studio-app .panel-heading{padding:12px 12px 10px}
+ .studio-app .tabs{margin-inline:12px;gap:14px}
+ .studio-app .tab{font-size:12px;min-height:30px;padding:7px 0}
+ .studio-app .tab-content{padding:12px}
+ .studio-app .tab-content>label{margin-bottom:10px}
+ .studio-app .field-grid{gap:8px;margin:9px 0}
+ .studio-app .color-picker{width:31px;height:30px}
+ .studio-app .color-picker input{width:100%;height:100%;min-height:0;min-width:0}
+ .studio-app input[type=color]{min-height:28px;min-width:28px}
+ .studio-app .alignment-tools button{min-height:28px}
+ .studio-app .font-controls{gap:4px;flex-wrap:wrap;row-gap:8px}
+ .studio-app .font-controls>select{flex:1;min-width:88px}
+ .studio-app .format-button{width:28px;height:30px}
+ .studio-app .project-menu>summary{font-size:12px;min-height:30px}
+ .studio-app .modal h2,.studio-app .bm-modal h2{font-size:19px}
+}
+@media(max-width:999px),(max-height:599px),(pointer:coarse){
+ .studio-app .button,.studio-home .button,.studio-app .text-button,.studio-home .text-button{min-height:44px}
+ .studio-app .check-label,.studio-home .check-label{min-height:44px}
+ .studio-app input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.studio-app select,.studio-app textarea,.studio-home input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]),.studio-home select{font-size:16px;min-height:44px}
+}
+@media(max-width:999px),(max-height:599px){.studio-tools{display:none}}
+@media(prefers-reduced-motion:reduce){.studio-app *,.studio-home *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}

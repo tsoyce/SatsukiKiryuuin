@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru" data-invitation-route="invitations.html" data-invitation-scope="index.html" data-bookmark-route="bookmarks.html" data-diploma-route="diplomas.html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Главная — редактор для печати</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="projects.css?v=25">
+  <link rel="stylesheet" href="studio.css?v=17">
+  <link rel="stylesheet" href="studio-shell.css?v=25">
+  <script defer src="cloud.js?v=14"></script>
+  <script defer src="bookmark-authors.js?v=23"></script>
+  <script defer src="bookmark-store.js?v=23"></script>
+  <script defer src="diploma-store.js?v=25"></script>
+  <script defer src="project-library.js?v=25"></script>
+  <script defer src="projects.js?v=25"></script>
+  <script defer src="studio-shell.js?v=18"></script>
+</head>
+<body class="projects-page studio-home">
+  <a class="skip-link" href="#projectsMain">К проектам</a>
+  <header class="studio-header">
+    <a class="studio-brand" href="index.html">Редактор для печати</a>
+    <nav class="studio-app-nav library-nav" aria-label="Разделы приложения">
+      <a href="index.html" aria-current="page">Главная</a>
+      <a href="invitations.html">Пригласительные</a>
+      <a href="bookmarks.html">Закладки</a>
+      <a href="diplomas.html">Дипломы</a>
+    </nav>
+    <div class="studio-header-actions"><a href="#identityForm" class="button quiet studio-profile" data-studio-actor>Представиться</a></div>
+  </header>
+  <div class="home-layout">
+    <aside class="home-sidebar" aria-label="Начало работы">
+      <button id="createProject" class="button primary home-create"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Новый проект</button>
+      <nav class="home-sections" aria-label="Место хранения проектов">
+        <button type="button" data-library-storage="all" aria-pressed="true"><span>Все проекты</span><span id="homeAllCount" class="home-count">0</span></button>
+        <button type="button" data-library-storage="server" aria-pressed="false"><span>На хостинге</span><span id="homeServerCount" class="home-count">0</span></button>
+        <button type="button" data-library-storage="browser" aria-pressed="false"><span>На устройстве</span><span id="homeBrowserCount" class="home-count">0</span></button>
+      </nav>
+      <div class="home-identity-block">
+        <details id="identityPanel" class="home-identity" open><summary><span>Ваше имя</span><strong id="identityNameSummary">Не указано</strong></summary>
+          <form id="identityForm" class="library-identity" tabindex="-1">
+            <label for="libraryActor">Имя / login<input id="libraryActor" name="actor" autocomplete="nickname" maxlength="80" placeholder="Как вас записать в истории"></label>
+            <button id="showProjects" class="button outline" type="submit">Сохранить имя</button>
+            <p class="home-identity-note">Это подпись в истории серверных проектов, без регистрации.</p>
+            <p id="serverStatus" role="status">Проверяем связь с хостингом…</p>
+          </form>
+        </details>
+      </div>
+      <button id="openLocalInvitation" class="text-button home-local-draft">Открыть черновик приглашения</button>
+    </aside>
+  <main id="projectsMain" class="library-main" tabindex="-1">
+    <div class="library-heading"><h1>Главная</h1><span class="home-app-description">Материалы для рассылки и печати</span></div>
+    <section class="home-start" aria-labelledby="homeStartHeading"><h2 id="homeStartHeading">Создать</h2><div class="home-format-actions">
+      <button type="button" class="home-format" data-create-type="invitation"><svg viewBox="0 0 44 44" aria-hidden="true"><rect x="9" y="4" width="26" height="36" rx="2"/><path d="M15 14h14M15 20h14M15 26h9M15 32h11"/></svg><span><strong>Пригласительные</strong><small>Гости, макет, рассылка и печать</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+      <button type="button" class="home-format" data-create-type="bookmark"><svg viewBox="0 0 44 44" aria-hidden="true"><path d="M8 5h12v34l-6-5-6 5zM25 5h11v34l-5.5-5-5.5 5zM11 12h6m11 0h5M11 18h6m11 0h5"/></svg><span><strong>Закладки</strong><small>Цитаты, фотографии, листы А4</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+      <button type="button" class="home-format" data-create-type="diploma"><svg viewBox="0 0 44 44" aria-hidden="true"><rect x="8" y="4" width="28" height="36" rx="2"/><path d="M14 12h16M14 18h16M17 24h10m-7 8-3 5 5-2 5 2-3-5"/><circle cx="22" cy="29" r="4"/></svg><span><strong>Дипломы</strong><small>Награждение, имена, печать А4</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+    </div></section>
+    <div class="home-projects-heading"><h2 id="homeProjectsHeading">Все проекты</h2><button id="refreshProjects" class="button quiet" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7a8 8 0 1 0 1 8M19 3v5h-5"/></svg>Обновить</button></div>
+    <div class="library-toolbar">
+      <label class="library-search" for="projectSearch">Найти проект<input id="projectSearch" type="search" placeholder="Название проекта" autocomplete="off"></label>
+      <label for="projectType">Вид материала<select id="projectType"><option value="all">Все проекты</option><option value="invitation">Пригласительные</option><option value="bookmark">Закладки</option><option value="diploma">Дипломы</option></select></label>
+    </div>
+    <p id="libraryStatus" class="library-status" role="status" aria-live="polite">Загрузка списка…</p>
+    <ul id="projectList" class="library-list" aria-label="Сохранённые проекты"></ul>
+    <div id="libraryEmpty" class="library-empty" hidden><h2 id="emptyTitle">Здесь появятся ваши проекты</h2><p id="emptyText">Нажмите «Новый проект» и выберите вид материала.</p></div>
+    <button id="showMoreProjects" class="button outline library-more" hidden>Показать ещё</button>
+    <p class="home-storage-note">Пригласительные на хостинге доступны с других устройств. Закладки, дипломы и локальный черновик хранятся в этом браузере. Для переноса скачайте проект в редакторе.</p>
+    <noscript><p>Для работы редактора включите JavaScript в браузере.</p></noscript>
+  </main>
+  </div>
+  <dialog id="projectDialog" class="library-dialog" aria-labelledby="dialogTitle">
+    <form id="projectForm">
+      <div class="library-dialog-heading"><h2 id="dialogTitle">Новый проект</h2><button type="button" id="closeProjectDialog" class="button quiet" aria-label="Закрыть">Закрыть</button></div>
+      <label id="kindField" for="newProjectType">Вид материала<select id="newProjectType" name="kind"><option value="invitation">Пригласительные</option><option value="bookmark">Закладки</option><option value="diploma">Дипломы</option></select></label>
+      <label id="titleField" for="projectName">Название проекта<input id="projectName" name="title" maxlength="160" required autocomplete="off"></label>
+      <div id="serverFields">
+        <label for="projectActor">Ваше имя / login<input id="projectActor" name="actor" maxlength="80" autocomplete="nickname"></label>
+        <p class="hint">Имя будет записано в историю проекта.</p>
+        <label id="sourceCodeField" for="sourceCode">Код проекта<input id="sourceCode" name="code" type="password" maxlength="128" autocomplete="off"></label>
+        <div id="newCodeFields">
+          <label class="check-label"><input id="protectProject" type="checkbox">Защитить проект кодом</label>
+          <label id="newCodeField" for="newCode">Код нового проекта<input id="newCode" name="newCode" type="password" maxlength="128" autocomplete="new-password"><span class="hint">Код выбираете вы. Допустим один символ.</span></label>
+        </div>
+      </div>
+      <p id="dialogNote" class="hint"></p>
+      <div id="dialogLocalInvitation" class="library-dialog-local" hidden>
+        <button id="openDialogLocalInvitation" class="button outline" type="button">Открыть черновик в браузере</button>
+        <p class="hint">Откроется сохранённый черновик на этом устройстве. Название и код из этой формы к нему не применяются.</p>
+      </div>
+      <p id="projectDialogError" class="library-error" role="alert" hidden></p>
+      <div class="library-dialog-actions"><button id="cancelProjectDialog" class="button outline" type="button">Отмена</button><button id="submitProjectDialog" class="button primary" type="submit">Создать</button></div>
+    </form>
+  </dialog>
+</body>
+</html>

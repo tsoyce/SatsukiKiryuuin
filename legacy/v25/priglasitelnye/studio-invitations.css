@@ -1,0 +1,135 @@
+/* Invitation workspace: geometry is independent of print and export dimensions. */
+body[data-studio-tool="invitations"] .canvas-zoom{display:flex;align-items:center;gap:2px}
+body[data-studio-tool="invitations"] #invitationZoom{width:102px;min-width:0}
+body[data-studio-tool="invitations"] #fitInvitation,body[data-studio-tool="invitations"] #invitationHandTool{width:32px;padding:5px}
+body[data-studio-tool="invitations"] #invitationHandTool[aria-pressed="true"]{color:#fff;background:var(--purple-dark);border-color:var(--purple-dark)}
+body[data-studio-tool="invitations"] #outputPanel>summary{cursor:pointer;font-weight:650;font-size:13px;display:list-item;list-style-position:inside;padding:12px}
+body[data-studio-tool="invitations"] #outputPanel:not([open])>summary{margin:0}
+body[data-studio-tool="invitations"] .canvas-help{font-size:12px;color:var(--muted);position:relative;margin-top:7px;text-align:right}
+body[data-studio-tool="invitations"] .canvas-help>summary{cursor:pointer;padding:4px 0;color:var(--purple-dark)}
+body[data-studio-tool="invitations"] .canvas-help p{max-width:52ch;margin:0 0 8px auto;text-align:left}
+@media(min-width:1000px) and (min-height:600px){
+ html:has(>body[data-studio-tool="invitations"]){height:100%;overflow:hidden}
+ body[data-studio-tool="invitations"]{--studio-left:var(--studio-left-size,232px);--studio-right:var(--studio-right-size,304px);display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden;min-width:0;position:fixed;inset:0;width:100%}
+ body[data-studio-tool="invitations"] .section-navigation{display:none}
+ body[data-studio-tool="invitations"] .cloud-alert{flex:0 0 auto;margin:0;border-radius:0;padding:7px 12px;font-size:12px}
+ body[data-studio-tool="invitations"] .studio-workspace{display:grid;grid-template-columns:var(--studio-left) minmax(0,1fr) var(--studio-right);align-items:stretch;gap:0;flex:1;min-height:0;max-width:none;width:100%;margin:0;padding:0;overflow:hidden}
+ body[data-studio-tool="invitations"].studio-left-hidden{--studio-left:0px}
+ body[data-studio-tool="invitations"].studio-right-hidden{--studio-right:0px}
+ body[data-studio-tool="invitations"].studio-left-hidden [data-studio-panel="left"],body[data-studio-tool="invitations"].studio-right-hidden [data-studio-panel="right"]{display:none}
+ body[data-studio-tool="invitations"].studio-focus-mode{--studio-left:0px;--studio-right:0px}
+ body[data-studio-tool="invitations"].studio-focus-mode [data-studio-panel]{display:none}
+ body[data-studio-tool="invitations"] [data-studio-panel]{min-width:0;min-height:0;height:100%;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border-radius:0;box-shadow:none;background:var(--paper)}
+ body[data-studio-tool="invitations"] .guests-panel{grid-column:1;grid-row:1;display:flex;flex-direction:column;border:0;border-right:1px solid var(--control-border,#c9c2ce)}
+ body[data-studio-tool="invitations"] .panel-heading{padding:10px 12px 8px;min-height:34px}
+ body[data-studio-tool="invitations"] .panel-heading h2{font-size:13px}
+ body[data-studio-tool="invitations"] .guest-actions{padding:0 10px;gap:5px}
+ body[data-studio-tool="invitations"] .guest-actions .button{padding:5px 7px}
+ body[data-studio-tool="invitations"] .search-field{margin:10px 11px 5px}
+ body[data-studio-tool="invitations"] .search-field #guestSearch{height:30px;font-size:12px}
+ body[data-studio-tool="invitations"] .search-field svg{top:8px}
+ body[data-studio-tool="invitations"] .guest-stats{margin:0 12px 6px;font-size:12px}
+ body[data-studio-tool="invitations"] .guest-list{min-height:80px;max-height:34vh;flex:1 0 100px;padding:0 5px 5px;scrollbar-gutter:stable}
+ body[data-studio-tool="invitations"] .guest-row{padding:8px 6px;gap:7px;border-radius:5px;margin-bottom:2px}
+ body[data-studio-tool="invitations"] .guest-row .avatar{width:25px;height:25px;font-size:12px}
+ body[data-studio-tool="invitations"] .guest-row strong{font-size:12px}
+ body[data-studio-tool="invitations"] .guest-row small{font-size:12px;margin-top:0}
+ body[data-studio-tool="invitations"] .sample-guests-banner{padding:6px 8px;font-size:12px}
+ body[data-studio-tool="invitations"] .guest-editor{padding:9px 11px;flex-shrink:0}
+ body[data-studio-tool="invitations"] .editor-caption{font-size:12px;letter-spacing:.3px;margin-bottom:6px}
+ body[data-studio-tool="invitations"] .guest-editor>label{margin-bottom:6px}
+ body[data-studio-tool="invitations"] .guest-editor .field-grid{margin:6px 0}
+ body[data-studio-tool="invitations"] .guest-editor .field-grid label{margin-top:6px}
+ body[data-studio-tool="invitations"] .guest-editor .hint{font-size:12px;line-height:1.45;margin-top:7px}
+ body[data-studio-tool="invitations"] .gender-actions{gap:3px 9px;flex-wrap:wrap;margin-top:5px}
+ body[data-studio-tool="invitations"] .gender-actions .text-button{font-size:12px}
+ body[data-studio-tool="invitations"] .guest-footer{padding:7px 11px;flex-shrink:0}
+ body[data-studio-tool="invitations"] .settings-panel{grid-column:3;grid-row:1;display:block;padding:0;border-left:1px solid var(--control-border,#c9c2ce);border-right:0}
+ body[data-studio-tool="invitations"] .settings-panel>.panel{border:0;border-radius:0;box-shadow:none}
+ body[data-studio-tool="invitations"] .design-panel{max-height:none;min-height:0;overflow:visible}
+ body[data-studio-tool="invitations"] .design-panel>.panel-heading{background:var(--paper);border-bottom:1px solid var(--line)}
+ body[data-studio-tool="invitations"] .block-manager{padding:5px 11px 7px;margin:0;border:0}
+ body[data-studio-tool="invitations"] .block-manager .label-row{margin:2px 0 5px}
+ body[data-studio-tool="invitations"] .block-list{max-height:124px;overflow:auto;scrollbar-width:thin;gap:3px}
+ body[data-studio-tool="invitations"] .block-row{padding:6px 7px;min-height:29px;font-size:12px;border-radius:4px}
+ body[data-studio-tool="invitations"] .block-row strong,body[data-studio-tool="invitations"] .block-row small{font-size:12px}
+ body[data-studio-tool="invitations"] .block-actions{gap:10px;margin-top:4px}
+ body[data-studio-tool="invitations"] .block-actions button{font-size:12px;padding:3px 0}
+ body[data-studio-tool="invitations"] .tabs{margin:0;padding:0 11px;gap:17px;background:#f7f5f2;border-top:1px solid var(--line);border-bottom:1px solid var(--control-border,#c9c2ce)}
+ body[data-studio-tool="invitations"] .tab{font-size:12px;padding:8px 0}
+ body[data-studio-tool="invitations"] .tab-content{padding:10px 11px 12px}
+ body[data-studio-tool="invitations"] .tab-content>label{margin-bottom:9px}
+ body[data-studio-tool="invitations"] .tab-content .field-grid{gap:8px;margin:8px 0}
+ body[data-studio-tool="invitations"] .label-row{margin:8px 0 5px}
+ body[data-studio-tool="invitations"] .font-source-buttons{gap:7px}
+ body[data-studio-tool="invitations"] .font-source-buttons .text-button{font-size:12px}
+ body[data-studio-tool="invitations"] #textTemplate{min-height:100px;height:113px;font-size:12px;line-height:1.5;padding:7px}
+ body[data-studio-tool="invitations"] .tokens{gap:4px;margin:5px 0 8px}
+ body[data-studio-tool="invitations"] .tokens button{font-size:12px;padding:3px 4px}
+ body[data-studio-tool="invitations"] .greetings summary{font-size:12px}
+ body[data-studio-tool="invitations"] .divider{margin:10px 0 2px}
+ body[data-studio-tool="invitations"] .font-controls{gap:4px;margin-top:7px}
+ body[data-studio-tool="invitations"] .font-controls>label:first-child{width:52px;font-size:12px}
+ body[data-studio-tool="invitations"] .font-controls>select{flex:1;width:78px;min-width:70px}
+ body[data-studio-tool="invitations"] .format-button,body[data-studio-tool="invitations"] .color-picker{width:29px;height:30px}
+ body[data-studio-tool="invitations"] .color-picker{padding:3px}
+ body[data-studio-tool="invitations"] .color-picker input{width:21px;height:22px}
+ body[data-studio-tool="invitations"] .accent-settings{margin-top:9px;padding:9px;border-radius:5px}
+ body[data-studio-tool="invitations"] #outputPanel{border-top:1px solid var(--control-border,#c9c2ce)}
+ body[data-studio-tool="invitations"] #outputPanel>summary{padding:10px 12px;background:#f7f5f2}
+ body[data-studio-tool="invitations"] .output-actions{padding:9px 11px 0}
+ body[data-studio-tool="invitations"] .output-actions .button{padding:7px;font-size:12px}
+ body[data-studio-tool="invitations"] .output-details{margin:0 11px;padding:9px 0}
+ body[data-studio-tool="invitations"] .advanced-link{margin:3px 11px 10px!important}
+ body[data-studio-tool="invitations"] .preview-section{grid-column:2;grid-row:1;display:grid;grid-template-rows:37px minmax(0,1fr) 35px 23px 31px;position:relative;top:auto;min-width:0;min-height:0;padding:0;background:#e7e4e0;overflow:hidden}
+ body[data-studio-tool="invitations"] .preview-toolbar{height:37px;min-height:37px;padding:3px 10px;gap:7px;border-bottom:1px solid var(--control-border,#c9c2ce);background:#f5f3ef;justify-content:flex-start}
+ body[data-studio-tool="invitations"] .preview-toolbar .canvas-zoom{margin-right:auto;flex-shrink:0}
+ body[data-studio-tool="invitations"] .preview-toolbar>select{width:134px;max-width:134px;font-size:12px;height:30px}
+ body[data-studio-tool="invitations"] .format-link{align-items:flex-end;gap:0;padding:0;line-height:1.1}
+ body[data-studio-tool="invitations"] .format-link>span{font-size:12px!important}
+ body[data-studio-tool="invitations"] .preview-surface{display:flex;align-items:flex-start;justify-content:flex-start;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;padding:18px;position:relative;border:0;border-radius:0;background:#dedbd7;background-image:none}
+ body[data-studio-tool="invitations"] .paper-stage{width:300px;min-width:0;flex-shrink:0;margin:auto;max-width:none;box-shadow:0 5px 18px #302a322c}
+ body[data-studio-tool="invitations"] .preview-navigation{padding:3px 12px;gap:10px;min-width:0;align-items:center;background:#f5f3ef;border-top:1px solid var(--control-border,#c9c2ce)}
+ body[data-studio-tool="invitations"] .preview-navigation>div{display:flex;align-items:baseline;gap:10px;min-width:0}
+ body[data-studio-tool="invitations"] .preview-navigation strong{font-size:12px;white-space:nowrap;text-overflow:ellipsis;max-width:38ch}
+ body[data-studio-tool="invitations"] .preview-navigation small{font-size:12px;white-space:nowrap;margin:0}
+ body[data-studio-tool="invitations"] .round-button{width:26px;height:26px;line-height:1;padding:3px}
+ body[data-studio-tool="invitations"] .preview-note{font-size:12px;padding:3px 12px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#f5f3ef}
+ body[data-studio-tool="invitations"] .preview-bottom{margin:0;padding:3px 12px;gap:10px;justify-content:flex-start;min-width:0;border-top:1px solid var(--line);background:#f5f3ef}
+ body[data-studio-tool="invitations"] .preview-bottom .check-label{font-size:12px}
+ body[data-studio-tool="invitations"] .preview-bottom .text-button{font-size:12px;margin-right:auto;white-space:nowrap}
+ body[data-studio-tool="invitations"] .canvas-help{position:absolute;right:12px;bottom:2px;z-index:5;margin:0;font-size:12px}
+ body[data-studio-tool="invitations"] .canvas-help>summary{padding:6px 0}
+ body[data-studio-tool="invitations"] .canvas-help p{position:absolute;right:0;bottom:28px;width:260px;max-width:none;margin:0;padding:12px;border:1px solid var(--control-border,#c9c2ce);background:var(--paper);color:var(--ink);border-radius:6px;line-height:1.55;font-size:12px}
+ body[data-studio-tool="invitations"] .app-footer{flex:0 0 24px;min-height:24px;padding:3px 12px;gap:15px;margin:0;border-top:1px solid var(--control-border,#c9c2ce);font-size:12px;line-height:1.4;white-space:nowrap;background:#faf8f4}
+ body[data-studio-tool="invitations"] .app-footer .offline-badge{padding:0;border:0;border-radius:0;font-size:12px;max-width:40vw;overflow:hidden;text-overflow:ellipsis}
+ body[data-studio-tool="invitations"] #privacyNote{margin-left:auto;overflow:hidden;text-overflow:ellipsis}
+}
+@media(min-width:1000px) and (max-width:1199px) and (min-height:600px){
+ body[data-studio-tool="invitations"] .preview-toolbar{padding-inline:8px;gap:5px}
+ body[data-studio-tool="invitations"] .preview-toolbar>select{width:117px;max-width:117px}
+ body[data-studio-tool="invitations"] .preview-navigation>div{gap:5px}
+ body[data-studio-tool="invitations"] .preview-navigation strong{max-width:25ch}
+}
+@media(max-width:999px),(max-height:599px){
+ body[data-studio-tool="invitations"] .section-navigation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));backdrop-filter:none;background:#faf8f4}
+ body[data-studio-tool="invitations"] #previewPanel{scroll-margin-top:65px}
+ body[data-studio-tool="invitations"] .canvas-zoom{display:none}
+ body[data-studio-tool="invitations"] .canvas-help{margin:0 5px 12px}
+ body[data-studio-tool="invitations"] .canvas-help summary{min-height:44px;display:flex;align-items:center;justify-content:flex-end;font-size:13px}
+ body[data-studio-tool="invitations"] .app-footer .offline-badge{white-space:normal;padding:0;border:0}
+}
+@media(min-width:1000px) and (min-height:600px) and (pointer:coarse){
+ body[data-studio-tool="invitations"] .round-button,body[data-studio-tool="invitations"] #fitInvitation,body[data-studio-tool="invitations"] #invitationHandTool{width:44px;min-width:44px;height:44px}
+ body[data-studio-tool="invitations"] button:not(.resize-handle),body[data-studio-tool="invitations"] summary,body[data-studio-tool="invitations"] .button{min-height:44px}
+ body[data-studio-tool="invitations"] input:not([type=checkbox]):not([type=radio]):not([type=color]),body[data-studio-tool="invitations"] select,body[data-studio-tool="invitations"] textarea{min-height:44px!important;font-size:16px!important}
+ body[data-studio-tool="invitations"] .check-label{min-height:44px}
+ body[data-studio-tool="invitations"] .preview-section{grid-template-rows:54px minmax(0,1fr) 48px 23px 50px}
+ body[data-studio-tool="invitations"] .preview-toolbar{height:54px;min-height:54px}
+ body[data-studio-tool="invitations"] .preview-toolbar>select{width:164px;max-width:164px}
+ body[data-studio-tool="invitations"] #invitationZoom{width:120px}
+ body[data-studio-tool="invitations"] .preview-bottom{padding-block:3px}
+ body[data-studio-tool="invitations"] .canvas-help>summary{min-height:44px;display:flex;align-items:center}
+ body[data-studio-tool="invitations"] .resize-handle{width:24px;height:24px;right:-12px;bottom:-12px}
+}
+

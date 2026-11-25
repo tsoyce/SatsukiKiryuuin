@@ -1,0 +1,182 @@
+/* Bookmark studio: a document in the middle, independently scrolling side panels. */
+.bookmark-app.studio-app .bm-inspector-tabs{display:flex;gap:2px;padding:5px;border-bottom:1px solid var(--line);background:var(--paper)}
+.bookmark-app.studio-app .bm-inspector-tabs button{flex:1;min-width:0;border:0;border-radius:4px;padding:8px 5px;font:600 12px "Segoe UI",Arial,sans-serif;color:var(--muted);background:transparent;cursor:pointer}
+.bookmark-app.studio-app .bm-inspector-tabs button[aria-selected=true]{background:var(--accent-soft,#eee6f2);color:var(--accent-strong)}
+.bookmark-app.studio-app .bm-inspector-tabs button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.bookmark-app.studio-app .bm-inspector-scroll{min-width:0}
+.bookmark-app.studio-app .bm-inspector-scroll>[role=tabpanel]{padding:12px}
+.bookmark-app.studio-app .bm-design-picker{padding:0;margin:0 0 12px}
+.bookmark-app.studio-app .bm-design-heading{margin-bottom:8px;gap:8px}
+.bookmark-app.studio-app .bm-design-heading>span{display:none}
+.bookmark-app.studio-app .bm-design-presets{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.bookmark-app.studio-app .bm-design-presets>button{min-height:48px;padding:7px;gap:6px;border-radius:5px;font-size:12px}
+.bookmark-app.studio-app .bm-design-presets small{display:none}
+.bookmark-app.studio-app .bm-design-presets .bm-preset-swatch{flex:0 0 27px;width:27px;height:24px}
+.bookmark-app.studio-app #bmDesignSettings{padding:0!important;margin:0;border:0!important}
+.bookmark-app.studio-app #bmDesignSettings>summary{display:none}
+.bookmark-app.studio-app .bm-documentstatus{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;line-height:1.5;color:var(--muted)}
+.bookmark-app.studio-app .bm-documentstatus .text-button{white-space:nowrap;font-size:12px}
+.bookmark-app.studio-app .bm-print-settings{padding:0;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.bookmark-app.studio-app .bm-print-settings .field-grid{grid-template-columns:1fr;gap:0}
+.bookmark-app.studio-app .bm-help,.bookmark-app.studio-app .bm-printnote{margin:12px 0 0;padding:10px 0;font-size:12px;line-height:1.6}
+.bookmark-app.studio-app .bm-print-settings details{padding:8px 0}
+.bookmark-app.studio-app .bm-canvasstage{display:flex;align-items:center;justify-content:center;width:100%;min-width:0}
+.bookmark-app.studio-app .bm-zoom-tools{display:none}
+.bookmark-app.studio-app .bm-outputbar{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.bookmark-app.studio-app .bm-sidebar-field{display:flex;align-items:center;gap:8px;min-width:0}
+.bookmark-app.studio-app .bm-sidebar-field label{white-space:nowrap;font-size:12px}
+.bookmark-app.studio-app .bm-sidebar-field select{width:160px;min-width:0;margin:0}
+.bookmark-app.studio-app .bm-preview-disclosures,.bookmark-app.studio-app .bm-view-options,.bookmark-app.studio-app .bm-view-options-body{display:contents}
+.bookmark-app.studio-app .bm-view-options>summary,.bookmark-app.studio-app .bm-check-details>summary{display:none}
+.bookmark-app.studio-app .bm-check-details{flex-shrink:0;min-height:0}
+
+@media(min-width:1000px) and (min-height:600px){
+  .bookmark-app.studio-app{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .bookmark-app.studio-app .bm-mobile-nav{display:none}
+  .bookmark-app.studio-app .bm-workspace{--studio-left:var(--studio-left-size,232px);--studio-right:var(--studio-right-size,304px);display:grid;grid-template-columns:var(--studio-left) minmax(0,1fr) var(--studio-right);grid-template-rows:minmax(0,1fr);flex:1;min-height:0;max-width:none;width:100%;padding:0;margin:0;gap:0;align-items:stretch;overflow:hidden}
+  .bookmark-app.studio-app .bm-cards{grid-column:1;grid-row:1;position:static;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;padding:12px 9px;border:0;border-right:1px solid var(--line);border-radius:0;background:var(--paper)}
+  .bookmark-app.studio-app .bm-cards>.bm-panelhead,.bookmark-app.studio-app .bm-cards>button,.bookmark-app.studio-app .bm-cards>input,.bookmark-app.studio-app .bm-listfoot{flex-shrink:0}
+  .bookmark-app.studio-app .bm-panelhead{margin-bottom:8px;gap:4px}
+  .bookmark-app.studio-app .bm-panelhead h2{font-size:13px}
+  .bookmark-app.studio-app .bm-panelhead .button{font-size:12px;min-height:30px;padding:4px}
+  .bookmark-app.studio-app .bm-cards>button{font-size:12px;min-height:30px;padding:5px 6px;margin-bottom:4px}
+  .bookmark-app.studio-app .bm-cards>input{min-height:30px;font-size:12px;padding:6px 8px;margin:4px 0 8px}
+  .bookmark-app.studio-app .bm-card-list{flex:1;min-height:0;max-height:none;gap:2px;padding:1px 2px 1px 0;overflow:auto;overscroll-behavior:contain}
+  .bookmark-app.studio-app .bm-listitem{grid-template-columns:22px minmax(0,1fr) 20px;gap:6px;padding:7px 5px;border-radius:4px;flex-shrink:0;min-height:47px}
+  .bookmark-app.studio-app .bm-listtext strong{font-size:12px;line-height:1.4}
+  .bookmark-app.studio-app .bm-listtext small{-webkit-line-clamp:1;font-size:12px;line-height:1.4;margin-top:2px}
+  .bookmark-app.studio-app .bm-listnumber{font-size:12px;padding:2px 0;border-radius:3px}
+  .bookmark-app.studio-app .bm-listfoot{font-size:12px;padding:9px 2px 0}
+  .bookmark-app.studio-app .bm-listfoot .text-button{padding-top:5px;font-size:12px;min-height:26px}
+  .bookmark-app.studio-app .bm-editor{grid-column:3;grid-row:1;padding:0;min-width:0;min-height:0;max-height:none;display:flex;flex-direction:column;overflow:hidden;border:0;border-left:1px solid var(--line);border-radius:0;background:var(--paper)}
+  .bookmark-app.studio-app .bm-inspector-tabs{flex:0 0 38px;padding:4px}
+  .bookmark-app.studio-app .bm-inspector-tabs button{padding:5px 4px;min-height:28px}
+  .bookmark-app.studio-app .bm-inspector-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+  .bookmark-app.studio-app .bm-editor label:not(.check-label){font-size:12px;margin:8px 0}
+  .bookmark-app.studio-app .bm-editor input,.bookmark-app.studio-app .bm-editor select{font-size:13px;min-height:30px;margin-top:4px;padding:5px 7px}
+  .bookmark-app.studio-app .bm-editor textarea{font-size:13px;min-height:145px;height:170px;line-height:1.45;padding:7px;margin-top:4px}
+  .bookmark-app.studio-app .bm-editor .field-grid{gap:8px}
+  .bookmark-app.studio-app .bm-editor .check-label{font-size:12px;margin:7px 0}
+  .bookmark-app.studio-app .bm-editor input[type=checkbox]{min-height:0;padding:0;margin:0 6px 0 0}
+  .bookmark-app.studio-app .bm-editor details{padding:8px 0}
+  .bookmark-app.studio-app .bm-editor details>summary{min-height:30px;font-size:12px}
+  .bookmark-app.studio-app .bm-editor .hint{font-size:12px;line-height:1.5;margin:7px 0}
+  .bookmark-app.studio-app .bm-photoeditor{padding:8px;gap:8px;border-radius:4px;background:transparent}
+  .bookmark-app.studio-app .bm-photoeditor>img{width:57px;height:68px}
+  .bookmark-app.studio-app .bm-photoeditor>div{gap:2px}
+  .bookmark-app.studio-app .bm-photoeditor .button,.bookmark-app.studio-app .bm-photoeditor .text-button{min-height:26px;padding:3px 5px;font-size:12px}
+  .bookmark-app.studio-app .bm-row{gap:10px}
+  .bookmark-app.studio-app .bm-order{gap:4px;margin-bottom:8px}
+  .bookmark-app.studio-app .bm-order .button{min-width:30px;min-height:30px;padding:5px}
+  .bookmark-app.studio-app .bm-cardactions{padding:7px 0}
+  .bookmark-app.studio-app .bm-cardactions .text-button{font-size:12px;min-height:28px}
+  .bookmark-app.studio-app .bm-design-heading h2{font-size:13px}
+  .bookmark-app.studio-app .bm-preview{grid-column:2;grid-row:1;position:static;display:flex;flex-direction:column;min-height:0;min-width:0;width:100%;max-width:none;overflow:hidden;padding:10px 12px 5px;background:#e5e2dd}
+  .bookmark-app.studio-app .bm-exportbar{flex-shrink:0;gap:6px;margin:0 0 7px}
+  .bookmark-app.studio-app .bm-exportbar>.button{font-size:12px;min-height:30px;padding:5px 10px}
+  .bookmark-app.studio-app .bm-export-options>summary{min-height:30px;padding:5px;font-size:12px}
+  .bookmark-app.studio-app .bm-layerbar{display:flex;flex:1;flex-shrink:0;margin:0 6px;gap:8px;min-width:200px}
+  .bookmark-app.studio-app .bm-layerbar label{font-size:12px}
+  .bookmark-app.studio-app .bm-layerbar select{flex:1;width:auto;min-width:0;max-width:240px;margin:0;min-height:28px;height:28px;font-size:12px;padding:4px 7px}
+  .bookmark-app.studio-app .bm-sidebar-field select{height:28px;min-height:28px;font-size:12px;padding:4px 7px}
+  .bookmark-app.studio-app .bm-layerinfo{font-size:12px;line-height:1.35;min-height:16px;margin:4px 0 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+  .bookmark-app.studio-app .bm-previewbar{flex-shrink:0;margin-bottom:5px;gap:6px}
+  .bookmark-app.studio-app .bm-previewtabs{border-radius:4px;padding:2px}
+  .bookmark-app.studio-app .bm-previewtabs button{font-size:12px;min-height:28px;padding:4px 8px;border-radius:3px}
+  .bookmark-app.studio-app .bm-previewbar>#bmOpenDesign{font-size:12px;min-height:28px;padding:4px 5px}
+  .bookmark-app.studio-app .bm-previewbar>#bmPageSize{font-size:12px;white-space:nowrap}
+  .bookmark-app.studio-app .bm-sidebar{flex-shrink:0;margin:0 0 6px;min-height:27px}
+  .bookmark-app.studio-app .bm-sidebar>span{font-size:12px;max-width:none}
+  .bookmark-app.studio-app .bm-sidebar>#bmPreviewHint{display:none}
+  .bookmark-app.studio-app .bm-zoom-tools{display:flex;align-items:center;gap:2px;margin-left:auto;flex-shrink:0}
+  .bookmark-app.studio-app .bm-zoom-tools .button{width:30px;height:30px;min-width:30px;min-height:30px;padding:5px}
+  .bookmark-app.studio-app .bm-zoom-tools .button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .bookmark-app.studio-app .bm-zoom-tools select{width:88px;min-width:0;height:30px;min-height:30px;margin:0;font-size:12px;padding:4px 5px}
+  .bookmark-app.studio-app .bm-zoom-tools button[aria-pressed=true]{background:var(--purple-light);border-color:var(--purple);color:var(--purple-dark)}
+  .bookmark-app.studio-app .bm-face-tabs button{min-height:26px;font-size:12px;padding:3px 1px}
+  .bookmark-app.studio-app .bm-sheetissues{flex-shrink:0;max-height:88px;overflow:auto;padding:6px 8px;font-size:12px;margin-bottom:6px;border-radius:4px}
+  .bookmark-app.studio-app .bm-canvaswrap,.bookmark-app.studio-app .bm-canvaswrap.card-view{flex:1;min-height:0;width:100%;padding:18px;display:block;border:0;border-radius:0;background:#d2cfca;overflow:auto;overscroll-behavior:contain}
+  .bookmark-app.studio-app .bm-canvasstage{min-width:0;flex-shrink:0;max-width:none}
+  .bookmark-app.studio-app .bm-canvaswrap canvas,.bookmark-app.studio-app .bm-canvaswrap.card-view canvas,.bookmark-app.studio-app .bm-canvaswrap.card-view.horizontal canvas{max-width:none;max-height:none;flex-shrink:0;width:auto;height:auto;box-shadow:0 3px 13px #26232324}
+  .bookmark-app.studio-app .bm-pagecontrols{flex-shrink:0;min-height:35px;margin-top:5px;gap:8px}
+  .bookmark-app.studio-app .bm-pagecontrols .button{min-height:28px;padding:4px 8px}
+  .bookmark-app.studio-app .bm-pagecontrols>label{font-size:12px;min-height:28px}
+  .bookmark-app.studio-app .bm-pagecontrols select{height:28px;min-height:28px;font-size:12px;padding:3px 6px}
+  .bookmark-app.studio-app .bm-pagecontrols .check-label{min-height:28px;font-size:12px}
+  .bookmark-app.studio-app .bm-documentstatus{flex-shrink:0;min-height:24px;font-size:12px;white-space:nowrap}
+  .bookmark-app.studio-app .bm-documentstatus .text-button{font-size:12px;min-height:24px;padding:2px}
+  .bookmark-app.studio-app>.bm-alert{flex-shrink:0;margin:0;border-radius:0;padding:7px 12px;max-height:80px;overflow:auto;font-size:12px}
+  .bookmark-app.studio-app.studio-left-hidden .bm-workspace{grid-template-columns:0 minmax(0,1fr) var(--studio-right)}
+  .bookmark-app.studio-app.studio-right-hidden .bm-workspace{grid-template-columns:var(--studio-left) minmax(0,1fr) 0}
+  .bookmark-app.studio-app.studio-left-hidden.studio-right-hidden .bm-workspace,.bookmark-app.studio-app.studio-focus-mode .bm-workspace{grid-template-columns:0 minmax(0,1fr) 0}
+  .bookmark-app.studio-app.studio-left-hidden .bm-cards,.bookmark-app.studio-app.studio-focus-mode .bm-cards{display:none}
+  .bookmark-app.studio-app.studio-right-hidden .bm-editor,.bookmark-app.studio-app.studio-focus-mode .bm-editor{display:none}
+}
+@media(min-width:1000px) and (max-width:1350px) and (min-height:600px){
+  .bookmark-app.studio-app .bm-workspace{--studio-left:var(--studio-left-size,216px);--studio-right:var(--studio-right-size,288px)}
+  .bookmark-app.studio-app .bm-outputbar{flex-basis:100%;order:2}
+}
+@media(max-width:999px), (max-height:599px){
+  .bookmark-app.studio-app .bm-workspace{display:block}
+  .bookmark-app.studio-app .bm-mobile-nav{display:flex}
+  .bookmark-app.studio-app .bm-mobile-nav{padding:6px 14px;gap:6px;min-height:56px;margin:0}
+  .bookmark-app.studio-app .bm-mobile-nav button{min-height:44px;min-width:0;padding:4px 6px;font-size:13px;line-height:1.3;border:1px solid var(--control-border);border-radius:5px;background:var(--paper);color:var(--accent-strong);flex:1}
+  .bookmark-app.studio-app .bm-mobile-nav button[aria-selected=true]{color:var(--paper);background:var(--accent-strong);border-color:var(--accent-strong);font-weight:600}
+  .bookmark-app.studio-app .bm-editor{padding:0;overflow:hidden}
+  .bookmark-app.studio-app .bm-inspector-tabs{padding:5px}
+  .bookmark-app.studio-app .bm-inspector-tabs button{min-height:44px;font-size:13px}
+  .bookmark-app.studio-app .bm-inspector-scroll>[role=tabpanel]{padding:16px}
+  .bookmark-app.studio-app .bm-documentstatus{margin-top:9px;flex-wrap:wrap}
+  .bookmark-app.studio-app .bm-documentstatus .text-button{min-height:44px}
+  .bookmark-app.studio-app .bm-exportbar .bm-layerbar{flex-basis:100%;order:2;margin-top:5px}
+  .bookmark-app.studio-app .bm-design-heading{display:flex;align-items:center}
+  .bookmark-app.studio-app .bm-design-heading h2{font-size:14px}
+  .bookmark-app.studio-app .bm-exportbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 110px;gap:6px;margin:0 0 8px;align-items:stretch}
+  .bookmark-app.studio-app .bm-exportbar>.button{min-width:0;min-height:44px;padding:8px 10px;font-size:12px}
+  .bookmark-app.studio-app .bm-export-options{margin:0;min-width:0}
+  .bookmark-app.studio-app .bm-export-options>summary{height:100%;min-height:44px;padding:8px 5px;justify-content:center;text-align:center;font-size:12px}
+  .bookmark-app.studio-app .bm-outputbar{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;order:2}
+  .bookmark-app.studio-app .bm-outputbar>.bm-sidebar-field,.bookmark-app.studio-app .bm-outputbar>.bm-layerbar{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;margin:0;flex-basis:auto}
+  .bookmark-app.studio-app .bm-outputbar label{font-size:12px;line-height:1.4}
+  .bookmark-app.studio-app .bm-outputbar select{width:100%;min-width:0;max-width:none;margin:0;min-height:44px;font-size:16px;padding:8px}
+  .bookmark-app.studio-app .bm-view-options{display:block;margin-bottom:8px;border-bottom:1px solid var(--line)}
+  .bookmark-app.studio-app .bm-view-options>summary,.bookmark-app.studio-app .bm-check-details>summary{display:flex;align-items:center;min-height:44px;gap:8px;padding:8px 2px;cursor:pointer;font-size:13px;font-weight:600;list-style:none;color:var(--accent-strong)}
+  .bookmark-app.studio-app .bm-view-options>summary::-webkit-details-marker,.bookmark-app.studio-app .bm-check-details>summary::-webkit-details-marker{display:none}
+  .bookmark-app.studio-app .bm-view-options>summary:after,.bookmark-app.studio-app .bm-check-details>summary:after{content:'';width:7px;height:7px;margin-left:auto;margin-right:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);flex-shrink:0}
+  .bookmark-app.studio-app .bm-view-options[open]>summary:after,.bookmark-app.studio-app .bm-check-details[open]>summary:after{transform:rotate(225deg)}
+  .bookmark-app.studio-app .bm-view-options-body{display:block;padding:2px 0 8px}
+  .bookmark-app.studio-app .bm-layerinfo{margin:0 0 10px;white-space:normal;font-size:12px;line-height:1.5}
+  .bookmark-app.studio-app .bm-check-details{display:block;margin:0 0 8px;border:1px solid var(--danger);border-radius:4px;background:var(--paper)}
+  .bookmark-app.studio-app .bm-check-details>summary{padding:8px 10px;color:var(--danger);font-size:12px}
+  .bookmark-app.studio-app .bm-check-details:has(.is-review){border-color:var(--warning)}
+  .bookmark-app.studio-app .bm-check-details:has(.is-review)>summary{color:var(--warning)}
+  .bookmark-app.studio-app .bm-check-details .bm-sheetissues{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;padding:8px 10px;max-height:none}
+  .bookmark-app.studio-app .bm-check-details .bm-sheetissues button{min-height:44px}
+  .bookmark-app.studio-app .bm-view-options>summary:focus-visible,.bookmark-app.studio-app .bm-check-details>summary:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+  .bookmark-app.studio-app .bm-preview-disclosures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+  .bookmark-app.studio-app .bm-preview-disclosures:has(>details[open]),.bookmark-app.studio-app .bm-preview-disclosures:has(>#bmCheckDetails[hidden]){display:block}
+  .bookmark-app.studio-app .bm-preview-disclosures:not(:has(>details[open]))>.bm-view-options{margin:0}
+  .bookmark-app.studio-app .bm-preview-disclosures:not(:has(>details[open]))>.bm-check-details{margin:0}
+  .bookmark-app.studio-app .bm-preview-disclosures:not(:has(>details[open]))>details>summary{padding:4px 8px;font-size:12px;line-height:1.35;height:44px}
+}
+@media(max-width:999px) and (min-width:701px), (min-width:701px) and (max-height:599px){
+  .bookmark-app.studio-app .bm-outputbar{grid-template-columns:minmax(0,220px) minmax(0,220px)}
+}
+@media(max-width:700px){
+  .bookmark-app.studio-app .bm-exportbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 96px}
+}
+@media(pointer:coarse){
+  .bookmark-app.studio-app .bm-inspector-tabs button{min-height:44px;height:auto}
+  .bookmark-app.studio-app button,.bookmark-app.studio-app summary,.bookmark-app.studio-app .bm-editor .check-label{min-height:44px}
+  .bookmark-app.studio-app .bm-order .button,.bookmark-app.studio-app .bm-pagecontrols .button{min-height:44px;min-width:44px}
+  .bookmark-app.studio-app .bm-editor input:not([type=checkbox]),.bookmark-app.studio-app .bm-editor select,.bookmark-app.studio-app .bm-editor textarea,.bookmark-app.studio-app .bm-layerbar select,.bookmark-app.studio-app .bm-pagecontrols select{font-size:16px;min-height:44px;height:auto}
+  .bookmark-app.studio-app .bm-sidebar-field select{font-size:16px;min-height:44px;height:auto}
+  .bookmark-app.studio-app .project-menu .project-menu-items .button,.bookmark-app.studio-app .bm-editor .button,.bookmark-app.studio-app .bm-editor .text-button,.bookmark-app.studio-app .bm-editor details>summary,.bookmark-app.studio-app .bm-listfoot .text-button,.bookmark-app.studio-app .bm-documentstatus .text-button{min-height:44px;min-width:44px}
+}
+@media(min-width:1000px) and (min-height:600px) and (pointer:coarse){
+  .bookmark-app.studio-app .bm-inspector-tabs{flex-basis:54px}
+  .bookmark-app.studio-app .bm-zoom-tools .button{width:44px;height:44px;min-width:44px;min-height:44px}
+  .bookmark-app.studio-app .bm-zoom-tools select{width:104px;height:44px;min-height:44px;font-size:16px}
+  .bookmark-app.studio-app .bm-exportbar>.button,.bookmark-app.studio-app .bm-export-options>summary,.bookmark-app.studio-app .bm-previewtabs button,.bookmark-app.studio-app .bm-face-tabs button,.bookmark-app.studio-app .bm-previewbar>#bmOpenDesign,.bookmark-app.studio-app .bm-pagecontrols .button,.bookmark-app.studio-app .bm-pagecontrols .check-label,.bookmark-app.studio-app .bm-photoeditor .button,.bookmark-app.studio-app .bm-photoeditor .text-button,.bookmark-app.studio-app .bm-panelhead .button,.bookmark-app.studio-app .bm-cards>button{min-height:44px}
+}
+

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru" data-invitation-route="invitations.html" data-invitation-scope="index.html" data-diploma-route="diplomas.html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f4f1ec">
+  <title>Закладки — редактор для печати</title>
+  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="bookmarks.css?v=23">
+  <link rel="stylesheet" href="studio.css?v=17">
+  <link rel="stylesheet" href="studio-bookmarks.css?v=18">
+  <link rel="stylesheet" href="studio-shell.css?v=25">
+  <link rel="stylesheet" href="print-center.css?v=21">
+  <script defer src="project-library.js?v=25"></script>
+  <script defer src="vendor/pako-inflate.min.js?v=13"></script>
+  <script defer src="vendor/fontkit.umd.min.js?v=13"></script>
+  <script defer src="fonts/bookmark-fonts.js?v=13"></script>
+  <script defer src="bookmark-loader.js?v=23"></script>
+  <script defer src="history.js?v=13"></script>
+  <script defer src="print-engine.js?v=13"></script>
+  <script defer src="print-plan.js?v=19"></script>
+  <script defer src="printer-discovery.js?v=21"></script>
+  <script defer src="print-center.js?v=21"></script>
+  <script defer src="bookmark-font-codec.js?v=13"></script>
+  <script defer src="bookmark-render.js?v=19"></script>
+  <script defer src="bookmark-authors.js?v=23"></script>
+  <script defer src="bookmark-raster-quotes.js?v=23"></script>
+  <script defer src="bookmark-store.js?v=23"></script>
+  <script defer src="studio-canvas.js?v=16"></script>
+  <script defer src="bookmarks.js?v=23"></script>
+  <script defer src="studio.js?v=17"></script>
+  <script defer src="studio-shell.js?v=18"></script>
+</head>
+<body class="bookmark-app studio-app" data-studio-tool="bookmarks">
+  <a class="bm-skip-link" href="#bmEditorPanel">Перейти к редактору</a>
+  <h1 class="bm-visually-hidden">Редактор закладок</h1>
+  <header class="bm-header studio-header">
+    <a class="studio-brand" href="index.html" data-project-navigation>Редактор для печати</a>
+    <nav class="studio-app-nav bm-tools" aria-label="Разделы приложения"><a href="index.html" data-project-navigation>Главная</a><a href="invitations.html" data-project-navigation>Пригласительные</a><a href="bookmarks.html" data-project-navigation aria-current="page">Закладки</a><a href="diplomas.html" data-project-navigation>Дипломы</a></nav>
+    <div class="studio-document-field" inert data-bm-startup-lock><label for="bmTitle">Название проекта</label><input id="bmTitle" maxlength="160" autocomplete="off" aria-describedby="bmTitleHint"><span id="bmTitleHint" class="bm-visually-hidden">Изменения сохраняются автоматически на этом устройстве.</span></div>
+    <div class="studio-header-actions"><span id="bmSaveStatus" class="studio-save-status" role="status">Загрузка…</span><a href="index.html#identityForm" class="button quiet studio-profile" data-studio-actor data-project-navigation>Представиться</a><details class="project-menu" id="bmProjectMenu" inert data-bm-startup-lock><summary class="button outline">Проект <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary><div class="project-menu-items"><button id="bmOpen" class="button quiet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V4h7l2 3h9v13z"/></svg>Открыть из файла</button><button id="bmBackup" class="button outline" title="Проект с фотографиями и настройками"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>Скачать проект</button><button id="bmRenameProject" class="button quiet">Переименовать</button><button id="bmCopyProject" class="button quiet">Создать копию</button><div class="studio-menu-extra"><button id="bmRestoreSeed" class="button quiet">Материалы Дня социолога</button><button id="bmDeleteProject" class="button quiet bm-danger">Удалить этот проект</button></div></div></details></div>
+  </header>
+  <div id="bmStartup" class="bm-startup"><p id="bmStartupMessage" role="status">Загружаем проект и шрифты…</p><button id="bmStartupRetry" type="button" class="button outline" hidden>Повторить загрузку</button><a href="index.html" class="button outline" id="bmStartupHome" hidden>К проектам</a></div>
+  <div class="bm-projectbar studio-commandbar" inert data-bm-startup-lock>
+    <nav class="studio-project-switcher" aria-label="Переключение проектов"><label class="bm-visually-hidden" for="bmProjects">Проект на этом устройстве</label><select id="bmProjects" aria-label="Выбрать проект"></select><button id="bmNew" class="button outline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Новый</button><div class="studio-history" role="group" aria-label="Отмена и повтор"><button id="bmUndo" class="button outline" title="Отменить · Ctrl+Z" aria-label="Отменить изменение" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 4 11l5 5M4 11h10a6 6 0 0 1 6 6"/></svg></button><button id="bmRedo" class="button outline" title="Повторить · Ctrl+Shift+Z / Ctrl+Y" aria-label="Повторить изменение" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6 5 5-5 5m5-5H10a6 6 0 0 0-6 6"/></svg></button></div></nav>
+    <div class="studio-tools" role="group" aria-label="Панели редактора"><button class="button quiet" type="button" data-studio-toggle="left" aria-pressed="true">Карточки</button><button class="button quiet" type="button" data-studio-toggle="right" aria-pressed="true">Свойства</button><button class="button quiet" type="button" data-studio-toggle="focus" aria-pressed="false" title="Фокус на макете · Shift+F">Фокус</button></div>
+    <div class="studio-export-actions"><button id="bmPdf" class="button outline" aria-label="Скачать PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span class="studio-desktop-label">Скачать PDF</span><span class="studio-mobile-label" aria-hidden="true">PDF</span></button><button id="bmPrintWizard" class="button quiet studio-print-wizard" aria-label="Мастер печати" title="Проходы, тираж и профили принтеров"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-5 0v6"/></svg><span class="studio-desktop-label">Мастер печати</span><span class="studio-mobile-label" aria-hidden="true">Мастер</span></button><button id="bmPrint" class="button primary" title="Обычная печать: сразу открыть системное окно"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 17H3V9h18v8h-3M6 14h12v7H6z"/></svg>Печатать</button></div>
+  </div>
+  <div id="bmError" class="bm-alert" role="alert" hidden></div>
+  <nav class="bm-mobile-nav" inert data-bm-startup-lock aria-label="Разделы редактора"><button id="bmCardsTab" data-bm-section="bmCardsPanel" aria-controls="bmCardsPanel">Карточки</button><button id="bmEditorTab" data-bm-section="bmEditorPanel" aria-controls="bmEditorPanel">Редактор</button><button id="bmPreviewTab" data-bm-section="bmPreviewPanel" aria-controls="bmPreviewPanel">Листы и печать</button></nav>
+  <main class="bm-workspace studio-workspace" inert data-bm-startup-lock aria-busy="true">
+    <aside class="panel bm-cards" id="bmCardsPanel" data-studio-panel="left" tabindex="-1" aria-labelledby="bmCardsHeading">
+      <div class="bm-panelhead"><h2 id="bmCardsHeading">Карточки <span id="bmCardCount" class="count"></span></h2><button id="bmAdd" class="button quiet" title="Добавить карточку"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Добавить</button></div>
+      <button id="bmImportDocx" class="button outline full">Импорт из Word (.docx)</button>
+      <button id="bmAddRasterQuotes" type="button" class="text-button full" disabled>Добавить цитаты с картинок</button>
+      <input id="bmSearch" type="search" placeholder="Найти автора или цитату" aria-label="Поиск карточек" aria-controls="bmCardList" aria-describedby="bmSearchStatus">
+      <p id="bmSearchStatus" class="bm-search-status" role="status" hidden></p>
+      <p id="bmCardKeyboardHint" class="bm-visually-hidden">Для выбора карточки используйте стрелки вверх и вниз. Enter открывает редактор.</p>
+      <div id="bmCardList" class="bm-card-list" aria-label="Список закладок" aria-describedby="bmCardKeyboardHint"></div>
+      <div id="bmListEmpty" class="bm-list-empty" hidden><p id="bmListEmptyText"></p><button id="bmClearSearch" type="button" class="text-button" hidden>Сбросить поиск</button></div>
+      <div class="bm-listfoot"><span>Порядок в списке — порядок на листах.</span><button id="bmCopiesAll" class="text-button">Тираж для всех</button></div>
+    </aside>
+
+    <section class="bm-preview" id="bmPreviewPanel" tabindex="-1" aria-labelledby="bmPreviewHeading">
+      <h2 id="bmPreviewHeading" class="bm-visually-hidden">Предпросмотр и печать</h2>
+      <div class="bm-exportbar"><div class="bm-outputbar"><div class="bm-sidebar-field"><label for="bmPrintSide">Стороны тиража</label><select id="bmPrintSide"><option value="front">Лицевые стороны</option><option value="back">Оборотные стороны</option><option value="duplex">С обеих сторон</option></select></div><div class="bm-layerbar"><label for="bmPrintLayer">Слой макета</label><select id="bmPrintLayer" aria-describedby="bmLayerInfo"><option value="all">Всё вместе</option><option value="inkjet">Струйник — цвет</option><option value="laser">Лазерный — текст</option></select></div></div><details class="bm-export-options"><summary class="button quiet">Пробный лист <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></summary><div><button id="bmPdfPage" class="button quiet">Скачать этот лист</button><button id="bmPrintPage" class="button quiet">Печатать этот лист</button></div></details></div>
+      <div class="bm-preview-disclosures"><details id="bmViewOptions" class="bm-view-options" open><summary>Параметры просмотра</summary><div class="bm-view-options-body">
+      <p id="bmLayerInfo" class="bm-layerinfo" role="status">Весь макет в исходных цветах — в предпросмотре, PDF и печати.</p>
+      <div class="bm-previewbar"><div class="bm-previewtabs" role="group" aria-label="Вид предпросмотра"><button id="bmViewCard" aria-pressed="true">Закладка крупно</button><button id="bmViewSheet" aria-pressed="false">Лист А4</button></div><button id="bmOpenDesign" class="button quiet">Оформление</button><span id="bmPageSize">140 × 65 мм</span></div>
+      <div class="bm-sidebar"><div class="bm-face-tabs" role="group" aria-label="Сторона предпросмотра"><button id="bmFaceFront" aria-pressed="true">Лицевая</button><button id="bmFaceBack" aria-pressed="false">Оборот</button></div><div class="bm-zoom-tools" role="group" aria-label="Масштаб просмотра"><button id="bmZoomOut" type="button" class="button quiet" aria-label="Уменьшить просмотр" title="Уменьшить просмотр"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button><label class="bm-visually-hidden" for="bmViewZoom">Масштаб просмотра</label><select id="bmViewZoom" aria-describedby="bmZoomHelp"><option value="fit">Уместить</option><option value="50">50%</option><option value="75">75%</option><option value="100">100%</option><option value="125">125%</option><option value="150">150%</option><option value="200">200%</option><option value="300">300%</option></select><button id="bmZoomIn" type="button" class="button quiet" aria-label="Увеличить просмотр" title="Увеличить просмотр"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button><button id="bmZoomFit" type="button" class="button quiet" aria-label="Уместить макет в окне" title="Уместить макет в окне"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5M4 4l6 6m10-6-6 6M4 20l6-6m10 6-6-6"/></svg></button><button id="bmHandTool" type="button" class="button quiet" aria-label="Перемещать просмотр" title="Перемещать просмотр" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v6-8a1.5 1.5 0 0 1 3 0v8-6a1.5 1.5 0 0 1 3 0v7-4a1.5 1.5 0 0 1 3 0v7c0 4-3 6-6 6h-1c-2 0-3-1-4-2l-4-5a1.5 1.5 0 0 1 2-2l2 2"/></svg></button><span id="bmZoomHelp" class="bm-visually-hidden">Масштаб влияет только на просмотр. 100% — 96 экранных пикселей на дюйм; размер печати сохраняется.</span></div><span id="bmPreviewHint">Текст вдоль длинной стороны</span></div>
+      </div></details>
+      <details id="bmCheckDetails" class="bm-check-details" open hidden><summary id="bmCheckSummary">Проверки карточек</summary><div id="bmSheetIssues" class="bm-sheetissues" role="status" hidden></div></details></div>
+      <div id="bmCanvasWrap" data-studio-canvas class="bm-canvaswrap card-view horizontal"><div id="bmCanvasStage" class="bm-canvasstage"><canvas id="bmCanvas" width="1654" height="768" role="img" aria-label="Предпросмотр закладки"></canvas></div></div>
+      <div class="bm-pagecontrols"><button id="bmPrevPage" class="button outline" aria-label="Предыдущий лист"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6-6 6 6 6M4 12h16"/></svg></button><label>Лист <select id="bmPage" aria-label="Номер листа"></select> <span id="bmPagesTotal"></span></label><button id="bmNextPage" class="button outline" aria-label="Следующий лист"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6 6 6-6 6M4 12h16"/></svg></button><label class="check-label"><input id="bmCuts" type="checkbox"> <span id="bmCutsLabel">Линии реза</span></label></div>
+    </section>
+    <section class="panel bm-editor" id="bmEditorPanel" data-studio-panel="right" tabindex="-1" aria-labelledby="bmEditorHeading">
+      <nav class="bm-inspector-tabs studio-inspector-tabs" role="tablist" aria-label="Свойства закладок"><button type="button" id="bmInspectorCardTab" role="tab" aria-controls="bmInspectorCard" aria-selected="true" data-bm-inspector="card">Карточка</button><button type="button" id="bmInspectorDesignTab" role="tab" aria-controls="bmInspectorDesign" aria-selected="false" tabindex="-1" data-bm-inspector="design">Оформление</button><button type="button" id="bmInspectorPrintTab" role="tab" aria-controls="bmInspectorPrint" aria-selected="false" tabindex="-1" data-bm-inspector="print">Печать</button></nav>
+      <div class="bm-inspector-scroll">
+      <div id="bmInspectorCard" role="tabpanel" aria-labelledby="bmInspectorCardTab">
+      <div class="bm-panelhead"><h2 id="bmEditorHeading">Закладка</h2><span id="bmCardPosition" class="count"></span></div>
+      <div id="bmEmpty" class="bm-empty" hidden>Добавьте карточку или импортируйте документ Word.</div>
+      <div id="bmCardEditor">
+        <label>Автор<input id="bmName" maxlength="1000" autocomplete="off"></label>
+        <label>Цитата<textarea id="bmQuote" maxlength="10000" rows="8" spellcheck="true" aria-describedby="bmCharCount bmFitStatus"></textarea></label>
+        <div class="bm-textmeta"><span id="bmCharCount"></span><span id="bmFitStatus" role="status"></span></div>
+        <div id="bmReview" class="bm-review" hidden><p id="bmReviewText"></p><button id="bmReviewDone" class="text-button">Проверено</button></div>
+        <div class="bm-row"><label>Экземпляров<input id="bmCopies" type="number" min="1" max="100" step="1"></label><div class="bm-order"><button id="bmUp" class="button outline" title="Переместить выше" aria-label="Переместить выше"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6-6 6 6m-6-6v16"/></svg></button><button id="bmDown" class="button outline" title="Переместить ниже" aria-label="Переместить ниже"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6 6 6-6m-6 6V4"/></svg></button></div></div>
+        <div class="bm-photoeditor"><img id="bmPhoto" alt="Фотография выбранного автора" hidden><div><button id="bmUploadPhoto" class="button outline">Загрузить фото</button><button id="bmChoosePhoto" class="text-button">Из документа</button><button id="bmRemovePhoto" class="text-button bm-danger">Убрать фото</button></div></div>
+        <details id="bmCropControls"><summary>Кадрирование фотографии</summary><label for="bmCropX">По горизонтали <output id="bmCropXValue"></output><input id="bmCropX" type="range" min="0" max="100" step="1"></label><label for="bmCropY">По вертикали <output id="bmCropYValue"></output><input id="bmCropY" type="range" min="0" max="100" step="1"></label><label for="bmZoom">Увеличение <output id="bmZoomValue"></output><input id="bmZoom" type="range" min="1" max="3" step="0.05"></label><button id="bmResetCrop" class="text-button">Сбросить кадрирование</button></details>
+        <details class="bm-individual"><summary>Оформление этой карточки</summary><p class="hint">Изменения здесь относятся только к выбранной закладке.</p><label class="check-label"><input id="bmOverride" type="checkbox"> Свои настройки</label><div id="bmIndividualFields" hidden>
+          <label>Текст<select id="bmCardDirection"><option value="horizontal">Вдоль длинной стороны</option><option value="vertical">Вдоль короткой стороны</option></select></label>
+          <label>Шрифт<select id="bmCardFont"><option value="montserrat">Montserrat</option><option value="compact">Compact · узкий</option></select></label>
+          <div class="field-grid"><label>Цитата, пт<input id="bmCardFontSize" type="number" min="9" max="18" step="0.5"></label><label>Имя, пт<input id="bmCardNameSize" type="number" min="9" max="20" step="0.5"></label></div>
+          <div class="field-grid"><label>Фото: ширина, мм<input id="bmCardPhotoWidth" type="number" min="15" max="45" step="1"></label><label>Высота, мм<input id="bmCardPhotoHeight" type="number" min="15" max="45" step="1"></label></div>
+          <label class="check-label"><input id="bmCardShowPhoto" type="checkbox"> Фотография</label><label class="check-label"><input id="bmCardFooter" type="checkbox"> Подпись «С Днём социолога!»</label><label>Цвет акцента<input id="bmCardAccent" type="color"></label><button id="bmCompactCard" class="text-button">Подобрать для длинной цитаты</button>
+        </div></details>
+        <div class="bm-cardactions"><button id="bmDuplicate" class="text-button">Дублировать</button><button id="bmDelete" class="text-button bm-danger">Удалить карточку</button></div>
+      </div>
+      </div>
+      <div id="bmInspectorDesign" role="tabpanel" aria-labelledby="bmInspectorDesignTab" hidden>
+  <section class="bm-design-picker" inert data-bm-startup-lock aria-labelledby="bmDesignTitle">
+    <div class="bm-design-heading"><h2 id="bmDesignTitle">Дизайн</h2><span>Выбор меняет оформление. Текст, фото и личные настройки карточек сохраняются.</span><button id="bmPresetToggle" class="button outline" type="button" aria-controls="bmDesignPresets" aria-expanded="false" hidden>Выбрать дизайн</button></div>
+    <div id="bmDesignPresets" class="bm-design-presets" role="group" aria-label="Готовые дизайны закладок">
+      <button type="button" data-bm-preset="custom" aria-pressed="true"><span class="bm-preset-swatch bm-swatch-custom" aria-hidden="true"></span><span>Стандартный<small>Свой фон и оформление</small></span></button>
+      <button type="button" data-bm-preset="frost" aria-pressed="false"><span class="bm-preset-swatch bm-swatch-frost" aria-hidden="true"></span><span>Первый иней<small>Общий оборот кафедры</small></span></button>
+      <button type="button" data-bm-preset="series" aria-pressed="false"><span class="bm-preset-swatch bm-swatch-series" aria-hidden="true"></span><span>Серия преподавателей<small>Шесть оборотов по три человека</small></span></button>
+      <button type="button" data-bm-preset="cards" aria-pressed="false"><span class="bm-preset-swatch bm-swatch-cards" aria-hidden="true"></span><span>Карточная рубашка<small>Симметричный орнамент</small></span></button>
+    </div>
+  </section>
+      <details class="bm-common" id="bmDesignSettings"><summary>Оформление всех закладок</summary>
+        <label>Дизайн лицевой стороны<select id="bmTheme"><option value="custom">Стандартный · свой фон</option><option value="frost">Первый иней</option><option value="cards">Карточная рамка</option></select></label>
+        <p id="bmThemeHint" class="hint"></p>
+        <div id="bmThemeOptions" hidden>
+          <label>Оборот<select id="bmBackTemplate"><option value="text">Свой текст</option><option value="department">Общий · 18 преподавателей</option><option value="series">Серия · по три преподавателя</option><option value="ornament">Орнаментальная рубашка</option></select></label>
+          <label id="bmSeriesGroupField" hidden>Группа на обороте<select id="bmSeriesGroup"><option value="0">Чередовать все шесть</option><option value="1">Группа 1</option><option value="2">Группа 2</option><option value="3">Группа 3</option><option value="4">Группа 4</option><option value="5">Группа 5</option><option value="6">Группа 6</option></select></label>
+          <p id="bmSeriesHint" class="hint" hidden>Группа выбирается по порядку карточек. Копии одной карточки получают одинаковый оборот.</p>
+          <label for="bmOrnamentStrength">Насыщенность орнамента <output id="bmOrnamentStrengthValue"></output><input id="bmOrnamentStrength" type="range" min="0" max="100" step="1"></label>
+          <label class="check-label"><input id="bmBrandVisible" type="checkbox"> Логотипы и подписи мероприятия</label>
+        </div>
+        <label>Расположение текста<select id="bmDirection"><option value="horizontal">Вдоль длинной стороны</option><option value="vertical">Вдоль короткой стороны</option></select></label>
+        <label>Оформление<select id="bmDesign"><option value="editorial">Акцент · портрет и цитата</option><option value="minimal">Минимальное · тонкие линии</option><option value="classic">Классическое · рамка</option></select></label>
+        <label>Размер и поля<select id="bmSize"><option value="safe">65 × 140 мм · с полями</option><option value="full">70 × 148,5 мм · без полей</option></select></label><p id="bmGeometry" class="hint"></p>
+        <label>Шрифт цитат<select id="bmFont"><option value="montserrat">Montserrat</option><option value="compact">Compact · узкий</option></select></label>
+        <div class="field-grid"><label>Цитата, пт<input id="bmFontSize" type="number" min="9" max="18" step="0.5"></label><label>Имя, пт<input id="bmNameSize" type="number" min="9" max="20" step="0.5"></label></div>
+        <p class="hint">Если текст не помещается, кегль уменьшается до 9 пт. Переполненные карточки нужно исправить перед печатью.</p>
+        <div class="field-grid"><label>Фото: ширина, мм<input id="bmPhotoWidth" type="number" min="15" max="45" step="1"></label><label>Высота, мм<input id="bmPhotoHeight" type="number" min="15" max="45" step="1"></label></div>
+        <div class="field-grid"><label>Интервал строк<input id="bmLineHeight" type="number" min="1.05" max="1.5" step="0.05"></label><label>Выравнивание<select id="bmQuoteAlign"><option value="left">Слева</option><option value="center">По центру</option></select></label></div>
+        <label class="check-label"><input id="bmShowPhoto" type="checkbox"> Фотографии · чёрно-белые</label><label class="check-label"><input id="bmFrame" type="checkbox"> Рамка и линии</label><label class="check-label"><input id="bmFooter" type="checkbox"> Подпись «С Днём социолога!»</label><label>Цвет акцента<input id="bmAccent" type="color"></label><button id="bmInkSaver" class="text-button">Сделать акценты чёрными</button>
+        <details class="bm-background-settings" id="bmFrontSettings"><summary>Фон лицевой стороны</summary><div class="bm-background-preview"><img id="bmFrontBackground" alt="Фон лицевой стороны" hidden><span id="bmFrontBackgroundEmpty">Белая бумага</span></div><div class="button-row"><button id="bmUploadFrontBackground" class="button outline">Загрузить фон</button><button id="bmFrontFromGallery" class="text-button">Из галереи</button><button id="bmRemoveFrontBackground" class="text-button bm-danger">Убрать</button></div><label>Изображение<select id="bmBackgroundFit"><option value="cover">Заполнить, обрезать края</option><option value="contain">Вместить целиком</option></select></label><label for="bmBackgroundOpacity">Насыщенность фона <output id="bmBackgroundOpacityValue"></output><input id="bmBackgroundOpacity" type="range" min="0" max="100" step="1"></label><p class="hint">Загружайте фон вдоль длинной стороны. При печати он поворачивается вместе с текстом.</p></details>
+        <details class="bm-background-settings" id="bmBackSettings"><summary>Оборотная сторона</summary><div class="bm-background-preview"><img id="bmBackBackground" alt="Фон оборотной стороны" hidden><span id="bmBackBackgroundEmpty">Без изображения</span></div><div class="button-row"><button id="bmUploadBackBackground" class="button outline">Загрузить фон</button><button id="bmBackFromGallery" class="text-button">Из галереи</button><button id="bmRemoveBackBackground" class="text-button bm-danger">Убрать</button></div><label>Изображение<select id="bmBackBackgroundFit"><option value="cover">Заполнить, обрезать края</option><option value="contain">Вместить целиком</option></select></label><label for="bmBackBackgroundOpacity">Насыщенность фона <output id="bmBackBackgroundOpacityValue"></output><input id="bmBackBackgroundOpacity" type="range" min="0" max="100" step="1"></label><label>Текст на обороте<textarea id="bmBackText" rows="3" maxlength="500" placeholder="Можно оставить пустым"></textarea></label><div class="bm-back-tokens"><button data-bm-back-token="{автор}" class="text-button">+ Имя автора</button><button data-bm-back-token="{цитата}" class="text-button">+ Цитата</button></div><div class="field-grid"><label>Цвет текста<input id="bmBackTextColor" type="color"></label><label>Оформление<select id="bmBackDesign"><option value="match">Как лицевая сторона</option><option value="plain">Только фон и текст</option></select></label></div><button id="bmShowBack" class="text-button">Посмотреть оборот</button></details>
+      </details>
+      </div>
+      <div id="bmInspectorPrint" role="tabpanel" aria-labelledby="bmInspectorPrintTab" hidden>
+      <div class="panel bm-print-settings"><button id="bmConfigurePrint" type="button" class="button primary full">Открыть мастер печати…</button><p class="hint">Листы, повторы, принтеры и все проходы задаются в одном окне. Подача проверяется пробным листом.</p><details><summary>Параметры проекта по умолчанию</summary><label>Переворот именно листа А4<select id="bmDuplexFlip"><option value="long">Как книгу · длинный край</option><option value="short">Как календарь · короткий край</option></select></label><p id="bmDuplexInfo" class="hint"></p><details id="bmLayerSettings"><summary>Лазерный слой</summary><label class="check-label"><input id="bmLaserBlack" type="checkbox" aria-describedby="bmLaserBlackHelp"> Чистый чёрный для лазерного слоя</label><p id="bmLaserBlackHelp" class="hint">«Всё вместе» сохраняет исходные цвета. Фото, логотипы и надписи внутри картинок остаются на цветном слое.</p></details></details></div>
+      <details class="bm-help"><summary>Как работать</summary><ol><li>Импортируйте Word или используйте уже загруженные материалы Дня социолога.</li><li>Выберите карточку в списке, проверьте цитату, автора и фотографию. Задайте тираж.</li><li>Выберите размер. Вариант с полями подходит большинству принтеров.</li><li>Исправьте карточки, отмеченные красным. Нажмите «Пробный лист», затем печатайте весь тираж.</li></ol><p>Изменения автоматически сохраняются в этом браузере. Для переноса на другое устройство скачайте проект с фотографиями. Файлы обрабатываются на устройстве, на сервер ничего не отправляется.</p></details>
+
+      </div>
+      </div>
+    </section>
+  </main>
+  <footer class="bm-documentstatus studio-statusbar" inert data-bm-startup-lock><span id="bmTotals"></span><button type="button" id="bmOpenPrintSettings" class="text-button">Мастер печати</button></footer>
+  <input type="file" id="bmDocxFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+  <input type="file" id="bmPhotoFile" accept="image/png,image/jpeg,image/webp" hidden>
+  <input type="file" id="bmBackgroundFile" accept="image/png,image/jpeg,image/webp" hidden>
+  <input type="file" id="bmProjectFile" accept=".json,application/json" hidden>
+  <dialog id="bmGallery" class="bm-dialog bm-gallerydialog" aria-labelledby="bmGalleryTitle"><div class="bm-dialoghead"><h2 id="bmGalleryTitle">Фотографии из проекта</h2><button data-bm-close="bmGallery" class="button quiet" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div><p class="hint">Выберите изображение для этой карточки. Дополнительные картинки из Word тоже сохранены здесь.</p><div id="bmGalleryList" class="bm-gallery"></div></dialog>
+  <dialog id="bmConfirm" class="bm-dialog" aria-labelledby="bmConfirmTitle" aria-describedby="bmConfirmText"><h2 id="bmConfirmTitle">Подтверждение</h2><p id="bmConfirmText"></p><div class="button-row"><button id="bmConfirmYes" class="button primary">Продолжить</button><button id="bmConfirmNo" class="button outline">Отмена</button></div></dialog>
+  <dialog id="bmImportDialog" class="bm-dialog" aria-labelledby="bmImportTitle" aria-describedby="bmImportInfo"><h2 id="bmImportTitle">Импорт из Word</h2><p id="bmImportInfo"></p><p class="hint">Цитаты переносятся без сокращений. Карточки с неясным автором или фотографией будут отмечены для проверки.</p><div class="bm-importactions"><button id="bmImportNew" class="button primary">В новый проект</button><button id="bmImportAppend" class="button outline">Добавить к текущим</button><button data-bm-close="bmImportDialog" class="button quiet">Отмена</button></div></dialog>
+  <div id="bmBusy" class="bm-busy" hidden role="status"><div><h2 id="bmBusyTitle">Подготовка…</h2><p id="bmBusyDetail"></p><progress></progress></div></div>
+  <div id="bmToast" class="bm-toast" hidden role="status"></div>
+</body>
+</html>
