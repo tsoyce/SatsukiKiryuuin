@@ -12,8 +12,11 @@
   let toastTimer;
   UI.toast = (text, error = false) => {
     const t = $('toast');
-    t.textContent = text; t.classList.toggle('error', !!error); t.hidden = false;
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, error ? 7000 : 3500);
+    t.textContent = text; t.classList.toggle('error', !!error); t.classList.remove('leaving'); t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => {
+      if (UI.Motion?.reduced() !== false) { t.hidden = true; return; }
+      t.classList.add('leaving'); toastTimer = setTimeout(() => { t.hidden = true; t.classList.remove('leaving'); }, 190);
+    }, error ? 7000 : 3500);
   };
   UI.busy = async (text, fn) => {
     $('busyText').textContent = text; $('busy').hidden = false;
@@ -124,7 +127,10 @@
     await XS.Fonts.ensureForDoc(doc).catch(e => UI.toast(e.message, true));
     Object.assign(S, {readOnly: readOnly || XS.Store.remote.meta.get(doc.id)?.permission === 'view', link, doc, side: 0, row: Math.min(doc.data.current || 0, Math.max(0, doc.data.rows.length - 1)), selection: [], selectedRows: new Set(), zoom: 0});
     S.history.clear();
+    const entering = $('editor').hidden;
     $('home').hidden = true; $('editor').hidden = false;
+    if (entering) UI.Motion?.screen($('editor'));
+    UI.Mobile?.close();
     const hash = link ? '#/link/' + link : '#/doc/' + doc.id;
     if (location.hash !== hash) history.replaceState(null, '', hash);
     document.body.classList.toggle('read-only', S.readOnly);
@@ -139,6 +145,8 @@
     S.doc = null; S.readOnly = false; S.link = '';
     document.body.classList.remove('read-only');
     $('editor').hidden = true; $('home').hidden = false;
+    UI.Mobile?.close();
+    UI.Motion?.screen($('home'));
     history.replaceState(null, '', '#/');
     document.title = 'XSatsu Студия';
     await UI.Home.render();

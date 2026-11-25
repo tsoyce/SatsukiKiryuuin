@@ -1,0 +1,101 @@
+/* XSatsu Студия · движение: переходы экранов, окна, меню, уведомления, отклик кнопок.
+ * Короткие (120–280 мс) и только transform/opacity — чтобы не тормозить на слабых компьютерах.
+ * Выключаются системной настройкой «уменьшить движение» или «Настройки → Анимации». */
+:root {
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 280ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-in: cubic-bezier(.4, 0, 1, 1); --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+}
+
+/* ---------- отклик элементов ---------- */
+.btn, .tab, .chip, .side-tabs .side, .add-bar button, .icon-btn, .menu button, .layer, .row-item, .seg button, .home-btn, .preset, .project, .choice {
+  transition: background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease, box-shadow var(--dur-2) ease, transform var(--dur-1) var(--ease-out), opacity var(--dur-1) ease;
+}
+.btn:not(:disabled):active, .add-bar button:active, .icon-btn:not(:disabled):active, .side-tabs .side:active, .chip:active { transform: scale(.96); }
+.btn.primary:not(:disabled):hover { box-shadow: 0 4px 14px rgba(79, 70, 229, .28); }
+.tab { position: relative; }
+.preset:hover { transform: translateY(-2px); }
+.preset:active { transform: translateY(0) scale(.99); }
+.project:hover { transform: translateY(-2px); }
+.project .thumb img { transition: transform var(--dur-3) var(--ease-out); }
+.project:hover .thumb img { transform: scale(1.03); }
+
+/* ---------- экраны ---------- */
+@keyframes screen-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes editor-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes page-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes slide-l { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes slide-r { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@keyframes slide-d { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.home.screen-in { animation: screen-in var(--dur-3) var(--ease-out); }
+.editor.screen-in { animation: editor-in var(--dur-2) ease; }
+.editor.screen-in .topbar { animation: slide-d var(--dur-3) var(--ease-out); }
+@media (min-width: 821px) {
+  .editor.screen-in .panel.left { animation: slide-l var(--dur-3) var(--ease-out); }
+  .editor.screen-in .panel.right { animation: slide-r var(--dur-3) var(--ease-out); }
+}
+.editor.screen-in .page { animation: page-in 360ms var(--ease-out); }
+
+/* Карточки шаблонов и проектов появляются по очереди. */
+@keyframes card-in { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+.home.screen-in .preset-grid > *, .project-grid.cards-in > .project { animation: card-in 340ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 28ms); }
+.home.screen-in .hero { animation: screen-in 420ms var(--ease-out) both; }
+
+/* Вкладки панели и смена содержимого */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.tab-body:not([hidden]) { animation: rise-in var(--dur-2) var(--ease-out); }
+.page.flip { animation: page-flip var(--dur-2) var(--ease-out); }
+@keyframes page-flip { from { opacity: .55; transform: scale(.992); } to { opacity: 1; transform: none; } }
+
+/* ---------- окна ---------- */
+@keyframes dlg-in { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes dlg-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+dialog[open] { animation: dlg-in var(--dur-3) var(--ease-out); }
+dialog[open]::backdrop { animation: backdrop-in var(--dur-3) ease; backdrop-filter: blur(2px); }
+dialog[data-closing] { animation: dlg-out 160ms var(--ease-in) forwards; pointer-events: none; }
+dialog[data-closing]::backdrop { animation: backdrop-out 160ms ease forwards; }
+
+/* ---------- меню и всплывающие элементы ---------- */
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(.97); } to { opacity: 1; transform: none; } }
+.menu:not([hidden]), .ctx-menu { animation: pop-in var(--dur-2) var(--ease-out); transform-origin: top right; }
+
+/* ---------- уведомления и ожидание ---------- */
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 16px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes toast-out { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 10px); } }
+.toast:not([hidden]) { animation: toast-in var(--dur-3) var(--ease-spring); }
+.toast.leaving { animation: toast-out 180ms var(--ease-in) forwards; }
+.busy:not([hidden]) { animation: fade-in var(--dur-2) ease; backdrop-filter: blur(2px); }
+.busy:not([hidden]) .busy-box { animation: dlg-in var(--dur-3) var(--ease-out); }
+
+/* Заглушки, пока грузится список проектов */
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.skeleton { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+.skeleton .sk { border-radius: 6px; background: linear-gradient(90deg, var(--soft) 0%, var(--line) 50%, var(--soft) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+.skeleton .sk.thumb { height: 150px; border-radius: 0; }
+.skeleton .sk.line { height: 12px; margin: 12px 12px 0; }
+.skeleton .sk.line.short { width: 55%; margin-bottom: 14px; }
+
+/* Сохранение: точка мягко пульсирует, пока идут изменения */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.save-state[data-state="Изменения…"] .ic, .save-state[data-state="Сохранение…"] .ic { animation: pulse 1s ease-in-out infinite; }
+
+/* Плавная смена темы (класс вешается на секунду при переключении) */
+:root.theme-anim, :root.theme-anim * { transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease, fill 280ms ease !important; }
+
+/* ---------- без анимаций ---------- */
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after, :root[data-motion="off"] ::backdrop {
+  animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="on"]) *, :root:not([data-motion="on"]) *::before, :root:not([data-motion="on"]) *::after, :root:not([data-motion="on"]) ::backdrop {
+    animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important;
+  }
+}
+
+/* Видимый фокус с клавиатуры для всего, что нажимается */
+.preset:focus-visible, .project:focus-visible, .tab:focus-visible, .menu button:focus-visible, .ctx-menu button:focus-visible,
+.mobile-nav button:focus-visible, .side-tabs .side:focus-visible, .chip:focus-visible, .add-bar button:focus-visible, .icon-btn:focus-visible, .home-btn:focus-visible, .scope:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}

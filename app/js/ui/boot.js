@@ -16,11 +16,19 @@
     }, '', {skip: ['stage', 'layers', 'data']});
     $('undoBtn').onclick = UI.undo; $('redoBtn').onclick = UI.redo;
     const menu = $('projectMenu');
-    $('projectMenuBtn').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
+    $('projectMenuBtn').onclick = e => {
+      e.stopPropagation(); menu.hidden = !menu.hidden;
+      const acc = menu.querySelector('[data-account-item]'); if (acc) acc.hidden = !XS.Api?.available;
+    };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) menu.hidden = true; });
     document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.hidden = true; });
     menu.addEventListener('click', UI.safe(async e => {
-      const act = e.target.dataset.act; if (!act) return;
+      const act = e.target.closest('[data-act]')?.dataset.act; if (!act) return;
       menu.hidden = true;
+      if (act === 'palette') UI.Palette?.open();
+      if (act === 'quickPrint') $('printBtn').click();
+      if (act === 'settings') UI.Settings.open();
+      if (act === 'account') document.querySelector('.topbar [data-account]')?.click();
       if (act === 'saveFile') UI.saveFile();
       if (act === 'duplicate') { const copy = XS.clone(S.doc); copy.id = XS.uid('doc'); copy.title += ' (копия)'; await UI.flush(); await UI.create(copy); UI.toast('Открыта копия проекта.'); }
       if (act === 'exportCsv') XS.download(new Blob([XS.Import.toCsv(S.doc)], {type: 'text/csv;charset=utf-8'}), XS.Zip.sanitizeFilename(S.doc.title) + '.csv');
@@ -64,7 +72,7 @@
     const m = /^#\/doc\/(.+)$/.exec(location.hash);
     if (m && (!S.doc || S.doc.id !== m[1])) await UI.Home.openId(decodeURIComponent(m[1]));
     else if (!m && S.doc) await UI.goHome();
-    else if (!m) { $('editor').hidden = true; $('home').hidden = false; await UI.Home.render(); }
+    else if (!m) { $('editor').hidden = true; $('home').hidden = false; UI.Motion?.screen($('home')); await UI.Home.render(); }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -74,6 +82,7 @@
     UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
     UI.PrintMaster?.init();
     UI.Tools?.init(); UI.Palette?.init(); UI.WhatsNew?.init(); UI.Forms?.init();
+    UI.Motion?.init(); UI.Mobile?.init();
     global.addEventListener('hashchange', UI.safe(route));
     // Сначала узнаём, есть ли сервер и кто вошёл, затем открываем нужный экран.
     UI.Account.init().catch(e => console.warn(e)).finally(() => UI.safe(route)());
