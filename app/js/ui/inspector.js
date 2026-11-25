@@ -60,13 +60,13 @@
   /* Конструктор «поле + форма»: {ФИО:дат}, {ФИО:инициалы}, {Место:верх}. */
   function formBuilder(ta) {
     const wrap = h('div', 'form-builder');
-    const cols = UI.fieldNames().filter(n => !['№', 'Дата', 'Проект'].includes(n));
+    const cols = UI.fieldNames().filter(n => n !== 'Проект');
     const field = h('select'); for (const n of cols) field.add(new Option('{' + n + '}', n));
-    const form = h('select'); for (const [m, label] of XS.Names.HINTS) form.add(new Option(label, m));
+    const form = h('select'); for (const [m, label] of [...XS.Names.HINTS, ...(XS.Formats?.HINTS || [])]) form.add(new Option(label, m));
     const go = h('button', 'btn small', 'Вставить'); go.type = 'button';
     go.title = 'Склонение по падежам и формы имени работают для ФИО; пол берётся из столбца «Пол» или угадывается.';
     go.onclick = () => { const t = '{' + field.value + ':' + form.value + '}'; const st = ta.selectionStart ?? ta.value.length; ta.setRangeText(t, st, ta.selectionEnd ?? st, 'end'); ta.dispatchEvent(new Event('input')); ta.focus(); };
-    wrap.append(h('span', 'muted small', 'Падеж / форма:'), field, form, go);
+    wrap.append(h('span', 'muted small', 'Падеж, форма, формат:'), field, form, go);
     return wrap;
   }
 
