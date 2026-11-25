@@ -70,6 +70,7 @@
     initTopbar();
     UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
     UI.PrintMaster?.init();
+    UI.Tools?.init(); UI.Palette?.init(); UI.WhatsNew?.init(); UI.Forms?.init();
     global.addEventListener('hashchange', UI.safe(route));
     // Сначала узнаём, есть ли сервер и кто вошёл, затем открываем нужный экран.
     UI.Account.init().catch(e => console.warn(e)).finally(() => UI.safe(route)());
