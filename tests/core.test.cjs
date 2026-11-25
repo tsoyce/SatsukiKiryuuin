@@ -61,5 +61,14 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   XS.Model.addRow(fromPdf, {'ФИО': 'Наложено поверх PDF-шаблона'});
   r = await XS.Export.run(fromPdf, {...fromPdf.output, packaging: 'single'});
   fs.writeFileSync(path.join(out, 'pdf-template.pdf'), Buffer.from(await r.blob.arrayBuffer()));
+  // 7. Группы слоёв: члены группы собираются подряд, пустые и «сироты» удаляются
+  const gd = XS.Model.blankDoc('custom', 'Группы', {width: 100, height: 100});
+  const gs = gd.sides[0];
+  const mk = (n, g = '') => XS.Model.element('text', {name: n, text: n, group: g});
+  gs.elements = [mk('a', 'g1'), mk('b'), mk('c', 'g1'), mk('d', 'ghost')];
+  gs.groups = [{id: 'g1', name: 'Группа 1'}, {id: 'empty', name: 'Пусто'}];
+  const norm = XS.Model.normalizeDoc(JSON.parse(JSON.stringify(gd))).sides[0];
+  assert.deepStrictEqual(norm.elements.map(e => e.name + ':' + e.group), ['b:', 'a:g1', 'c:g1', 'd:']);
+  assert.deepStrictEqual(norm.groups.map(g => g.id), ['g1']);
   console.log('Все проверки ядра пройдены. Файлы:', fs.readdirSync(out).join(', '));
 })().catch(e => { console.error(e); process.exit(1); });

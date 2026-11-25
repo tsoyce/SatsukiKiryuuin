@@ -27,7 +27,7 @@
   const PAPER = {a4: [210, 297], a3: [297, 420], a5: [148, 210], sra3: [320, 450]};
 
   const ELEMENT_DEFAULTS = {
-    common: {name: '', x: 10, y: 10, w: 60, h: 20, visible: true, locked: false, layer: 'auto', opacity: 1},
+    common: {name: '', x: 10, y: 10, w: 60, h: 20, visible: true, locked: false, layer: 'auto', opacity: 1, group: ''},
     text: {text: 'Текст', font: 'PT Sans', size: 14, bold: false, italic: false, color: '#222222', align: 'center', valign: 'middle',
       lineHeight: 1.2, letterSpacing: 0, uppercase: false, autoFit: true, minSize: 6,
       accent: {enabled: false, fields: 'ФИО', font: '', size: 0, bold: true, italic: false, color: ''},
@@ -69,7 +69,7 @@
   }
 
   function side(id, name, props = {}) {
-    return {id: id || uid('side'), name: name || 'Лицевая', background: null, elements: [], ...props};
+    return {id: id || uid('side'), name: name || 'Лицевая', background: null, elements: [], groups: [], ...props};
   }
 
   function blankDoc(kind = 'custom', title = 'Новый проект', page = {width: 148, height: 210}) {
@@ -100,8 +100,10 @@
     doc.sides = (Array.isArray(input.sides) && input.sides.length ? input.sides : [side('front')]).slice(0, 8).map((s, i) => ({
       id: String(s.id || (i ? 'back' : 'front')), name: String(s.name || (i ? 'Оборот' : 'Лицевая')),
       background: s.background && s.background.asset ? {asset: s.background.asset, page: num(s.background.page, 1, 1, 10000), fit: ['stretch', 'cover', 'contain'].includes(s.background.fit) ? s.background.fit : 'stretch', opacity: num(s.background.opacity, 1, 0, 1)} : null,
-      elements: (Array.isArray(s.elements) ? s.elements : []).map(normalizeElement).filter(Boolean)
+      elements: (Array.isArray(s.elements) ? s.elements : []).map(normalizeElement).filter(Boolean),
+      groups: (Array.isArray(s.groups) ? s.groups : []).filter(g => g && g.id).map(g => ({id: String(g.id), name: String(g.name || 'Группа'), collapsed: !!g.collapsed}))
     }));
+    for (const s of doc.sides) cleanGroups(s);
     const columns = Array.isArray(input.data?.columns) ? input.data.columns.filter(c => c && c.name).map(c => ({id: String(c.id || uid('c')), name: String(c.name).slice(0, 100), type: c.type === 'image' ? 'image' : 'text'})) : [];
     doc.data = {
       columns: columns.length ? columns : doc.data.columns,
@@ -114,6 +116,24 @@
     doc.fonts = (Array.isArray(input.fonts) ? input.fonts : []).filter(f => f && f.family && typeof f.data === 'string').map(f => ({id: String(f.id || uid('font')), family: String(f.family), variant: ['regular', 'bold', 'italic', 'bolditalic'].includes(f.variant) ? f.variant : 'regular', name: String(f.name || f.family), data: f.data}));
     doc.output = {...defaultOutput(doc.kind), ...(input.output || {})};
     return doc;
+  }
+
+  /* Группы: элементы одной группы идут подряд; пустые группы удаляются. */
+  function cleanGroups(s) {
+    s.groups = s.groups || [];
+    const ids = new Set(s.groups.map(g => g.id));
+    for (const el of s.elements) if (el.group && !ids.has(el.group)) el.group = '';
+    const used = new Set(s.elements.map(e => e.group).filter(Boolean));
+    s.groups = s.groups.filter(g => used.has(g.id));
+    // Собираем участников каждой группы к самому верхнему из них, сохраняя их порядок.
+    for (const g of s.groups) {
+      const members = s.elements.filter(e => e.group === g.id);
+      const top = s.elements.lastIndexOf(members[members.length - 1]);
+      const before = s.elements.slice(0, top + 1).filter(e => e.group !== g.id);
+      const after = s.elements.slice(top + 1).filter(e => e.group !== g.id);
+      s.elements = [...before, ...members, ...after];
+    }
+    return s;
   }
 
   /* --- работа с данными --- */
@@ -161,5 +181,5 @@
     for (const id of Object.keys(doc.assets)) if (!used.has(id)) delete doc.assets[id];
   }
 
-  XS.Model = {KINDS, PAGE_PRESETS, PAPER, TYPE_LABELS, ELEMENT_DEFAULTS, element, normalizeElement, side, blankDoc, defaultOutput, normalizeDoc, columnByName, addColumn, addRow, rowValues, addAsset, usedAssets, pruneAssets};
+  XS.Model = {KINDS, PAGE_PRESETS, PAPER, TYPE_LABELS, ELEMENT_DEFAULTS, element, normalizeElement, side, cleanGroups, blankDoc, defaultOutput, normalizeDoc, columnByName, addColumn, addRow, rowValues, addAsset, usedAssets, pruneAssets};
 })(typeof window !== 'undefined' ? window : globalThis);

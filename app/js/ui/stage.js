@@ -1,9 +1,10 @@
-/* XSatsu Студия · рабочая область: предпросмотр страницы, выделение, перетаскивание, масштаб, привязка. */
+/* XSatsu Студия · рабочая область: предпросмотр страницы, выделение (клик, Shift/Ctrl-клик, рамкой),
+ * перетаскивание и размер с привязкой, масштаб, сдвиг холста пробелом, строка состояния. */
 (function (global) {
   'use strict';
   const XS = global.XS, UI = XS.UI, S = UI.S, $ = UI.$;
   const BASE = 96 / 25.4; // px на мм при масштабе 100%
-  let gen = 0, frame = 0, guidesEl = [];
+  let gen = 0, frame = 0, extras = [], spaceDown = false;
 
   const k = () => (S.zoom || 1) * BASE;
 
@@ -14,7 +15,15 @@
     S.zoom = kk / BASE;
     render();
   }
-  function setZoom(z) { S.zoom = Math.max(0.1, Math.min(8, z)); render(); }
+  function setZoom(z, anchor) {
+    const vp = $('viewport'), old = k();
+    const rect = vp.getBoundingClientRect();
+    const ax = anchor ? anchor.x - rect.left : vp.clientWidth / 2, ay = anchor ? anchor.y - rect.top : vp.clientHeight / 2;
+    const mmX = (vp.scrollLeft + ax) / old, mmY = (vp.scrollTop + ay) / old;
+    S.zoom = Math.max(0.1, Math.min(8, z));
+    render();
+    requestAnimationFrame(() => { vp.scrollLeft = mmX * k() - ax; vp.scrollTop = mmY * k() - ay; });
+  }
 
   function render() {
     if (!S.doc) return;
@@ -38,15 +47,14 @@
     off.width = off.height = 1;
     renderWarnings();
     renderBoxes();
+    UI.Layers.render();
   }
 
   function renderChrome() {
-    const doc = S.doc, kk = k();
-    const page = $('page');
+    const doc = S.doc, kk = k(), page = $('page');
     page.style.width = doc.page.width * kk + 'px';
     page.style.height = doc.page.height * kk + 'px';
     $('zoomFit').textContent = Math.round((S.zoom || 1) * 100) + '%';
-    // стороны
     const tabs = $('sideTabs');
     tabs.replaceChildren(...doc.sides.map((s, i) => {
       const b = document.createElement('button');
@@ -56,52 +64,79 @@
     }));
     if (doc.sides.length < 2) {
       const add = document.createElement('button');
-      add.className = 'side'; add.textContent = '＋ Оборот'; add.title = 'Добавить оборотную сторону';
-      add.onclick = () => UI.edit(d => { d.sides.push(XS.Model.side('back', 'Оборот')); S.side = d.sides.length - 1; S.sel = null; });
+      add.className = 'side add'; add.type = 'button'; add.innerHTML = XS.Icons.icon('plus', 14) + 'Оборот'; add.title = 'Добавить оборотную сторону';
+      add.onclick = () => UI.edit(d => { d.sides.push(XS.Model.side('back', 'Оборот')); S.side = d.sides.length - 1; S.selection = []; });
       tabs.append(add);
     }
-    // запись
     const rows = doc.data.rows, row = UI.row();
     const first = doc.data.columns.find(c => c.type !== 'image');
     const label = row ? String(row.cells[first?.id] || '').trim() || '(пусто — бланк)' : '';
     $('rowLabel').textContent = rows.length ? (S.row + 1) + ' / ' + rows.length + ' · ' + label : 'Нет записей — показан макет';
     $('prevRow').disabled = S.row <= 0; $('nextRow').disabled = S.row >= rows.length - 1;
+    status();
   }
 
   function renderWarnings() {
     const box = $('warnings'), w = S.warnings;
     box.hidden = !w.length;
-    box.textContent = w.length ? '⚠ ' + w.map(x => x.name + ': ' + x.msg).join(' · ') : '';
+    box.innerHTML = w.length ? XS.Icons.icon('warn', 14) + ' ' + XS.esc(w.map(x => x.name + ': ' + x.msg).join(' · ')) : '';
+  }
+
+  /* Строка состояния: выделение, размер, курсор. */
+  let cursor = null;
+  function status() {
+    const sel = UI.selected();
+    let text = S.doc.page.width + '×' + S.doc.page.height + ' мм';
+    if (sel.length) {
+      const b = UI.Sel.bounds(sel);
+      text = (sel.length === 1 ? XS.esc(sel[0].name) : 'Выделено: ' + sel.length) + ' · X ' + b.x.toFixed(1) + ' Y ' + b.y.toFixed(1) + ' · ' + b.w.toFixed(1) + '×' + b.h.toFixed(1) + ' мм';
+    }
+    $('statusSel').innerHTML = text;
+    $('statusCursor').textContent = cursor ? 'курсор ' + cursor.x.toFixed(1) + ', ' + cursor.y.toFixed(1) + ' мм' : '';
   }
 
   /* Рамки элементов поверх картинки — для выделения и перетаскивания. */
   function renderBoxes() {
     const overlay = $('overlay'), kk = k();
-    const warnIds = new Set(S.warnings.map(w => w.el));
-    overlay.replaceChildren(...guidesEl);
+    const warnIds = new Set(S.warnings.map(w => w.el)), sel = new Set(S.selection);
+    const single = S.selection.length === 1 ? UI.element() : null;
+    overlay.replaceChildren();
     for (const el of UI.side().elements) {
       if (!el.visible) continue;
       const box = document.createElement('div');
-      box.className = 'box' + (el.id === S.sel ? ' sel' : '') + (el.locked ? ' locked' : '') + (warnIds.has(el.id) ? ' warn' : '');
+      box.className = 'box' + (sel.has(el.id) ? ' sel' : '') + (el.locked ? ' locked' : '') + (warnIds.has(el.id) ? ' warn' : '') + (el.group ? ' grouped' : '');
       box.dataset.id = el.id;
-      const minPx = 6;
-      let x = el.x * kk, y = el.y * kk, w = Math.abs(el.w) * kk, h = Math.abs(el.h) * kk;
-      if (h < minPx) { y -= (minPx - h) / 2; h = minPx; }
-      if (w < minPx) { x -= (minPx - w) / 2; w = minPx; }
-      Object.assign(box.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
-      box.title = el.name + (el.locked ? ' (закреплён)' : '');
-      if (el.id === S.sel && !el.locked) {
+      place(box, el, kk);
+      box.title = el.name + (el.group ? ' · ' + (UI.Sel.groupOf(el)?.name || 'группа') : '') + (el.locked ? ' (закреплён)' : '');
+      if (single && single.id === el.id && !el.locked) {
         const handles = el.type === 'line' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-        for (const hname of handles) { const hd = document.createElement('div'); hd.className = 'h'; hd.dataset.h = hname; box.append(hd); }
+        for (const h of handles) { const hd = document.createElement('div'); hd.className = 'h'; hd.dataset.h = h; box.append(hd); }
       }
       overlay.append(box);
     }
+    // Общая рамка нескольких выделенных элементов.
+    if (S.selection.length > 1) {
+      const b = UI.Sel.bounds(UI.selected());
+      const frameEl = document.createElement('div');
+      frameEl.className = 'multi-frame';
+      place(frameEl, b, kk);
+      overlay.append(frameEl);
+    }
+    overlay.append(...extras);
+    status();
+  }
+  function place(node, r, kk) {
+    const minPx = 6;
+    let x = r.x * kk, y = r.y * kk, w = Math.abs(r.w) * kk, h = Math.abs(r.h) * kk;
+    if (h < minPx) { y -= (minPx - h) / 2; h = minPx; }
+    if (w < minPx) { x -= (minPx - w) / 2; w = minPx; }
+    Object.assign(node.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
   }
 
-  /* ---------- перетаскивание и изменение размера ---------- */
-  function snapTargets(exceptId) {
+  /* ---------- привязка ---------- */
+  function snapTargets(exclude) {
     const W = S.doc.page.width, H = S.doc.page.height, xs = [0, W / 2, W], ys = [0, H / 2, H];
-    for (const e of UI.side().elements) if (e.id !== exceptId && e.visible) { xs.push(e.x, e.x + e.w / 2, e.x + e.w); ys.push(e.y, e.y + e.h / 2, e.y + e.h); }
+    for (const e of UI.side().elements) if (!exclude.has(e.id) && e.visible) { xs.push(e.x, e.x + e.w / 2, e.x + e.w); ys.push(e.y, e.y + e.h / 2, e.y + e.h); }
     return {xs, ys};
   }
   function bestSnap(values, targets, threshold) {
@@ -109,90 +144,127 @@
     for (const v of values) for (const t of targets) { const d = t - v; if (Math.abs(d) <= threshold && (!best || Math.abs(d) < Math.abs(best.d))) best = {d, t}; }
     return best;
   }
-  function showGuides(gx, gy) {
+  function guides(gx, gy) {
     const kk = k();
-    guidesEl = [];
-    if (gx != null) { const g = document.createElement('div'); g.className = 'guide v'; g.style.left = gx * kk + 'px'; guidesEl.push(g); }
-    if (gy != null) { const g = document.createElement('div'); g.className = 'guide hz'; g.style.top = gy * kk + 'px'; guidesEl.push(g); }
+    extras = [];
+    if (gx != null) { const g = document.createElement('div'); g.className = 'guide v'; g.style.left = gx * kk + 'px'; extras.push(g); }
+    if (gy != null) { const g = document.createElement('div'); g.className = 'guide hz'; g.style.top = gy * kk + 'px'; extras.push(g); }
   }
+  const toMm = ev => { const r = $('page').getBoundingClientRect(), kk = k(); return {x: (ev.clientX - r.left) / kk, y: (ev.clientY - r.top) / kk}; };
 
+  /* ---------- мышь ---------- */
   function onPointerDown(e) {
+    if (e.button === 1 || (e.button === 0 && spaceDown)) return startPan(e);
+    if (e.button !== 0) return;
     const boxEl = e.target.closest('.box');
-    if (!boxEl) { if (S.sel) UI.select(null); return; }
-    const el = UI.element(boxEl.dataset.id) || null;
+    const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+    if (!boxEl) return startMarquee(e, additive);
+    const el = UI.element(boxEl.dataset.id);
     if (!el) return;
-    if (S.sel !== el.id) UI.select(el.id);
-    if (el.locked || e.button !== 0) return;
+    // Группа выделяется целиком, если не выбран уже элемент внутри неё.
+    const insideGroup = el.group && S.selection.length === 1 && UI.Sel.members(el.group).some(m => m.id === S.selection[0]) && S.selection[0] === el.id;
+    const target = el.group && !insideGroup ? UI.Sel.expand([el.id]) : [el.id];
+    if (additive) { UI.select(target, 'toggle'); return; }
+    if (!target.every(id => S.selection.includes(id))) UI.select(target);
+    const moving = UI.selected().filter(x => !x.locked);
+    if (!moving.length) return;
     e.preventDefault();
-    const handle = e.target.dataset.h || '';
-    const start = {x: el.x, y: el.y, w: el.w, h: el.h, px: e.clientX, py: e.clientY};
+    const handle = S.selection.length === 1 ? e.target.dataset.h || '' : '';
+    const start = new Map(moving.map(m => [m.id, {x: m.x, y: m.y, w: m.w, h: m.h}]));
+    const b0 = UI.Sel.bounds(moving), px = e.clientX, py = e.clientY;
+    const targets = snapTargets(new Set(moving.map(m => m.id)));
     let moved = false;
-    const targets = snapTargets(el.id);
     const move = ev => {
-      const kk = k(), dx = (ev.clientX - start.px) / kk, dy = (ev.clientY - start.py) / kk;
-      if (!moved && Math.hypot(ev.clientX - start.px, ev.clientY - start.py) < 3) return;
+      const kk = k(), dx = (ev.clientX - px) / kk, dy = (ev.clientY - py) / kk;
+      if (!moved && Math.hypot(ev.clientX - px, ev.clientY - py) < 3) return;
       if (!moved) { S.history.record(S.doc); moved = true; }
       const th = 6 / kk, free = ev.altKey;
       let gx = null, gy = null;
       if (!handle) {
-        let x = start.x + dx, y = start.y + dy;
-        if (ev.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) y = start.y; else x = start.x; }
+        let ddx = dx, ddy = dy;
+        if (ev.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) ddy = 0; else ddx = 0; }
         if (!free) {
-          const sx = bestSnap([x, x + el.w / 2, x + el.w], targets.xs, th); if (sx) { x += sx.d; gx = sx.t; }
-          const sy = bestSnap([y, y + el.h / 2, y + el.h], targets.ys, th); if (sy) { y += sy.d; gy = sy.t; }
+          const x = b0.x + ddx, y = b0.y + ddy;
+          const sx = bestSnap([x, x + b0.w / 2, x + b0.w], targets.xs, th); if (sx) { ddx += sx.d; gx = sx.t; }
+          const sy = bestSnap([y, y + b0.h / 2, y + b0.h], targets.ys, th); if (sy) { ddy += sy.d; gy = sy.t; }
         }
-        el.x = +x.toFixed(2); el.y = +y.toFixed(2);
+        for (const m of moving) { const s0 = start.get(m.id); m.x = +(s0.x + ddx).toFixed(2); m.y = +(s0.y + ddy).toFixed(2); }
       } else {
-        let {x, y, w, h} = start;
-        const minW = 2, minH = el.type === 'line' ? 0 : 2;
-        if (handle.includes('e')) w = Math.max(minW, start.w + dx);
-        if (handle.includes('s')) h = Math.max(minH, start.h + dy);
-        if (handle.includes('w')) { w = Math.max(minW, start.w - dx); x = start.x + start.w - w; }
-        if (handle.includes('n')) { h = Math.max(minH, start.h - dy); y = start.y + start.h - h; }
+        const m = moving[0], s0 = start.get(m.id);
+        let {x, y, w, h} = s0;
+        const minW = 2, minH = m.type === 'line' ? 0 : 2;
+        if (handle.includes('e')) w = Math.max(minW, s0.w + dx);
+        if (handle.includes('s')) h = Math.max(minH, s0.h + dy);
+        if (handle.includes('w')) { w = Math.max(minW, s0.w - dx); x = s0.x + s0.w - w; }
+        if (handle.includes('n')) { h = Math.max(minH, s0.h - dy); y = s0.y + s0.h - h; }
+        if (ev.shiftKey && handle.length === 2 && s0.w && s0.h) { const r = Math.max(w / s0.w, h / s0.h); w = s0.w * r; h = s0.h * r; if (handle.includes('w')) x = s0.x + s0.w - w; if (handle.includes('n')) y = s0.y + s0.h - h; }
         if (!free) {
           if (handle.includes('e')) { const s = bestSnap([x + w], targets.xs, th); if (s) { w += s.d; gx = s.t; } }
           if (handle.includes('w')) { const s = bestSnap([x], targets.xs, th); if (s) { x += s.d; w -= s.d; gx = s.t; } }
           if (handle.includes('s')) { const s = bestSnap([y + h], targets.ys, th); if (s) { h += s.d; gy = s.t; } }
           if (handle.includes('n')) { const s = bestSnap([y], targets.ys, th); if (s) { y += s.d; h -= s.d; gy = s.t; } }
         }
-        Object.assign(el, {x: +x.toFixed(2), y: +y.toFixed(2), w: +w.toFixed(2), h: +h.toFixed(2)});
+        Object.assign(m, {x: +x.toFixed(2), y: +y.toFixed(2), w: +w.toFixed(2), h: +h.toFixed(2)});
       }
-      showGuides(gx, gy);
+      guides(gx, gy);
       render();
       UI.Inspector.updateGeometry();
     };
     const up = () => {
       global.removeEventListener('pointermove', move);
       global.removeEventListener('pointerup', up);
-      guidesEl = [];
+      extras = [];
       if (moved) UI.changed({skip: ['data']}); else render();
     };
     global.addEventListener('pointermove', move);
     global.addEventListener('pointerup', up);
   }
 
-  /* ---------- клавиатура ---------- */
-  function onKey(e) {
-    if ($('editor').hidden || document.querySelector('dialog[open]')) return;
-    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-    const mod = e.ctrlKey || e.metaKey, key = e.key.toLowerCase();
-    if (mod && (key === 'z' || key === 'я') && !typing) { e.preventDefault(); e.shiftKey ? UI.redo() : UI.undo(); return; }
-    if (mod && (key === 'y' || key === 'н') && !typing) { e.preventDefault(); UI.redo(); return; }
-    if (mod && (key === 's' || key === 'ы')) { e.preventDefault(); UI.flush(); UI.toast('Проект сохранён в браузере. Файл проекта — в меню «Проект».'); return; }
-    if (mod && key === '0') { e.preventDefault(); fit(); return; }
-    if (typing) return;
-    if (e.key === 'PageDown') { e.preventDefault(); UI.setRow(S.row + 1); return; }
-    if (e.key === 'PageUp') { e.preventDefault(); UI.setRow(S.row - 1); return; }
-    const el = UI.element();
-    if (!el) return;
-    if (e.key === 'Escape') { UI.select(null); return; }
-    if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); UI.Layers.remove(el.id); return; }
-    if (mod && (key === 'd' || key === 'в')) { e.preventDefault(); UI.Layers.duplicate(el.id); return; }
-    const step = e.shiftKey ? 5 : 0.5, arrows = {ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step]};
-    if (arrows[e.key] && !el.locked) {
-      e.preventDefault();
-      UI.edit(() => { el.x = +(el.x + arrows[e.key][0]).toFixed(2); el.y = +(el.y + arrows[e.key][1]).toFixed(2); }, 'nudge:' + el.id, {skip: ['data']});
-    }
+  /* Выделение рамкой по пустому месту. */
+  function startMarquee(e, additive) {
+    const p0 = toMm(e), before = additive ? S.selection.slice() : [];
+    const rect = document.createElement('div');
+    rect.className = 'marquee';
+    let active = false;
+    const move = ev => {
+      const p = toMm(ev);
+      if (!active && Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) < 4) return;
+      active = true;
+      const r = {x: Math.min(p0.x, p.x), y: Math.min(p0.y, p.y), w: Math.abs(p.x - p0.x), h: Math.abs(p.y - p0.y)};
+      place(rect, r, k());
+      const hit = UI.side().elements.filter(el => el.visible && el.x < r.x + r.w && el.x + el.w > r.x && el.y < r.y + r.h && el.y + Math.max(el.h, 0.01) > r.y).map(el => el.id);
+      S.selection = [...new Set([...before, ...UI.Sel.expand(hit)])];
+      extras = [rect];
+      renderBoxes();
+    };
+    const up = () => {
+      global.removeEventListener('pointermove', move);
+      global.removeEventListener('pointerup', up);
+      extras = [];
+      if (!active) { if (!additive && S.selection.length) UI.select([]); return; }
+      UI.refresh({skip: ['data']});
+    };
+    global.addEventListener('pointermove', move);
+    global.addEventListener('pointerup', up);
+  }
+
+  /* Сдвиг холста: пробел + мышь или средняя кнопка. */
+  function startPan(e) {
+    e.preventDefault();
+    const vp = $('viewport'), sx = vp.scrollLeft, sy = vp.scrollTop, px = e.clientX, py = e.clientY;
+    vp.classList.add('panning');
+    const move = ev => { vp.scrollLeft = sx - (ev.clientX - px); vp.scrollTop = sy - (ev.clientY - py); };
+    const up = () => { vp.classList.remove('panning'); global.removeEventListener('pointermove', move); global.removeEventListener('pointerup', up); };
+    global.addEventListener('pointermove', move);
+    global.addEventListener('pointerup', up);
+  }
+
+  function onDblClick(e) {
+    const b = e.target.closest('.box'); if (!b) return;
+    const el = UI.element(b.dataset.id); if (!el) return;
+    // Двойной клик по группе — выделить элемент внутри; по тексту — к редактированию.
+    if (el.group && S.selection.length > 1) { UI.select([el.id]); return; }
+    if (el.type === 'text') UI.Inspector.focusText();
   }
 
   /* ---------- файлы, брошенные на рабочую область ---------- */
@@ -208,23 +280,31 @@
   }
 
   function init() {
-    $('overlay').addEventListener('pointerdown', onPointerDown);
-    $('viewport').addEventListener('pointerdown', e => { if (e.target === $('viewport') && S.sel) UI.select(null); });
-    $('overlay').addEventListener('dblclick', e => { const b = e.target.closest('.box'); if (b) UI.Inspector.focusText(); });
-    document.addEventListener('keydown', onKey);
+    const vp = $('viewport');
+    vp.addEventListener('pointerdown', onPointerDown);
+    vp.addEventListener('dblclick', onDblClick);
+    vp.addEventListener('pointermove', e => { if (!S.doc) return; const p = toMm(e); cursor = p.x >= 0 && p.y >= 0 && p.x <= S.doc.page.width && p.y <= S.doc.page.height ? p : null; $('statusCursor').textContent = cursor ? 'курсор ' + cursor.x.toFixed(1) + ', ' + cursor.y.toFixed(1) + ' мм' : ''; });
+    vp.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const b = e.target.closest('.box');
+      if (b) { const el = UI.element(b.dataset.id); if (el && !S.selection.includes(el.id)) UI.select(el.group ? UI.Sel.expand([el.id]) : [el.id]); }
+      UI.Menu.open(e.clientX, e.clientY, b ? 'element' : 'empty');
+    });
     $('zoomIn').onclick = () => setZoom((S.zoom || 1) * 1.25);
     $('zoomOut').onclick = () => setZoom((S.zoom || 1) / 1.25);
     $('zoomFit').onclick = fit;
     $('prevRow').onclick = () => UI.setRow(S.row - 1);
     $('nextRow').onclick = () => UI.setRow(S.row + 1);
-    $('viewport').addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom((S.zoom || 1) * (e.deltaY < 0 ? 1.1 : 1 / 1.1)); } }, {passive: false});
-    const vp = $('viewport');
+    vp.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom((S.zoom || 1) * (e.deltaY < 0 ? 1.1 : 1 / 1.1), {x: e.clientX, y: e.clientY}); } }, {passive: false});
     vp.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); $('dropHint').hidden = false; } });
     vp.addEventListener('dragleave', e => { if (!vp.contains(e.relatedTarget)) $('dropHint').hidden = true; });
     vp.addEventListener('drop', UI.safe(onDrop));
+    // Пробел для сдвига холста (если фокус не в поле ввода).
+    document.addEventListener('keydown', e => { if (e.code === 'Space' && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target.tagName) && !$('editor').hidden) { if (!spaceDown) vp.classList.add('pan-ready'); spaceDown = true; e.preventDefault(); } });
+    document.addEventListener('keyup', e => { if (e.code === 'Space') { spaceDown = false; vp.classList.remove('pan-ready'); } });
     let resizeTimer;
     global.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.doc) render(); }, 150); });
   }
 
-  UI.Stage = {init, render, fit, setZoom};
+  UI.Stage = {init, render, fit, setZoom, zoom: () => S.zoom || 1};
 })(typeof window !== 'undefined' ? window : globalThis);
