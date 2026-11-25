@@ -5,7 +5,7 @@
   const XS = global.XS;
   const $ = id => document.getElementById(id);
 
-  const S = {doc: null, side: 0, row: 0, sel: null, selectedRows: new Set(), zoom: 0, history: XS.History.create(), warnings: [], saving: Promise.resolve()};
+  const S = {doc: null, side: 0, row: 0, selection: [], selectedRows: new Set(), zoom: 0, history: XS.History.create(), warnings: [], saving: Promise.resolve()};
   const UI = XS.UI = {S, $};
 
   /* ---------- сообщения ---------- */
@@ -25,7 +25,9 @@
   /* ---------- доступ к текущему ---------- */
   UI.side = () => S.doc.sides[S.side] || S.doc.sides[0];
   UI.row = () => S.doc.data.rows[S.row] || null;
-  UI.element = (id = S.sel) => UI.side().elements.find(e => e.id === id) || null;
+  /* Один выделенный элемент (или по id). При нескольких выделенных — null: см. UI.selected(). */
+  UI.element = id => (id === undefined ? (S.selection.length === 1 ? UI.side().elements.find(e => e.id === S.selection[0]) || null : null) : UI.side().elements.find(e => e.id === id) || null);
+  UI.selected = () => { const set = new Set(S.selection); return UI.side().elements.filter(e => set.has(e.id)); };
   UI.fieldNames = () => {
     const cols = S.doc.data.columns.map(c => c.name);
     const extra = ['№', 'Обращение', 'Проект', 'Дата'].filter(n => !cols.some(c => XS.key(c) === XS.key(n)));
@@ -49,7 +51,7 @@
     if (!S.doc) return;
     S.side = Math.min(S.side, S.doc.sides.length - 1);
     S.row = Math.max(0, Math.min(S.row, S.doc.data.rows.length - 1));
-    if (S.sel && !UI.element()) S.sel = null;
+    if (S.selection.length) { const have = new Set(UI.side().elements.map(e => e.id)); S.selection = S.selection.filter(id => have.has(id)); }
     $('undoBtn').disabled = !S.history.canUndo; $('redoBtn').disabled = !S.history.canRedo;
     if (document.activeElement !== $('docTitle')) $('docTitle').value = S.doc.title;
     $('docKind').value = S.doc.kind;
@@ -58,9 +60,16 @@
     if (!skip.has('data')) UI.Data.render(opts);
     if (!skip.has('inspector')) UI.Inspector.render();
   };
-  UI.select = id => { S.sel = id; UI.refresh({skip: ['data']}); };
+  /* mode: 'set' — заменить, 'toggle' — Shift/Ctrl-клик, 'add' — добавить. */
+  UI.select = (list, mode = 'set') => {
+    const arr = list == null ? [] : Array.isArray(list) ? list : [list];
+    if (mode === 'set') S.selection = [...new Set(arr)];
+    else if (mode === 'add') S.selection = [...new Set([...S.selection, ...arr])];
+    else if (mode === 'toggle') { const all = arr.every(id => S.selection.includes(id)); S.selection = all ? S.selection.filter(id => !arr.includes(id)) : [...new Set([...S.selection, ...arr])]; }
+    UI.refresh({skip: ['data']});
+  };
   UI.setRow = i => { S.row = Math.max(0, Math.min(i, S.doc.data.rows.length - 1)); UI.refresh({skip: ['inspector']}); UI.Inspector.render(); };
-  UI.setSide = i => { S.side = i; S.sel = null; UI.refresh({skip: ['data']}); };
+  UI.setSide = i => { S.side = i; S.selection = []; UI.refresh({skip: ['data']}); };
 
   UI.undo = () => { const d = S.history.undo(S.doc); if (d) { S.doc = XS.Model.normalizeDoc(d); UI.changed(); } };
   UI.redo = () => { const d = S.history.redo(S.doc); if (d) { S.doc = XS.Model.normalizeDoc(d); UI.changed(); } };
@@ -93,7 +102,7 @@
   UI.open = async doc => {
     XS.Model.pruneAssets(doc); // неиспользуемые файлы чистим только здесь: история отмен начинается заново
     await XS.Fonts.ensureForDoc(doc).catch(e => UI.toast(e.message, true));
-    Object.assign(S, {doc, side: 0, row: Math.min(doc.data.current || 0, Math.max(0, doc.data.rows.length - 1)), sel: null, selectedRows: new Set(), zoom: 0});
+    Object.assign(S, {doc, side: 0, row: Math.min(doc.data.current || 0, Math.max(0, doc.data.rows.length - 1)), selection: [], selectedRows: new Set(), zoom: 0});
     S.history.clear();
     $('home').hidden = true; $('editor').hidden = false;
     if (location.hash !== '#/doc/' + doc.id) history.replaceState(null, '', '#/doc/' + doc.id);

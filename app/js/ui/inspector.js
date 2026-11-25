@@ -61,8 +61,17 @@
   function renderElement(el) {
     const key = p => el.id + ':' + p;
     const title = h('div', 'insp-title');
-    title.append(textInput(el.name, v => { el.name = v; }, key('name')));
+    title.insertAdjacentHTML('beforeend', XS.Icons.icon({text: 'text', image: 'image', rect: el.shape === 'ellipse' ? 'ellipse' : 'rect', line: 'line', path: 'path'}[el.type], 18));
+    const nameInput = textInput(el.name, v => { el.name = v; }, key('name'));
+    nameInput.id = 'inspName'; nameInput.title = 'Название слоя (F2)';
+    title.append(nameInput);
     box.append(title);
+    const grp = UI.Sel.groupOf(el);
+    if (grp) {
+      const note = h('div', 'group-note', XS.Icons.icon('group', 14) + ' В группе «' + XS.esc(grp.name) + '»');
+      note.append(button('Выделить группу', () => UI.select(UI.Sel.members(grp.id).map(m => m.id)), 'btn small ghost'));
+      box.append(note);
+    }
 
     if (el.type === 'text') {
       section('Текст');
@@ -156,18 +165,14 @@
       i.dataset.geo = p; l.append(i); g.append(l);
     }
     box.append(g);
-    const align = h('div', 'insp-actions');
-    align.append(button('⇔ По центру', () => UI.edit(() => { el.x = +((S.doc.page.width - el.w) / 2).toFixed(2); })), button('⇕ По центру', () => UI.edit(() => { el.y = +((S.doc.page.height - el.h) / 2).toFixed(2); })));
-    box.append(align);
+    box.append(alignBar('Выровнять по странице'));
 
     section('Печать');
     row('Слой', select([['auto', 'авто (' + (XS.Scene.elementLayer({...el, layer: 'auto'}) === 'text' ? 'текст' : 'цвет') + ')'], ['color', 'цвет / фон (струйный)'], ['text', 'текст / линии (лазер)']], el.layer, v => { el.layer = v; }, key('layer'))).title = 'Для печати в два прохода: фон на струйном, текст на лазерном.';
     row('Непрозрачность', numInput(Math.round(el.opacity * 100), v => { el.opacity = v / 100; }, key('op'), {step: 5, min: 0, max: 100}), h('span', 'muted small', '%'));
     row('', check('видим', el.visible, v => { el.visible = v; }, key('vis')), check('закреплён', el.locked, v => { el.locked = v; }, key('lock')));
 
-    const acts = h('div', 'insp-actions');
-    acts.append(button('⧉ Копия', () => UI.Layers.duplicate(el.id)), button('↑ Выше', () => UI.Layers.move(el.id, 1)), button('↓ Ниже', () => UI.Layers.move(el.id, -1)), button('Удалить', () => UI.Layers.remove(el.id), 'btn small danger'));
-    box.append(acts);
+    box.append(actionBar());
   }
 
   /* ---------- макет и сторона ---------- */
@@ -204,7 +209,7 @@
       row('Непрозрачность', numInput(Math.round((bg.opacity ?? 1) * 100), v => { bg.opacity = v / 100; }, 'bg:op', {step: 5, min: 0, max: 100}), h('span', 'muted small', '%'));
     }
     box.append(h('p', 'note', 'PDF-шаблон остаётся векторным в выгрузке: текст и графика макета не превращаются в картинку. Файл можно просто перетащить на макет.'));
-    if (doc.sides.length > 1) box.append(button('Удалить сторону «' + side.name + '»', () => { if (confirm('Удалить сторону «' + side.name + '» со всеми элементами?')) UI.edit(d => { d.sides.splice(S.side, 1); S.side = 0; S.sel = null; }); }, 'btn small danger'));
+    if (doc.sides.length > 1) box.append(button('Удалить сторону «' + side.name + '»', () => { if (confirm('Удалить сторону «' + side.name + '» со всеми элементами?')) UI.edit(d => { d.sides.splice(S.side, 1); S.side = 0; S.selection = []; }); }, 'btn small danger'));
 
     section('Шрифты');
     const user = doc.fonts.map(f => f.family + ' (' + ({regular: 'обычный', bold: 'жирный', italic: 'курсив', bolditalic: 'жирный курсив'}[f.variant]) + ')');
@@ -215,13 +220,68 @@
     box.append(h('p', 'note', 'Выделите элемент мышью, чтобы изменить его. Стрелки — сдвиг на 0,5 мм (с Shift — 5 мм), Alt при перетаскивании — без привязки, Ctrl+D — копия, Delete — удалить, PageUp/PageDown — соседняя запись, Ctrl+колёсико — масштаб.'));
   }
 
+  /* ---------- общие панели ---------- */
+  function alignBar(title) {
+    const wrap = h('div', 'align-bar');
+    wrap.title = title;
+    const mk = (icon, label, run) => { const b = h('button', 'icon-btn', XS.Icons.icon(icon, 17)); b.type = 'button'; b.title = label; b.onclick = UI.safe(run); return b; };
+    wrap.append(
+      mk('alignLeft', 'По левому краю', () => UI.Sel.align('left')), mk('alignCenterH', 'По центру', () => UI.Sel.align('centerH')), mk('alignRight', 'По правому краю', () => UI.Sel.align('right')),
+      h('span', 'sep'),
+      mk('alignTop', 'По верху', () => UI.Sel.align('top')), mk('alignCenterV', 'По середине', () => UI.Sel.align('centerV')), mk('alignBottom', 'По низу', () => UI.Sel.align('bottom')));
+    if (S.selection.length > 2 || UI.Sel.selectedUnits().length > 2) wrap.append(h('span', 'sep'), mk('distH', 'Распределить по горизонтали', () => UI.Sel.distribute('h')), mk('distV', 'Распределить по вертикали', () => UI.Sel.distribute('v')));
+    const outer = h('div', 'f wide');
+    outer.append(h('span', '', XS.esc(title)), wrap);
+    return outer;
+  }
+  function actionBar() {
+    const acts = h('div', 'insp-actions');
+    const n = S.selection.length, grouped = UI.selected().some(e => e.group);
+    const b = (icon, label, run, cls = 'btn small', title = '') => { const x = button('', run, cls); x.innerHTML = XS.Icons.icon(icon, 15) + XS.esc(label); if (title) x.title = title; return x; };
+    acts.append(b('copy', 'Копия', () => UI.Sel.duplicate(), 'btn small', 'Ctrl+D'));
+    if (n > 1) acts.append(b('group', 'Сгруппировать', () => UI.Sel.group(), 'btn small', 'Ctrl+G'));
+    if (grouped) acts.append(b('ungroup', 'Разгруппировать', () => UI.Sel.ungroup(), 'btn small', 'Ctrl+Shift+G'));
+    acts.append(b('up', 'Выше', () => UI.Sel.order('up'), 'btn small', 'Ctrl+]'), b('down', 'Ниже', () => UI.Sel.order('down'), 'btn small', 'Ctrl+['), b('trash', 'Удалить', () => UI.Sel.remove(), 'btn small danger', 'Delete'));
+    return acts;
+  }
+
+  /* ---------- несколько элементов ---------- */
+  function renderMulti(els) {
+    const units = UI.Sel.selectedUnits();
+    const head = h('div', 'insp-title');
+    head.innerHTML = XS.Icons.icon('layers', 18) + '<b>Выделено: ' + els.length + '</b>' + (units.length !== els.length ? '<span class="muted small">(' + units.length + ' объекта)</span>' : '');
+    box.append(head);
+    section('Выравнивание');
+    box.append(alignBar(units.length === 1 ? 'По странице' : 'Друг относительно друга'));
+    const same = (prop) => els.every(e => e[prop] === els[0][prop]) ? els[0][prop] : '';
+    const texts = els.filter(e => e.type === 'text');
+    if (texts.length === els.length) {
+      section('Текст — для всех');
+      const set = (prop, v) => UI.edit(() => { for (const e of texts) e[prop] = v; }, 'multi:' + prop, {skip: ['inspector']});
+      row('Гарнитура', select([['', '— разные —'], ...fontOptions()], same('font'), v => { if (v) for (const e of texts) e.font = v; }, 'multi:font'));
+      const size = numInput(same('size') || texts[0].size, v => { for (const e of texts) { e.size = v; e.minSize = Math.min(e.minSize, v); } }, 'multi:size', {step: 0.5, min: 2, max: 400});
+      const common = {bold: texts.every(e => e.bold), italic: texts.every(e => e.italic), uppercase: texts.every(e => e.uppercase)};
+      row('Размер, pt', size, seg([['bold', 'Ж', 'Полужирный'], ['italic', 'К', 'Курсив'], ['uppercase', 'АА', 'Все прописные']], common, (p, on) => { for (const e of texts) e[p] = on; }, 'multi:style', {multi: true}));
+      row('Цвет', colorInput(same('color') || texts[0].color, v => { for (const e of texts) e.color = v; }, 'multi:color'));
+      row('По горизонт.', seg([['left', '⟸', 'Влево'], ['center', '⟺', 'По центру'], ['right', '⟹', 'Вправо']], same('align'), v => { for (const e of texts) e.align = v; }, 'multi:align'));
+      void set;
+    }
+    section('Печать');
+    row('Слой', select([['', '— разные —'], ['auto', 'авто'], ['color', 'цвет / фон (струйный)'], ['text', 'текст / линии (лазер)']], same('layer'), v => { if (v) for (const e of els) e.layer = v; }, 'multi:layer'));
+    row('Непрозрачность', numInput(Math.round((same('opacity') === '' ? 1 : same('opacity')) * 100), v => { for (const e of els) e.opacity = v / 100; }, 'multi:op', {step: 5, min: 0, max: 100}), h('span', 'muted small', '%'));
+    row('', check('видимы', els.every(e => e.visible), v => { for (const e of els) e.visible = v; }, 'multi:vis'), check('закреплены', els.every(e => e.locked), v => { for (const e of els) e.locked = v; }, 'multi:lock'));
+    box.append(actionBar());
+    box.append(h('p', 'note', 'Двигайте выделенное вместе мышью или стрелками. Ctrl+G — сгруппировать, чтобы дальше выделять одним кликом.'));
+  }
+
   function render() {
     box = $('inspector');
-    if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON' && S.lastInspected === (S.sel || 'doc')) return;
-    S.lastInspected = S.sel || 'doc';
+    const key = S.selection.join(',') || 'doc';
+    if (box.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON' && S.lastInspected === key) return;
+    S.lastInspected = key;
     box.replaceChildren();
-    const el = UI.element();
-    if (el) renderElement(el); else renderDocument();
+    const els = UI.selected();
+    if (els.length > 1) renderMulti(els); else if (els.length === 1) renderElement(els[0]); else renderDocument();
   }
   function updateGeometry() {
     const el = UI.element(); if (!el) return;

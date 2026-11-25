@@ -44,7 +44,7 @@
         <div class="info"><b data-open title="${XS.esc(p.title)}">${XS.esc(p.title)}</b>
         <span class="muted small">${XS.esc(XS.Model.KINDS[p.kind]?.label || '')} · записей: ${p.rows} · ${Math.round(p.page?.width || 0)}×${Math.round(p.page?.height || 0)} мм</span>
         <span class="muted small">изменён ${isNaN(date) ? '' : date.toLocaleString('ru-RU', {dateStyle: 'short', timeStyle: 'short'})}</span></div>
-        <div class="acts"><button class="btn small" data-act="open">Открыть</button><button class="btn small" data-act="copy" title="Копия">⧉</button><button class="btn small" data-act="file" title="Скачать файл проекта">⭳</button><span class="spacer"></span><button class="btn small danger" data-act="del" title="Удалить">✕</button></div>`;
+        <div class="acts"><button class="btn small" data-act="open">Открыть</button><button class="btn small" data-act="copy" title="Копия">${XS.Icons.icon('copy', 15)}</button><button class="btn small" data-act="file" title="Скачать файл проекта">${XS.Icons.icon('download', 15)}</button><span class="spacer"></span><button class="btn small danger" data-act="del" title="Удалить">${XS.Icons.icon('trash', 15)}</button></div>`;
       card.addEventListener('click', UI.safe(async e => {
         const act = e.target.closest('[data-act]')?.dataset.act || (e.target.closest('[data-open]') ? 'open' : '');
         if (!act) return;

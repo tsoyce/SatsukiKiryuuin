@@ -38,7 +38,7 @@
   async function runCheck() {
     const problems = await UI.busy('Проверяем все записи…', () => XS.Export.check(S.doc));
     const body = $('checkBody');
-    if (!problems.length) body.innerHTML = '<p>✓ Всё в порядке: тексты помещаются, поля найдены, символы есть в шрифтах.</p>';
+    if (!problems.length) body.innerHTML = '<p class="ok-line">' + XS.Icons.icon('check', 18) + ' Всё в порядке: тексты помещаются, поля найдены, символы есть в шрифтах.</p>';
     else {
       body.innerHTML = `<p>Найдено замечаний: ${problems.length}. Нажмите, чтобы открыть запись.</p><ol class="check-list">${problems.slice(0, 300).map(p => `<li><a data-r="${p.record - 1}">Запись ${p.record}</a>${S.doc.sides.length > 1 ? ' · ' + XS.esc(p.side) : ''} · ${XS.esc(p.name)}: ${XS.esc(p.msg)}</li>`).join('')}</ol>`;
       body.querySelectorAll('a[data-r]').forEach(a => { a.onclick = () => { $('checkDialog').close(); UI.setRow(+a.dataset.r); }; });
@@ -55,8 +55,9 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     if (!global.PDFLib || !global.fontkit) { document.body.innerHTML = '<p style="padding:24px;font:16px sans-serif">Не загрузились библиотеки из папки vendor/. Проверьте, что скопирована вся папка приложения.</p>'; return; }
+    XS.Icons.hydrate();
     initTopbar();
-    UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init();
+    UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init();
     global.addEventListener('hashchange', UI.safe(route));
     UI.safe(route)();
   });
