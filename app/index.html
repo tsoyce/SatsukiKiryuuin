@@ -29,6 +29,7 @@
   <script defer src="js/core/impose.js?v=3"></script>
   <script defer src="js/core/check.js?v=3"></script>
   <script defer src="js/core/export.js?v=3"></script>
+  <script defer src="js/core/api.js?v=3"></script>
   <script defer src="js/core/store.js?v=3"></script>
   <script defer src="js/core/history.js?v=3"></script>
   <script defer src="js/core/presets.js?v=3"></script>
@@ -46,6 +47,7 @@
   <script defer src="js/ui/inspector.js?v=3"></script>
   <script defer src="js/ui/export-dialog.js?v=3"></script>
   <script defer src="js/ui/home.js?v=3"></script>
+  <script defer src="js/ui/account.js?v=3"></script>
   <script defer src="js/ui/boot.js?v=3"></script>
 </head>
 <body>
@@ -54,11 +56,13 @@
     <header class="home-top">
       <div class="brand"><span data-logo="36"></span><span class="brand-name">XSatsu <b>Студия</b></span></div>
       <nav class="home-nav">
+        <button class="btn account-btn" type="button" data-account hidden></button>
         <button id="themeBtn" class="btn icon" type="button" title="Тёмная тема"></button>
         <button class="btn icon" type="button" data-open-settings title="Настройки"><i data-icon="settings" data-size="17"></i></button>
         <label class="btn"><input id="openProjectFile" type="file" accept=".json,application/json" hidden><i data-icon="folderOpen"></i>Открыть файл проекта</label>
       </nav>
     </header>
+    <p id="siteNotice" class="site-notice" hidden></p>
     <div class="hero">
       <h1>Один макет — сколько угодно экземпляров</h1>
       <p>Пригласительные, дипломы, закладки и открытки в одном редакторе. Возьмите шаблон или свой PDF, вставьте список из Excel и получите по файлу на каждого — или готовые листы для печати.</p>
@@ -66,10 +70,12 @@
     </div>
     <h2 class="home-h">Создать</h2>
     <div id="presetGrid" class="preset-grid"></div>
-    <div class="home-h-row"><h2 class="home-h">Мои проекты <span id="projectCount" class="muted"></span></h2>
+    <div class="home-h-row"><h2 class="home-h">Проекты <span id="projectCount" class="muted"></span></h2>
+      <div id="projectScopes" class="scopes" hidden></div>
+      <button id="migrateAll" class="btn small" type="button" hidden><i data-icon="cloud" data-size="15"></i>Перенести все в аккаунт</button>
       <label class="search-wrap"><i data-icon="search"></i><input id="projectSearch" class="search" type="search" placeholder="Поиск по названию"></label></div>
     <div id="projectGrid" class="project-grid"></div>
-    <p class="muted small">Проекты хранятся в этом браузере. Для переноса на другой компьютер и резервной копии — «Проект → Сохранить файл проекта». Подходят и JSON-проекты старой версии.</p>
+    <p id="storageHint" class="muted small"></p>
   </section>
 
   <!-- РЕДАКТОР -->
@@ -88,6 +94,7 @@
       <span id="saveState" class="save-state">Сохранено</span>
       <button id="keysBtn" class="btn icon" title="Горячие клавиши (? или F1)"><i data-icon="keyboard" data-size="17"></i></button>
       <button class="btn icon" type="button" data-open-settings title="Настройки"><i data-icon="settings" data-size="17"></i></button>
+      <button class="btn account-btn compact" type="button" data-account hidden></button>
       <div class="menu-wrap">
         <button id="projectMenuBtn" class="btn">Проект<i data-icon="chevronDown" data-size="14"></i></button>
         <div id="projectMenu" class="menu" hidden>
@@ -95,6 +102,9 @@
           <button data-act="duplicate"><i data-icon="copy"></i>Сделать копию</button>
           <button data-act="exportCsv"><i data-icon="table"></i>Скачать таблицу (CSV)</button>
           <hr>
+          <button data-act="versions" data-server-only hidden><i data-icon="history"></i>Версии…</button>
+          <button data-act="share" data-server-only hidden><i data-icon="share"></i>Доступ и ссылка…</button>
+          <hr data-server-only hidden>
           <button data-act="check"><i data-icon="check"></i>Проверить все записи</button>
         </div>
       </div>
@@ -225,6 +235,7 @@
     <div id="checkBody" class="dialog-body"></div>
   </dialog>
 
+  <div id="accountMenu" class="menu account-menu" hidden></div>
   <div id="busy" class="busy" hidden><div class="busy-box"><div class="spinner"></div><div id="busyText">Подождите…</div></div></div>
   <div id="toast" class="toast" hidden></div>
 </body>

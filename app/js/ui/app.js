@@ -36,12 +36,16 @@
 
   /* ---------- правки ---------- */
   UI.edit = (fn, mergeKey = '', opts = {}) => {
+    if (S.readOnly) { readOnlyNotice(); return; }
     S.history.record(S.doc, mergeKey);
     fn(S.doc);
     UI.changed(opts);
   };
+  let roShown = 0;
+  function readOnlyNotice() { if (Date.now() - roShown > 4000) { roShown = Date.now(); UI.toast('Только просмотр. Чтобы менять, сделайте копию: «Проект → Сделать копию».', true); } }
   UI.changed = (opts = {}) => {
     S.doc.updatedAt = new Date().toISOString();
+    if (S.readOnly) { readOnlyNotice(); UI.refresh(opts); return; }
     setSaveState('Изменения…');
     scheduleSave();
     UI.refresh(opts);
@@ -75,7 +79,15 @@
   UI.redo = () => { const d = S.history.redo(S.doc); if (d) { S.doc = XS.Model.normalizeDoc(d); UI.changed(); } };
 
   /* ---------- сохранение ---------- */
-  function setSaveState(text, error = false) { const el = $('saveState'); el.textContent = text; el.classList.toggle('error', error); }
+  function setSaveState(text, error = false) {
+    const el = $('saveState');
+    const remote = S.doc && XS.Store.where(S.doc.id) === 'remote';
+    el.innerHTML = (S.readOnly ? XS.Icons.icon('eye', 14) : XS.Icons.icon(remote ? (error ? 'cloudOff' : 'cloud') : 'file', 14)) + '<span>' + XS.esc(S.readOnly ? 'Только просмотр' : text) + '</span>';
+    el.title = S.readOnly ? 'Изменения не сохраняются' : remote ? 'Проект хранится на сервере, в вашем аккаунте' : 'Проект хранится только в этом браузере';
+    el.dataset.state = text;
+    el.classList.toggle('error', error);
+  }
+  UI.setSaveState = setSaveState;
   async function thumbnail(doc) {
     try {
       await XS.Fonts.ensureForDoc(doc);
@@ -92,29 +104,40 @@
     const withThumb = Date.now() - thumbAt > 4000;
     const thumb = withThumb ? await thumbnail(doc) : '';
     if (withThumb) thumbAt = Date.now();
-    try { await XS.Store.save(doc, thumb); if (doc === S.doc) setSaveState('Сохранено'); }
-    catch (e) { setSaveState('Не сохранено', true); UI.toast('Не удалось сохранить в браузере: ' + e.message + ' Скачайте файл проекта.', true); }
+    try { await XS.Store.save(doc, thumb); if (doc === S.doc) { setSaveState('Сохранено'); retry.cancel(); } }
+    catch (e) {
+      if (e.status === 409 && UI.Account) { setSaveState('Конфликт', true); UI.Account.conflict(e); return; }
+      if (e.offline || e.status >= 500 || e.status === 0) { setSaveState('Нет связи — повторим', true); retry(); return; }
+      setSaveState('Не сохранено', true);
+      UI.toast('Не удалось сохранить: ' + e.message + ' Скачайте файл проекта.', true);
+    }
   }
-  const scheduleSave = XS.debounce(() => { S.saving = S.saving.then(save, save); }, 700);
+  const scheduleSave = XS.debounce(() => { if (S.readOnly || !S.doc) return; S.saving = S.saving.then(save, save); }, 700);
+  const retry = XS.debounce(() => scheduleSave(), 15000);
+  UI.saveNow = async opts => { scheduleSave.cancel(); await S.saving; await XS.Store.save(S.doc, await thumbnail(S.doc), opts); setSaveState('Сохранено'); };
+  UI.thumbnail = thumbnail;
   UI.flush = async () => { scheduleSave.flush(); await S.saving; };
 
   /* ---------- открыть / закрыть ---------- */
-  UI.open = async doc => {
+  UI.open = async (doc, {readOnly = false, link = ''} = {}) => {
     XS.Model.pruneAssets(doc); // неиспользуемые файлы чистим только здесь: история отмен начинается заново
     await XS.Fonts.ensureForDoc(doc).catch(e => UI.toast(e.message, true));
-    Object.assign(S, {doc, side: 0, row: Math.min(doc.data.current || 0, Math.max(0, doc.data.rows.length - 1)), selection: [], selectedRows: new Set(), zoom: 0});
+    Object.assign(S, {readOnly: readOnly || XS.Store.remote.meta.get(doc.id)?.permission === 'view', link, doc, side: 0, row: Math.min(doc.data.current || 0, Math.max(0, doc.data.rows.length - 1)), selection: [], selectedRows: new Set(), zoom: 0});
     S.history.clear();
     $('home').hidden = true; $('editor').hidden = false;
-    if (location.hash !== '#/doc/' + doc.id) history.replaceState(null, '', '#/doc/' + doc.id);
+    const hash = link ? '#/link/' + link : '#/doc/' + doc.id;
+    if (location.hash !== hash) history.replaceState(null, '', hash);
+    document.body.classList.toggle('read-only', S.readOnly);
     document.title = doc.title + ' — XSatsu Студия';
     setSaveState('Сохранено');
     UI.refresh();
     requestAnimationFrame(() => UI.Stage.fit());
   };
-  UI.create = async doc => { await XS.Store.save(doc, await thumbnail(doc)); await UI.open(doc); };
+  UI.create = async doc => { await XS.Store.create(doc, await thumbnail(doc)); await UI.open(doc); };
   UI.goHome = async () => {
     if (S.doc) { S.doc.data.current = S.row; await UI.flush(); }
-    S.doc = null;
+    S.doc = null; S.readOnly = false; S.link = '';
+    document.body.classList.remove('read-only');
     $('editor').hidden = true; $('home').hidden = false;
     history.replaceState(null, '', '#/');
     document.title = 'XSatsu Студия';
@@ -155,5 +178,5 @@
     UI.Stage.fit();
   };
 
-  global.addEventListener('beforeunload', e => { if ($('saveState').textContent !== 'Сохранено' && S.doc) { scheduleSave.flush(); e.preventDefault(); } });
+  global.addEventListener('beforeunload', e => { if (S.doc && !S.readOnly && $('saveState').dataset.state !== 'Сохранено') { scheduleSave.flush(); e.preventDefault(); } });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -25,6 +25,9 @@
       if (act === 'duplicate') { const copy = XS.clone(S.doc); copy.id = XS.uid('doc'); copy.title += ' (копия)'; await UI.flush(); await UI.create(copy); UI.toast('Открыта копия проекта.'); }
       if (act === 'exportCsv') XS.download(new Blob([XS.Import.toCsv(S.doc)], {type: 'text/csv;charset=utf-8'}), XS.Zip.sanitizeFilename(S.doc.title) + '.csv');
       if (act === 'check') await runCheck();
+      if (act === 'versions') await UI.Account.versions();
+      if (act === 'share') await UI.Account.share();
+      if (act === 'print') await UI.PrintMaster?.open();
     }));
     document.querySelectorAll('.tab').forEach(t => {
       t.onclick = () => {
@@ -53,6 +56,8 @@
   UI.runCheck = runCheck;
 
   async function route() {
+    const link = /^#\/link\/(.+)$/.exec(location.hash);
+    if (link) { if (S.link !== link[1]) await UI.Account.openLink(decodeURIComponent(link[1])); return; }
     const m = /^#\/doc\/(.+)$/.exec(location.hash);
     if (m && (!S.doc || S.doc.id !== m[1])) await UI.Home.openId(decodeURIComponent(m[1]));
     else if (!m && S.doc) await UI.goHome();
@@ -64,7 +69,9 @@
     XS.Icons.hydrate();
     initTopbar();
     UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
+    UI.PrintMaster?.init();
     global.addEventListener('hashchange', UI.safe(route));
-    UI.safe(route)();
+    // Сначала узнаём, есть ли сервер и кто вошёл, затем открываем нужный экран.
+    UI.Account.init().catch(e => console.warn(e)).finally(() => UI.safe(route)());
   });
 })(typeof window !== 'undefined' ? window : globalThis);
