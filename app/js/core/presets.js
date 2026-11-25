@@ -133,6 +133,131 @@
     return doc;
   }
 
+  /* ---------- шаблоны v4 ---------- */
+  const INDIGO = '#4f46e5', INK = '#1b2030', SOFT = '#eef0ff', MUTED = '#5b6474';
+  const R = props => M().element('rect', {stroke: '', strokeWidth: 0, ...props});
+
+  /* Бейдж 70×100: фото из столбца (или буквы имени), фамилия крупно, роль, организация, QR. */
+  async function badge() {
+    const doc = M().blankDoc('badge', 'Бейджи участников', {width: 70, height: 100});
+    const F = {font: 'Montserrat', color: INK};
+    doc.sides[0].elements = [
+      R({name: 'Шапка', x: 0, y: 0, w: 70, h: 26, fill: INDIGO, locked: true}),
+      T({...F, name: 'Мероприятие', text: 'Форум молодых социологов · 2026', x: 5, y: 3, w: 60, h: 9, size: 8.5, bold: true, color: '#ffffff', minSize: 6}),
+      R({name: 'Кольцо фото', shape: 'ellipse', x: 19, y: 13, w: 32, h: 32, fill: '#ffffff'}),
+      M().element('image', {name: 'Фото', src: '{Фото}', fit: 'cover', shape: 'ellipse', x: 20, y: 14, w: 30, h: 30, showIf: {field: 'Фото', op: 'filled', value: ''}}),
+      R({name: 'Без фото', shape: 'ellipse', x: 20, y: 14, w: 30, h: 30, fill: SOFT, showIf: {field: 'Фото', op: 'empty', value: ''}}),
+      T({...F, name: 'Буквы', text: '{ФИО:буквы}', x: 20, y: 14, w: 30, h: 30, size: 26, bold: true, color: INDIGO, showIf: {field: 'Фото', op: 'empty', value: ''}}),
+      T({...F, name: 'Фамилия', text: '{ФИО:фамилия:верх}', x: 4, y: 48, w: 62, h: 10, size: 16, bold: true, minSize: 9, letterSpacing: 0.6}),
+      T({...F, name: 'Имя и отчество', text: '{ФИО:имя отчество}', x: 4, y: 58, w: 62, h: 8, size: 11, minSize: 7}),
+      R({name: 'Плашка роли', x: 10, y: 69, w: 50, h: 9, radius: 4.5, fill: SOFT}),
+      T({...F, name: 'Роль', text: '{Роль|Участник}', x: 10, y: 69, w: 50, h: 9, size: 9.5, bold: true, color: INDIGO, minSize: 6, uppercase: true, letterSpacing: 0.8}),
+      M().element('qr', {name: 'QR-код', data: '{Ссылка}', x: 4, y: 82, w: 14, h: 14, quiet: 0, showIf: {field: 'Ссылка', op: 'filled', value: ''}}),
+      T({...F, name: 'Организация', text: '{Организация}', x: 20, y: 82, w: 46, h: 14, size: 8, color: MUTED, align: 'left', minSize: 6, empty: {mode: 'hide'}})
+    ];
+    doc.data.columns = [{id: 'c-fio', name: 'ФИО'}, {id: 'c-role', name: 'Роль'}, {id: 'c-org', name: 'Организация'}, {id: 'c-link', name: 'Ссылка'}, {id: 'c-photo', name: 'Фото', type: 'image'}];
+    M().addRow(doc, {'ФИО': 'Иванов Иван Иванович', 'Роль': 'Спикер', 'Организация': 'Тюменский государственный университет', 'Ссылка': 'https://o.utmns.ru'});
+    M().addRow(doc, {'ФИО': 'Петрова Анна Сергеевна', 'Роль': '', 'Организация': 'Уральский федеральный университет', 'Ссылка': ''});
+    M().addRow(doc, {'ФИО': 'Сидоров Пётр Алексеевич', 'Роль': 'Организатор', 'Организация': 'Кафедра общей и экономической социологии', 'Ссылка': 'https://o.utmns.ru'});
+    doc.output.packaging = 'sheets'; doc.output.cutMarks = true; doc.output.gap = 2;
+    return doc;
+  }
+
+  /* Сертификат участника, А4 альбомный: номер, слово по полу, повернутая надпись на полосе, QR для проверки. */
+  async function certificate() {
+    const doc = M().blankDoc('certificate', 'Сертификаты участников', {width: 297, height: 210});
+    const F = {font: 'Montserrat', color: INK, x: 40, w: 240};
+    doc.sides[0].elements = [
+      R({name: 'Полоса', x: 0, y: 0, w: 24, h: 210, fill: INDIGO, locked: true}),
+      T({name: 'Надпись на полосе', text: 'СОЦИОЛОГИЯ БУДУЩЕГО · 2026', font: 'Montserrat', bold: true, size: 11, color: '#ffffff', letterSpacing: 3, x: -93, y: 99, w: 210, h: 12, rotate: -90}),
+      M().element('rect', {name: 'Рамка', x: 32, y: 10, w: 255, h: 190, fill: '', stroke: '#c9ccff', strokeWidth: 0.5, locked: true}),
+      T({...F, name: 'Заголовок', text: 'СЕРТИФИКАТ', y: 26, h: 20, size: 40, bold: true, letterSpacing: 5, color: INDIGO}),
+      T({...F, name: 'Номер', text: '№ {№:0000}', y: 47, h: 7, size: 10, color: MUTED, letterSpacing: 1}),
+      T({...F, name: 'Подтверждает', text: 'подтверждает, что', y: 62, h: 9, size: 13, font: 'PT Serif', italic: true, color: MUTED}),
+      T({...F, name: 'Получатель', text: '{ФИО}', y: 73, h: 22, size: 30, bold: true, font: 'PT Serif', minSize: 16, empty: {mode: 'lines', lines: 1, color: '#9aa1ad', width: 0.3}}),
+      T({...F, name: 'Участие', text: '{ФИО:принял/приняла} участие в научно-практической конференции\n«Социология будущего»', y: 100, h: 20, size: 14, lineHeight: 1.35}),
+      T({...F, name: 'Статус', text: '{Статус}', y: 122, h: 9, size: 12, bold: true, color: INDIGO, empty: {mode: 'hide'}}),
+      M().element('line', {name: 'Линия подписи', x: 160, y: 172, w: 70, h: 0, stroke: INK, strokeWidth: 0.3}),
+      T({name: 'Подписант', text: 'Председатель оргкомитета\nИ. О. Фамилия', font: 'Montserrat', size: 9, color: MUTED, x: 160, y: 174, w: 70, h: 12}),
+      T({name: 'Дата', text: 'г. Тюмень, {Дата:длинная}', font: 'Montserrat', size: 9.5, color: MUTED, align: 'left', x: 44, y: 176, w: 100, h: 8}),
+      M().element('qr', {name: 'QR проверки', data: '{Ссылка}', x: 251, y: 160, w: 26, h: 26, quiet: 0, showIf: {field: 'Ссылка', op: 'filled', value: ''}})
+    ];
+    doc.data.columns = [{id: 'c-fio', name: 'ФИО'}, {id: 'c-status', name: 'Статус'}, {id: 'c-link', name: 'Ссылка'}];
+    M().addRow(doc, {'ФИО': 'Иванов Иван Иванович', 'Статус': 'в качестве докладчика', 'Ссылка': 'https://o.utmns.ru/?cert=0001'});
+    M().addRow(doc, {'ФИО': 'Петрова Анна Сергеевна', 'Статус': '', 'Ссылка': 'https://o.utmns.ru/?cert=0002'});
+    M().addRow(doc, {'ФИО': 'Ким Александра Викторовна', 'Статус': 'в качестве слушателя', 'Ссылка': ''});
+    return doc;
+  }
+
+  /* Благодарственное письмо А4: «Уважаемый/ая», имя-отчество, дательный падеж, дата прописью. */
+  async function thanks() {
+    const doc = M().blankDoc('letter', 'Благодарственные письма', {width: 210, height: 297});
+    const F = {font: 'PT Serif', color: INK, x: 25, w: 160};
+    doc.sides[0].elements = [
+      R({name: 'Верхняя полоса', x: 0, y: 0, w: 210, h: 8, fill: INDIGO, locked: true}),
+      R({name: 'Нижняя полоса', x: 0, y: 289, w: 210, h: 8, fill: INDIGO, locked: true}),
+      T({...F, name: 'Организация', text: 'Тюменский государственный университет\nКафедра общей и экономической социологии', y: 22, h: 14, size: 10.5, font: 'Montserrat', color: MUTED, lineHeight: 1.35}),
+      T({...F, name: 'Заголовок', text: 'БЛАГОДАРНОСТЬ', y: 52, h: 20, size: 36, font: 'Montserrat', bold: true, letterSpacing: 3, color: INDIGO}),
+      M().element('line', {name: 'Разделитель', x: 90, y: 78, w: 30, h: 0, stroke: INDIGO, strokeWidth: 0.6}),
+      T({...F, name: 'Обращение', text: 'Уважаем{ФИО:ый/ая} {ФИО:имя отчество}!', y: 92, h: 14, size: 20, bold: true, minSize: 12}),
+      T({...F, name: 'Текст', text: 'Кафедра выражает искреннюю благодарность {ФИО:дат} за {За что|активное участие в жизни кафедры}.\n\nЖелаем дальнейших успехов, вдохновения и новых открытий!', y: 114, h: 80, size: 15, lineHeight: 1.45, valign: 'top', minSize: 10, accent: {enabled: true, fields: 'ФИО', font: '', size: 0, bold: true, italic: false, color: ''}}),
+      T({name: 'Должность', text: 'Заведующий кафедрой', font: 'Montserrat', size: 10.5, color: INK, align: 'left', x: 25, y: 238, w: 70, h: 8}),
+      M().element('line', {name: 'Линия подписи', x: 100, y: 244, w: 40, h: 0, stroke: INK, strokeWidth: 0.3}),
+      T({name: 'Подписант', text: 'И. О. Фамилия', font: 'Montserrat', size: 10.5, color: INK, align: 'right', x: 145, y: 238, w: 40, h: 8}),
+      T({name: 'Город и дата', text: 'г. Тюмень · {Дата:длинная}', font: 'Montserrat', size: 9.5, color: MUTED, x: 25, y: 270, w: 160, h: 7})
+    ];
+    doc.data.columns = [{id: 'c-fio', name: 'ФИО'}, {id: 'c-sex', name: 'Пол'}, {id: 'c-for', name: 'За что'}];
+    M().addRow(doc, {'ФИО': 'Петрова Анна Сергеевна', 'Пол': '', 'За что': 'помощь в организации Дня социолога'});
+    M().addRow(doc, {'ФИО': 'Иванов Иван Иванович', 'Пол': '', 'За что': ''});
+    return doc;
+  }
+
+  /* Карточка рассадки (тейбл-тент) 210×99: складывается пополам, верхняя половина повёрнута на 180°. */
+  async function tent() {
+    const doc = M().blankDoc('tent', 'Карточки рассадки', {width: 210, height: 99});
+    const F = {font: 'Montserrat', color: INK, x: 15, w: 180};
+    const half = (suffix, flip) => {
+      const y = v => (flip ? +(99 - v).toFixed(2) : v), r = flip ? {rotate: 180} : {};
+      return [
+        R({name: 'Полоса' + suffix, x: 0, y: flip ? 0 : 93, w: 210, h: 6, fill: INDIGO, ...r}),
+        T({...F, name: 'Имя' + suffix, text: '{ФИО:иф}', y: y(82) - (flip ? 0 : 24), h: 24, size: 32, bold: true, minSize: 14, ...r}),
+        T({...F, name: 'Организация' + suffix, text: '{Организация}', y: flip ? y(92) : 82, h: 10, size: 13, color: MUTED, empty: {mode: 'hide'}, ...r})
+      ];
+    };
+    doc.sides[0].elements = [
+      ...half(' (лицо)', false),
+      ...half(' (с обратной стороны)', true),
+      M().element('line', {name: 'Линия сгиба', x: 0, y: 49.5, w: 210, h: 0, stroke: '#c9ccff', strokeWidth: 0.25, dash: 1.5, locked: true})
+    ];
+    doc.data.columns = [{id: 'c-fio', name: 'ФИО'}, {id: 'c-org', name: 'Организация'}];
+    M().addRow(doc, {'ФИО': 'Иванов Иван Иванович', 'Организация': 'ТюмГУ'});
+    M().addRow(doc, {'ФИО': 'Петрова Анна Сергеевна', 'Организация': 'УрФУ'});
+    doc.output.packaging = 'sheets'; doc.output.cutMarks = true;
+    return doc;
+  }
+
+  /* Билет 180×65 с корешком: ряд и место из таблицы, сквозной номер, повёрнутый штрихкод на корешке. */
+  async function ticket() {
+    const doc = M().blankDoc('ticket', 'Билеты', {width: 180, height: 65});
+    const W = '#ffffff', PALE = '#c9ccff', L = {font: 'Montserrat', align: 'left', x: 10, w: 124};
+    doc.sides[0].elements = [
+      R({name: 'Фон', x: 0, y: 0, w: 180, h: 65, fill: INK, locked: true}),
+      R({name: 'Акцент', x: 0, y: 0, w: 4, h: 65, fill: INDIGO, locked: true}),
+      T({...L, name: 'Событие', text: 'Вечер социолога', y: 7, h: 13, size: 22, bold: true, color: W, minSize: 12}),
+      T({...L, name: 'Когда и где', text: '12 ноября 2026, 18:00 · Актовый зал ТюмГУ, ул. Ленина, 16', y: 21, h: 7, size: 9, color: PALE, minSize: 6}),
+      T({...L, name: 'Ряд и место', text: 'Ряд {Ряд|—} · Место {Место|—}', y: 33, h: 11, size: 16, bold: true, color: W}),
+      T({...L, name: 'Гость', text: '{ФИО}', y: 45, h: 7, size: 10, color: PALE, empty: {mode: 'hide'}}),
+      T({...L, name: 'Номер', text: '№ {№:0000}', y: 54, h: 6, size: 8, color: '#8a90a6', letterSpacing: 1}),
+      M().element('line', {name: 'Линия отрыва', x: 140, y: 3, w: 0, h: 59, stroke: '#8a90a6', strokeWidth: 0.3, dash: 1.2, locked: true}),
+      R({name: 'Поле штрихкода', x: 145, y: 3, w: 32, h: 59, fill: W, radius: 2}),
+      M().element('barcode', {name: 'Штрихкод', data: '{№:000000}', x: 133.5, y: 23.5, w: 55, h: 18, rotate: 90, background: '', textSize: 7})
+    ];
+    doc.data.columns = [{id: 'c-row', name: 'Ряд'}, {id: 'c-seat', name: 'Место'}, {id: 'c-fio', name: 'ФИО'}];
+    for (let i = 0; i < 8; i++) M().addRow(doc, {'Ряд': String(1 + Math.floor(i / 4)), 'Место': String(1 + i % 4), 'ФИО': i === 0 ? 'Иванов Иван Иванович' : ''});
+    doc.output.packaging = 'sheets'; doc.output.cutMarks = true; doc.output.margin = 8;
+    return doc;
+  }
+
   /* Новый проект из PDF-шаблона: размер страницы берётся из PDF, страницы 1 и 2 — лицо и оборот. */
   async function fromPdf(file, kind = 'custom') {
     const a = await XS.Assets.fromFile(file);
@@ -154,7 +279,12 @@
     {id: 'diploma-classic', kind: 'diploma', title: 'Диплом · классический', hint: 'А4 · рамка · место и основание', make: diplomaClassic},
     {id: 'diploma-frost', kind: 'diploma', title: 'Диплом · первый иней', hint: 'А4 · фон и логотипы', make: diplomaFrost},
     {id: 'bookmarks', kind: 'bookmark', title: 'Закладки с цитатами', hint: '65×140 · 46 цитат с портретами · две стороны', make: bookmarks},
+    {id: 'badge', kind: 'badge', title: 'Бейджи участников', hint: '70×100 · фото или буквы имени · роль · QR', make: badge, isNew: true},
+    {id: 'certificate', kind: 'certificate', title: 'Сертификат участника', hint: 'А4 альбомный · номер · «принял/приняла» · QR проверки', make: certificate, isNew: true},
+    {id: 'thanks', kind: 'letter', title: 'Благодарственное письмо', hint: 'А4 · «Уважаемый/ая» · дательный падеж · дата словами', make: thanks, isNew: true},
+    {id: 'tent', kind: 'tent', title: 'Карточки рассадки', hint: 'Тейбл-тент 210×99 · читается с двух сторон', make: tent, isNew: true},
+    {id: 'ticket', kind: 'ticket', title: 'Билеты с корешком', hint: '180×65 · ряд и место · номер · штрихкод', make: ticket, isNew: true},
     {id: 'card', kind: 'card', title: 'Открытка', hint: 'А6 · пустой макет', make: blankCard}
   ];
-  XS.Presets = {LIST, fromPdf, invitation, diplomaClassic, diplomaFrost, bookmarks, blankCard};
+  XS.Presets = {LIST, fromPdf, invitation, diplomaClassic, diplomaFrost, bookmarks, blankCard, badge, certificate, thanks, tent, ticket};
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,0 +1,54 @@
+/* XSatsu Студия · «Что нового» (v4) и работа без сети: окно показывается один раз после обновления,
+ * service worker (sw.js) кэширует Студию — после первого открытия она запускается и без интернета. */
+(function (global) {
+  'use strict';
+  const XS = global.XS, UI = XS.UI, $ = UI.$;
+  const VERSION = '4.0', KEY = 'xs-seen-version';
+
+  const ITEMS = [
+    ['search', 'Палитра команд — Ctrl+K', 'Любое действие, шаблон, запись или слой — набором пары букв. Ctrl+H — найти и заменить.'],
+    ['sparkle', 'Пять новых шаблонов', 'Бейджи с фото и QR, сертификаты с номером, благодарственные письма, карточки рассадки, билеты с корешком.'],
+    ['rotate', 'Поворот элементов', 'Круглая ручка над рамкой (Shift — шаг 15°), Shift+R — на 90°. В PDF поворот остаётся вектором.'],
+    ['barcode', 'Штрихкоды', 'Code 128 и EAN-13: сквозной номер {№:000000}, номер билета или табельный — клавиша B.'],
+    ['field', 'Форматы полей', '{Дата:длинная} → 26 ноября 2026 г. · {Сумма:прописью} · {Место:порядковое} · {№:000} · {Роль|Участник} · {ФИО:принял/приняла}.'],
+    ['camera', 'Фото по именам файлов', 'Выберите сразу все фотографии — Студия разложит их по записям («Иванов Иван.jpg», «003.jpg»).'],
+    ['table', 'Google Таблица по ссылке', 'Список подтягивается по ссылке и обновляется одной кнопкой. Ещё — сортировка и удаление повторов.'],
+    ['form', 'Анкета регистрации', 'Ссылка-анкета для гостей: ответы сами становятся записями проекта (нужен вход в аккаунт).'],
+    ['wifiOff', 'Работает без интернета', 'После первого открытия Студия запускается и без сети; проекты в браузере доступны всегда.']
+  ];
+
+  function open(force = false) {
+    const box = $('whatsNewBody');
+    box.innerHTML = '<ul class="wn-list">' + ITEMS.map(([icon, title, text]) => `<li><span class="wn-ico">${XS.Icons.icon(icon, 20)}</span><span><b>${XS.esc(title)}</b><span class="muted">${XS.esc(text)}</span></span></li>`).join('') + '</ul>';
+    if (!$('whatsNewDialog').open) $('whatsNewDialog').showModal();
+    try { localStorage.setItem(KEY, VERSION); } catch (e) { /* приватный режим */ }
+    void force;
+  }
+  function maybeShow() {
+    let seen = '';
+    try { seen = localStorage.getItem(KEY) || ''; } catch (e) { return; }
+    if (seen !== VERSION) setTimeout(() => { if (!document.querySelector('dialog[open]')) open(); }, 700);
+  }
+
+  function registerWorker() {
+    if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && !/[?&]sw=1/.test(location.search)) return; // в разработке не мешаем свежему коду
+    navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker:', e));
+  }
+  function offlineBadge() {
+    const set = () => document.body.classList.toggle('is-offline', !navigator.onLine);
+    global.addEventListener('online', () => { set(); UI.toast('Связь восстановлена.'); });
+    global.addEventListener('offline', () => { set(); UI.toast('Нет сети: работаем с проектами в браузере, сохранение на сервер — когда связь вернётся.', true); });
+    set();
+  }
+
+  function init() {
+    $('whatsNewClose').onclick = () => $('whatsNewDialog').close();
+    $('whatsNewGo').onclick = () => { $('whatsNewDialog').close(); UI.Palette?.open(); };
+    document.querySelectorAll('[data-whats-new]').forEach(b => { b.onclick = () => open(true); });
+    maybeShow();
+    registerWorker();
+    offlineBadge();
+  }
+  UI.WhatsNew = {init, open, VERSION};
+})(typeof window !== 'undefined' ? window : globalThis);

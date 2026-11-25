@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-use XSatsu\{App, Auth, Projects, Assets, Settings, Admin, Migrate, HttpError};
+use XSatsu\{App, Auth, Projects, Assets, Settings, Admin, Migrate, Forms, HttpError};
 
 App::route('GET', '/v1/health', function () {
     $db = false; $schema = null; $pending = null;
@@ -34,6 +34,16 @@ App::route('GET', '/v1/projects/{id}/shares', fn($p) => Projects::shares($p));
 App::route('POST', '/v1/projects/{id}/shares', fn($p) => Projects::share($p));
 App::route('DELETE', '/v1/projects/{id}/shares/{share}', fn($p) => Projects::unshare($p));
 App::route('GET', '/v1/links/{token}', fn($p) => Projects::byLink($p));
+
+// v4: анкеты регистрации (владелец/редактор) и публичная анкета (без входа)
+App::route('GET', '/v1/projects/{id}/forms', fn($p) => Forms::list($p));
+App::route('POST', '/v1/projects/{id}/forms', fn($p) => Forms::create($p));
+App::route('PATCH', '/v1/projects/{id}/forms/{form}', fn($p) => Forms::update($p));
+App::route('DELETE', '/v1/projects/{id}/forms/{form}', fn($p) => Forms::remove($p));
+App::route('GET', '/v1/projects/{id}/forms/{form}/responses', fn($p) => Forms::responses($p));
+App::route('POST', '/v1/projects/{id}/forms/{form}/ack', fn($p) => Forms::ack($p));
+App::route('GET', '/v1/f/{token}', fn($p) => Forms::publicGet($p));
+App::route('POST', '/v1/f/{token}', fn($p) => Forms::submit($p));
 
 App::route('POST', '/v1/assets/missing', fn() => Assets::missing());
 App::route('PUT', '/v1/assets/{sha}', fn($p) => Assets::upload($p));

@@ -4,7 +4,7 @@
   'use strict';
   const XS = global.XS, UI = XS.UI, S = UI.S, $ = UI.$;
   const I = (n, s) => XS.Icons.icon(n, s);
-  const TYPE_ICON = {text: 'text', image: 'image', rect: 'rect', line: 'line', path: 'path', qr: 'qr'};
+  const TYPE_ICON = {text: 'text', image: 'image', rect: 'rect', line: 'line', path: 'path', qr: 'qr', barcode: 'barcode'};
   let anchor = null; // для Shift-клика диапазоном
 
   function typeIcon(el) { return el.type === 'rect' && el.shape === 'ellipse' ? 'ellipse' : el.type === 'text' && /\{[^}]+\}/.test(el.text) ? 'field' : TYPE_ICON[el.type]; }
@@ -40,7 +40,7 @@
     const li = document.createElement('li');
     li.className = 'layer' + (sel.has(el.id) ? ' active' : '') + (el.visible ? '' : ' hidden-el') + (nested ? ' nested' : '') + (el.locked ? ' is-locked' : '');
     li.draggable = true; li.dataset.id = el.id;
-    const preview = el.type === 'text' ? el.text.replace(/\s+/g, ' ').slice(0, 40) : el.type === 'qr' ? el.data.slice(0, 40) : el.type === 'image' && /^\{/.test(el.src) ? el.src : '';
+    const preview = el.type === 'text' ? el.text.replace(/\s+/g, ' ').slice(0, 40) : el.type === 'qr' || el.type === 'barcode' ? el.data.slice(0, 40) : el.type === 'image' && /^\{/.test(el.src) ? el.src : '';
     li.innerHTML = `<span class="type">${I(typeIcon(el), 15)}</span><span class="name">${XS.esc(el.name)}${preview && preview !== el.name ? '<small>' + XS.esc(preview) + '</small>' : ''}</span>` +
       (warn.has(el.id) ? `<span class="warn-dot" title="Есть предупреждения">${I('warn', 14)}</span>` : '') + tools(el.locked, !el.visible);
     return li;
@@ -62,6 +62,11 @@
       const link = S.doc.data.columns.find(c => /ссылк|url|link|qr/i.test(c.name));
       const side = Math.max(15, Math.round(Math.min(W, S.doc.page.height) * 0.18));
       return insert(M.element('qr', {...center(side, side), name: 'QR-код', data: link ? '{' + link.name + '}' : 'https://o.utmns.ru'}));
+    }
+    if (type === 'barcode') {
+      const code = S.doc.data.columns.find(c => /штрих|код|билет|номер|barcode/i.test(c.name));
+      const w = Math.max(35, Math.round(W * 0.45));
+      return insert(M.element('barcode', {...center(w, Math.max(12, Math.round(w * 0.3))), name: 'Штрихкод', data: code ? '{' + code.name + '}' : '{№:000000}'}));
     }
     if (type === 'image') {
       const input = document.createElement('input');

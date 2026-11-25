@@ -109,8 +109,8 @@
       place(box, el, kk);
       box.title = el.name + (el.group ? ' · ' + (UI.Sel.groupOf(el)?.name || 'группа') : '') + (el.locked ? ' (закреплён)' : '');
       if (single && single.id === el.id && !el.locked) {
-        const handles = el.type === 'line' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-        for (const h of handles) { const hd = document.createElement('div'); hd.className = 'h'; hd.dataset.h = h; box.append(hd); }
+        const handles = el.type === 'line' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'rot'];
+        for (const h of handles) { const hd = document.createElement('div'); hd.className = 'h'; hd.dataset.h = h; if (h === 'rot') hd.title = 'Повернуть (Shift — шаг 15°)'; box.append(hd); }
       }
       overlay.append(box);
     }
@@ -130,7 +130,7 @@
     let x = r.x * kk, y = r.y * kk, w = Math.abs(r.w) * kk, h = Math.abs(r.h) * kk;
     if (h < minPx) { y -= (minPx - h) / 2; h = minPx; }
     if (w < minPx) { x -= (minPx - w) / 2; w = minPx; }
-    Object.assign(node.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
+    Object.assign(node.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', transform: r.rotate ? 'rotate(' + r.rotate + 'deg)' : ''});
   }
 
   /* ---------- привязка ---------- */
@@ -174,8 +174,13 @@
     const b0 = UI.Sel.bounds(moving), px = e.clientX, py = e.clientY;
     const targets = snapTargets(new Set(moving.map(m => m.id)));
     let moved = false;
+    if (handle === 'rot') return startRotate(e, moving[0]);
     const move = ev => {
-      const kk = k(), dx = (ev.clientX - px) / kk, dy = (ev.clientY - py) / kk;
+      const kk = k();
+      let dx = (ev.clientX - px) / kk, dy = (ev.clientY - py) / kk;
+      const angle = handle ? (moving[0].rotate || 0) * Math.PI / 180 : 0;
+      // Повёрнутый элемент: сдвиг мыши переводим в оси самого элемента.
+      if (angle) [dx, dy] = [dx * Math.cos(angle) + dy * Math.sin(angle), -dx * Math.sin(angle) + dy * Math.cos(angle)];
       if (!moved && Math.hypot(ev.clientX - px, ev.clientY - py) < 3) return;
       if (!moved) { S.history.record(S.doc); moved = true; }
       const th = UI.Prefs.get('snapPx') / kk, free = ev.altKey || !UI.Prefs.get('snap');
@@ -198,7 +203,15 @@
         if (handle.includes('w')) { w = Math.max(minW, s0.w - dx); x = s0.x + s0.w - w; }
         if (handle.includes('n')) { h = Math.max(minH, s0.h - dy); y = s0.y + s0.h - h; }
         if (ev.shiftKey && handle.length === 2 && s0.w && s0.h) { const r = Math.max(w / s0.w, h / s0.h); w = s0.w * r; h = s0.h * r; if (handle.includes('w')) x = s0.x + s0.w - w; if (handle.includes('n')) y = s0.y + s0.h - h; }
-        if (!free) {
+        if (angle) {
+          // Противоположный угол/край остаётся на месте экрана.
+          const c = Math.cos(angle), s = Math.sin(angle);
+          const off = (W, H) => [handle.includes('e') ? -W / 2 : handle.includes('w') ? W / 2 : 0, handle.includes('s') ? -H / 2 : handle.includes('n') ? H / 2 : 0];
+          const [ax, ay] = off(s0.w, s0.h), cx0 = s0.x + s0.w / 2, cy0 = s0.y + s0.h / 2;
+          const Ax = cx0 + ax * c - ay * s, Ay = cy0 + ax * s + ay * c;
+          const [bx, by] = off(w, h);
+          x = Ax - (bx * c - by * s) - w / 2; y = Ay - (bx * s + by * c) - h / 2;
+        } else if (!free) {
           if (handle.includes('e')) { const s = bestSnap([x + w], targets.xs, th); if (s) { w += s.d; gx = s.t; } }
           if (handle.includes('w')) { const s = bestSnap([x], targets.xs, th); if (s) { x += s.d; w -= s.d; gx = s.t; } }
           if (handle.includes('s')) { const s = bestSnap([y + h], targets.ys, th); if (s) { h += s.d; gy = s.t; } }
@@ -214,6 +227,31 @@
       global.removeEventListener('pointermove', move);
       global.removeEventListener('pointerup', up);
       extras = [];
+      if (moved) UI.changed({skip: ['data']}); else render();
+    };
+    global.addEventListener('pointermove', move);
+    global.addEventListener('pointerup', up);
+  }
+
+  /* Поворот за круглую ручку над рамкой. Без Shift — прилипает к 0/90/180/270°, с Shift — шаг 15°. */
+  function startRotate(e, el) {
+    const r = $('page').getBoundingClientRect(), kk = k();
+    const cx = r.left + (el.x + el.w / 2) * kk, cy = r.top + (el.y + el.h / 2) * kk;
+    let moved = false;
+    const move = ev => {
+      if (!moved) { S.history.record(S.doc); moved = true; }
+      let deg = Math.atan2(ev.clientX - cx, -(ev.clientY - cy)) * 180 / Math.PI;
+      if (ev.shiftKey) deg = Math.round(deg / 15) * 15;
+      else { const near = Math.round(deg / 90) * 90; if (Math.abs(deg - near) < 3) deg = near; }
+      if (deg > 180) deg -= 360; if (deg <= -180) deg += 360;
+      el.rotate = +deg.toFixed(1);
+      $('statusSel').textContent = el.name + ' · поворот ' + el.rotate + '°';
+      render();
+      UI.Inspector.updateGeometry();
+    };
+    const up = () => {
+      global.removeEventListener('pointermove', move);
+      global.removeEventListener('pointerup', up);
       if (moved) UI.changed({skip: ['data']}); else render();
     };
     global.addEventListener('pointermove', move);

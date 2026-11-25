@@ -56,6 +56,9 @@
   UI.runCheck = runCheck;
 
   async function route() {
+    const form = /^#\/form\/(.+)$/.exec(location.hash);
+    if (form) { if (S.doc) await UI.goHome(); await UI.Forms.openPublic(decodeURIComponent(form[1])); return; }
+    UI.Forms?.closePublic();
     const link = /^#\/link\/(.+)$/.exec(location.hash);
     if (link) { if (S.link !== link[1]) await UI.Account.openLink(decodeURIComponent(link[1])); return; }
     const m = /^#\/doc\/(.+)$/.exec(location.hash);
@@ -70,6 +73,7 @@
     initTopbar();
     UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
     UI.PrintMaster?.init();
+    UI.Tools?.init(); UI.Palette?.init(); UI.WhatsNew?.init(); UI.Forms?.init();
     global.addEventListener('hashchange', UI.safe(route));
     // Сначала узнаём, есть ли сервер и кто вошёл, затем открываем нужный экран.
     UI.Account.init().catch(e => console.warn(e)).finally(() => UI.safe(route)());

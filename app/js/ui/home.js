@@ -4,13 +4,52 @@
   const XS = global.XS, UI = XS.UI, $ = UI.$;
   let projects = [];
 
-  function presetCard({kind, title, hint, special}, onclick) {
+  function presetCard({id, kind, title, hint, special, isNew, make}, onclick) {
     const b = document.createElement('button');
-    b.className = 'preset' + (special ? ' special' : ''); b.type = 'button';
-    b.innerHTML = `<span class="kind">${XS.esc(XS.Model.KINDS[kind]?.label || kind)}</span><b>${XS.esc(title)}</b><span class="muted small">${XS.esc(hint)}</span>`;
+    b.className = 'preset' + (special ? ' special' : '') + (make ? ' has-thumb' : ''); b.type = 'button';
+    b.innerHTML = (make ? '<span class="pthumb">' + XS.Icons.icon('file', 26) + '</span>' : '') +
+      `<span class="kind">${XS.esc(XS.Model.KINDS[kind]?.label || kind)}${isNew ? ' <em class="new">новое</em>' : ''}</span><b>${XS.esc(title)}</b><span class="muted small">${XS.esc(hint)}</span>`;
     b.onclick = UI.safe(onclick);
+    if (make) thumbs.queue(b.querySelector('.pthumb'), id, make);
     return b;
   }
+
+  /* Превью шаблонов: рисуются по очереди, когда карточка видна; хранятся в localStorage. */
+  const thumbs = (() => {
+    const VERSION = 'v4.0', jobs = [];
+    let running = false;
+    const keyOf = id => 'xs-thumb:' + VERSION + ':' + id;
+    const show = (el, url) => { el.innerHTML = '<img alt="" src="' + url + '">'; };
+    async function run() {
+      if (running) return;
+      running = true;
+      while (jobs.length) {
+        const {el, id, make} = jobs.shift();
+        try {
+          const doc = await make();
+          await XS.Fonts.ensureForDoc(doc);
+          const scene = XS.Scene.build(doc, 0, doc.data.rows[0] || null, 0);
+          const dpi = 25.4 * 150 / Math.max(doc.page.width, doc.page.height);
+          const c = await XS.CanvasRender.toCanvas(scene, dpi);
+          const url = c.toDataURL('image/jpeg', 0.82);
+          try { localStorage.setItem(keyOf(id), url); } catch (e) { /* место кончилось — просто не кэшируем */ }
+          show(el, url);
+        } catch (e) { console.warn('Превью шаблона', id, e); }
+        await XS.pause();
+      }
+      running = false;
+    }
+    const io = global.IntersectionObserver ? new IntersectionObserver(entries => {
+      for (const en of entries) if (en.isIntersecting) { io.unobserve(en.target); jobs.push(en.target._job); run(); }
+    }, {rootMargin: '200px'}) : null;
+    function queue(el, id, make) {
+      const cached = (() => { try { return localStorage.getItem(keyOf(id)); } catch (e) { return null; } })();
+      if (cached) return show(el, cached);
+      el._job = {el, id, make};
+      if (io) io.observe(el); else { jobs.push(el._job); run(); }
+    }
+    return {queue};
+  })();
   function renderPresets() {
     const grid = $('presetGrid');
     grid.replaceChildren(

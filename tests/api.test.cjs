@@ -103,6 +103,29 @@ const ok = (r, status = 200) => { assert.strictEqual(r.status, status, JSON.stri
   assert.strictEqual(ok(await a.call('GET', 'v1/projects&scope=trash')).projects.length, 1);
   ok(await a.call('POST', 'v1/projects/doc-test-1/restore'));
   ok(await a.call('DELETE', 'v1/projects/doc-test-1&purge=1'), 409);
+  // v4: анкета регистрации — гость отвечает без входа, владелец забирает ответы и отмечает перенесёнными
+  ok(await a.call('POST', 'v1/projects/doc-test-1/forms', {fields: []}), 422);
+  const fc = ok(await a.call('POST', 'v1/projects/doc-test-1/forms', {title: 'Регистрация', intro: 'Заполните', fields: [{column: 'ФИО', required: true}, {column: 'Email', type: 'email'}, {column: 'Секция', type: 'choice', options: ['A', 'B']}, {column: 'ФИО', label: 'повтор'}]}));
+  assert.ok(fc.token); const form = fc.forms[0];
+  assert.strictEqual(form.fields.length, 3, 'повтор столбца убран'); assert.strictEqual(form.pending, 0);
+  const pub = ok(await anon.call('GET', 'v1/f/' + fc.token));
+  assert.strictEqual(pub.fields.length, 3); assert.ok(pub.open); assert.strictEqual(pub.token, undefined, 'гость не видит служебное');
+  ok(await anon.call('POST', 'v1/f/' + fc.token, {answers: {Email: 'x@y.ru'}}), 422);
+  ok(await anon.call('POST', 'v1/f/' + fc.token, {answers: {'ФИО': 'Гость', Email: 'bad'}}), 422);
+  ok(await anon.call('POST', 'v1/f/' + fc.token, {answers: {'ФИО': 'Гость', 'Секция': 'C'}}), 422);
+  ok(await anon.call('POST', 'v1/f/' + fc.token, {answers: {'ФИО': 'Петрова Анна', Email: 'anna@example.com', 'Секция': 'B', 'Лишнее': 'x'}}));
+  ok(await anon.call('POST', 'v1/f/' + fc.token, {answers: {'ФИО': 'Бот'}, website: 'spam'})); // ловушка: «принято», но не сохранено
+  ok(await b.call('GET', 'v1/projects/doc-test-1/forms/' + form.id + '/responses'), 404);
+  let resp = ok(await a.call('GET', 'v1/projects/doc-test-1/forms/' + form.id + '/responses&pending=1')).responses;
+  assert.deepStrictEqual(resp.map(r => r.answers), [{'ФИО': 'Петрова Анна', Email: 'anna@example.com', 'Секция': 'B'}]);
+  assert.strictEqual(ok(await a.call('POST', 'v1/projects/doc-test-1/forms/' + form.id + '/ack', {ids: resp.map(r => r.id)})).marked, 1);
+  assert.strictEqual(ok(await a.call('GET', 'v1/projects/doc-test-1/forms/' + form.id + '/responses&pending=1')).responses.length, 0);
+  ok(await a.call('PATCH', 'v1/projects/doc-test-1/forms/' + form.id, {isOpen: false}));
+  ok(await anon.call('POST', 'v1/f/' + fc.token, {answers: {'ФИО': 'Поздно'}}), 410);
+  assert.strictEqual(ok(await anon.call('GET', 'v1/f/' + fc.token)).open, false);
+  assert.strictEqual(ok(await a.call('GET', 'v1/projects/doc-test-1/forms')).forms[0].responses, 1);
+  ok(await a.call('DELETE', 'v1/projects/doc-test-1/forms/' + form.id));
+  ok(await anon.call('GET', 'v1/f/' + fc.token), 404);
   // Настройки
   const s = ok(await b.call('PUT', 'v1/settings/user', {prefs: {theme: 'dark'}, printers: [{id: 'p1', name: 'HP'}]}));
   assert.strictEqual(s.user.prefs.theme, 'dark');
