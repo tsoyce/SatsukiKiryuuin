@@ -7,6 +7,7 @@
   /* Описание каждого ключа: из него строится и проверка, и форма в окне «Настройки». */
   const SCHEMA = [
     {key: 'theme', label: 'Тема', type: 'choice', options: [['auto', 'как в системе'], ['light', 'светлая'], ['dark', 'тёмная']], def: 'auto'},
+    {key: 'motion', label: 'Анимации', type: 'choice', options: [['auto', 'как в системе'], ['on', 'включены'], ['off', 'выключены']], def: 'auto'},
     {key: 'nudge', label: 'Сдвиг стрелками, мм', type: 'number', min: 0.1, max: 10, step: 0.1, def: 0.5},
     {key: 'nudgeBig', label: 'Сдвиг с Shift, мм', type: 'number', min: 1, max: 50, step: 1, def: 5},
     {key: 'snap', label: 'Привязка к направляющим', type: 'bool', def: true},
@@ -39,6 +40,8 @@
   function applyTheme() {
     const t = values.theme || 'auto';
     if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t;
+    const m = values.motion || 'auto';
+    if (m === 'auto') document.documentElement.removeAttribute('data-motion'); else document.documentElement.dataset.motion = m;
   }
   const onChange = fn => listeners.add(fn);
 

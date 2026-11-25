@@ -85,9 +85,11 @@
     if (user && !render.started) { render.started = true; scope = 'mine'; }
     if (!user) scope = 'local';
     renderScopes();
+    if (scope !== 'local') UI.Motion?.skeleton($('projectGrid'), Math.min(6, Math.max(2, projects.length || 4)));
     try { projects = scope === 'local' ? await XS.Store.local.list() : await XS.Store.remote.list(scope); }
     catch (e) { UI.toast(e.message, true); projects = []; }
     renderProjects();
+    UI.Motion?.revealCards($('projectGrid'));
   }
   const ACTS = {
     mine: [['open', 'Открыть'], ['copy', 'copy', 'Копия'], ['file', 'download', 'Скачать файл проекта'], ['share', 'share', 'Доступ'], ['del', 'trash', 'В корзину']],

@@ -4,15 +4,16 @@
   'use strict';
   const XS = global.XS, UI = XS.UI, S = UI.S, $ = UI.$;
   const BASE = 96 / 25.4; // px на мм при масштабе 100%
-  let gen = 0, frame = 0, extras = [], spaceDown = false;
+  let gen = 0, frame = 0, extras = [], spaceDown = false, lastView = '', autoFit = true;
 
   const k = () => (S.zoom || 1) * BASE;
 
   function fit() {
     if (!S.doc) return;
     const vp = $('viewport'), W = S.doc.page.width, H = S.doc.page.height;
-    const kk = Math.max(0.2, Math.min((vp.clientWidth - 80) / W, (vp.clientHeight - 80) / H));
-    S.zoom = kk / BASE;
+    const pad = vp.clientWidth < 600 ? 32 : 80;
+    const kk = Math.max(0.2, Math.min((vp.clientWidth - pad) / W, (vp.clientHeight - pad) / H));
+    S.zoom = kk / BASE; autoFit = true;
     render();
   }
   function setZoom(z, anchor) {
@@ -20,7 +21,7 @@
     const rect = vp.getBoundingClientRect();
     const ax = anchor ? anchor.x - rect.left : vp.clientWidth / 2, ay = anchor ? anchor.y - rect.top : vp.clientHeight / 2;
     const mmX = (vp.scrollLeft + ax) / old, mmY = (vp.scrollTop + ay) / old;
-    S.zoom = Math.max(0.1, Math.min(8, z));
+    S.zoom = Math.max(0.1, Math.min(8, z)); autoFit = false;
     render();
     requestAnimationFrame(() => { vp.scrollLeft = mmX * k() - ax; vp.scrollTop = mmY * k() - ay; });
   }
@@ -45,6 +46,10 @@
     c.width = off.width; c.height = off.height;
     c.getContext('2d').drawImage(off, 0, 0);
     off.width = off.height = 1;
+    // Другая запись или сторона того же проекта — мягкая смена страницы.
+    const view = doc.id + '|' + S.side + '|' + S.row;
+    if (lastView && view !== lastView && lastView.split('|')[0] === doc.id) UI.Motion?.flip($('page'));
+    lastView = view;
     renderWarnings();
     renderBoxes();
     UI.Layers.render();
@@ -341,7 +346,7 @@
     document.addEventListener('keydown', e => { if (e.code === 'Space' && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target.tagName) && !$('editor').hidden) { if (!spaceDown) vp.classList.add('pan-ready'); spaceDown = true; e.preventDefault(); } });
     document.addEventListener('keyup', e => { if (e.code === 'Space') { spaceDown = false; vp.classList.remove('pan-ready'); } });
     let resizeTimer;
-    global.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.doc) render(); }, 150); });
+    global.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.doc) { if (autoFit) fit(); else render(); } }, 150); });
   }
 
   UI.Stage = {init, render, fit, setZoom, zoom: () => S.zoom || 1};
