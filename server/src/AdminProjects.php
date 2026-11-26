@@ -167,7 +167,7 @@ final class AdminProjects
             FROM assets a ORDER BY a.bytes DESC LIMIT 15');
         $types = App::all("SELECT CASE WHEN mime LIKE 'image/%' THEN 'image' WHEN mime = 'application/pdf' THEN 'pdf' WHEN mime LIKE 'font/%' THEN 'font' ELSE 'other' END t, COUNT(*) n, COALESCE(SUM(bytes),0) b FROM assets GROUP BY t ORDER BY b DESC");
         $rev = App::one('SELECT COUNT(*) n, COALESCE(SUM(LENGTH(doc_gz)),0) b FROM project_revisions');
-        $orph = App::one('SELECT COUNT(*) n, COALESCE(SUM(a.bytes),0) b FROM assets a LEFT JOIN project_assets pa ON pa.sha256 = a.sha256 WHERE pa.sha256 IS NULL');
+        $orph = App::one('SELECT COUNT(*) n, COALESCE(SUM(a.bytes),0) b FROM assets a LEFT JOIN project_assets pa ON pa.sha256 = a.sha256 WHERE pa.sha256 IS NULL AND NOT EXISTS (SELECT 1 FROM site_template_assets sa WHERE sa.sha256 = a.sha256) AND NOT EXISTS (SELECT 1 FROM site_fonts sf WHERE sf.sha256 = a.sha256)');
         $trash = App::one('SELECT COUNT(*) n, COALESCE(SUM(size_bytes),0) b FROM projects WHERE deleted_at IS NOT NULL');
         return [
             'users' => $byUser, 'defaultQuotaMb' => (int)Settings::system('defaultQuotaMb'),

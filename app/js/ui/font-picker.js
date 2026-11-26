@@ -12,6 +12,13 @@
   const VARIANT_RU = {regular: 'обычный', bold: 'жирный', italic: 'курсив', bolditalic: 'жирный курсив'};
 
   let tab = 'project', opts = {}, query = '', cat = '', cyrOnly = true, shown = PAGE, sample = '';
+  let siteFonts = null; // шрифты сайта (публикует администратор в админке): [{family, category, variants: [{variant, sha256, name}]}]
+  const tabs = () => siteFonts?.length ? [TABS[0], ['site', 'shield', 'Шрифты сайта'], ...TABS.slice(1)] : TABS;
+  async function loadSite() {
+    if (!XS.Api?.available) return;
+    try { siteFonts = (await XS.Api.call('GET', 'v1/fonts/site')).fonts; } catch (e) { siteFonts = []; }
+    if ($('fontsDialog')?.open) render();
+  }
   let localFonts = null; // [{family, faces: FontData[]}]
   const previewLinks = new Set();
   let observer = null;
@@ -31,6 +38,7 @@
     $('fontsDialog').querySelector('h2').textContent = o.onPick ? 'Выбор шрифта' : 'Шрифты проекта';
     render();
     if (!$('fontsDialog').open) $('fontsDialog').showModal();
+    loadSite();
     setTimeout(() => $('fpSearch')?.focus(), 40);
   }
   /* Превью — текст выделенного элемента (с подставленной записью), иначе панграмма. */
@@ -64,7 +72,9 @@
   }
 
   function render() {
-    $('fpTabs').replaceChildren(...TABS.map(([id, icon, label]) => {
+    if (siteFonts && !tabs().some(t => t[0] === tab)) tab = 'project';
+    if (tab === 'site' && !siteFonts) { $('fpBody').innerHTML = '<p class="muted">Загружаем шрифты сайта…</p>'; return; }
+    $('fpTabs').replaceChildren(...tabs().map(([id, icon, label]) => {
       const b = h('button', 'tab' + (id === tab ? ' active' : ''), XS.Icons.icon(icon, 15) + label); b.type = 'button';
       b.onclick = () => { tab = id; shown = PAGE; render(); };
       return b;
@@ -87,7 +97,7 @@
   function renderBody() {
     const body = $('fpBody');
     observer?.disconnect();
-    ({project: renderProject, google: renderGoogle, local: renderLocal, file: renderFile})[tab](body);
+    ({project: renderProject, site: renderSite, google: renderGoogle, local: renderLocal, file: renderFile})[tab](body);
   }
   function foot(text) { $('fpFoot').textContent = text || ''; }
 
@@ -237,6 +247,35 @@
       UI.toast('Шрифт «' + plan.family + '» добавлен в проект: ' + kinds + '.');
       return plan.family;
     } finally { if (button && button.isConnected) { button.disabled = false; button.innerHTML = label; } }
+  }
+
+  /* ---------- шрифты сайта ---------- */
+  function renderSite(body) {
+    const q = norm(query);
+    body.replaceChildren();
+    for (const f of (siteFonts || []).filter(f => !q || norm(f.family).includes(q))) {
+      const inDoc = has(f.family);
+      const actions = [];
+      if (opts.onPick && inDoc) actions.push(btn(opts.value === f.family ? 'Выбран' : 'Выбрать', () => pick(f.family), 'btn small' + (opts.value === f.family ? '' : ' primary')));
+      if (!inDoc) actions.push(btn(opts.onPick ? 'Добавить и выбрать' : 'Добавить в проект', async b => { await addSite(f, b); if (opts.onPick) pick(f.family); renderBody(); }, 'btn small primary'));
+      const r = fontRow({family: f.family, meta: 'шрифт сайта · ' + f.variants.map(v => VARIANT_RU[v.variant]).join(', ') + (inDoc ? ' · уже в проекте' : ''), current: opts.value === f.family, actions,
+        onClick: opts.onPick && inDoc ? () => pick(f.family) : null});
+      r.dataset.family = f.family;
+      body.append(r);
+      if (inDoc) F().ensure(S.doc, f.family, false, false).then(face => { if (face) { r.querySelector('.fp-name').style.fontFamily = face.css; r.querySelector('.fp-sample-text').style.fontFamily = face.css; } }).catch(() => {});
+    }
+    foot('Шрифты, которые администратор сайта добавил для всех. Шрифт копируется в проект и уходит в PDF вместе с ним.');
+  }
+  async function addSite(f, button) {
+    if (button) { button.disabled = true; button.textContent = 'Скачиваем…'; }
+    const got = await Promise.all(f.variants.map(async v => {
+      const r = await XS.Api.call('GET', 'v1/assets/' + v.sha256);
+      return {id: XS.uid('font'), family: f.family, variant: v.variant, source: 'site', name: v.name || f.family, ...(f.category ? {category: f.category} : {}), sha256: v.sha256, data: XS.bytesToDataUrl(r.bytes, r.mime || 'font/ttf')};
+    }));
+    UI.edit(d => { d.fonts = d.fonts.filter(x => x.family !== f.family).concat(got); });
+    await F().ensure(S.doc, f.family, false, false);
+    UI.refresh();
+    UI.toast('Шрифт сайта «' + f.family + '» добавлен в проект.');
   }
 
   /* ---------- шрифты компьютера ---------- */

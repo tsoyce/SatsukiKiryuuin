@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, AdminAudit, AdminProjects, ServerStatus, Migrate, Forms, Fonts, RemoteImage, HttpError};
+use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, AdminAudit, AdminProjects, ServerStatus, SiteLibrary, Migrate, Forms, Fonts, RemoteImage, HttpError};
 
 App::route('GET', '/v1/health', function () {
     $db = false; $schema = null; $pending = null;
@@ -57,6 +57,11 @@ App::route('GET', '/v1/assets/{sha}', fn($p) => Assets::download($p));
 App::route('GET', '/v1/fonts/google', fn() => Fonts::google());
 App::route('GET', '/v1/images/fetch', fn() => RemoteImage::fetch());
 
+// Библиотека сайта: шаблоны и шрифты для всех (без входа), управление — в админке
+App::route('GET', '/v1/templates', fn() => SiteLibrary::templates());
+App::route('GET', '/v1/templates/{id}', fn($p) => SiteLibrary::template($p));
+App::route('GET', '/v1/fonts/site', fn() => SiteLibrary::fonts());
+
 App::route('GET', '/v1/settings', fn() => Settings::get());
 App::route('PUT', '/v1/settings/user', fn() => Settings::putUser());
 App::route('PUT', '/v1/settings/system', fn() => Settings::putSystem());
@@ -83,6 +88,13 @@ App::route('DELETE', '/v1/admin/links/{id}', fn($p) => AdminProjects::revoke($p)
 App::route('POST', '/v1/admin/links/purge-expired', fn() => AdminProjects::purgeExpired());
 App::route('PATCH', '/v1/admin/forms/{id}', fn($p) => AdminProjects::closeForm($p));
 App::route('GET', '/v1/admin/storage', fn() => AdminProjects::storage());
+App::route('GET', '/v1/admin/templates', fn() => SiteLibrary::adminTemplates());
+App::route('POST', '/v1/admin/templates', fn() => SiteLibrary::publish());
+App::route('POST', '/v1/admin/templates/order', fn() => SiteLibrary::reorder());
+App::route('PATCH', '/v1/admin/templates/{id}', fn($p) => SiteLibrary::updateTemplate($p));
+App::route('DELETE', '/v1/admin/templates/{id}', fn($p) => SiteLibrary::deleteTemplate($p));
+App::route('POST', '/v1/admin/fonts', fn() => SiteLibrary::addFont());
+App::route('DELETE', '/v1/admin/fonts/{id}', fn($p) => SiteLibrary::deleteFont($p));
 App::route('GET', '/v1/admin/server', fn() => ServerStatus::get());
 App::route('POST', '/v1/admin/maintenance/cleanup', fn() => ServerStatus::runCleanup());
 

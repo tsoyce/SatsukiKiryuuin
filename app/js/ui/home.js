@@ -64,7 +64,34 @@
         await UI.create(doc);
       })
     );
+    siteTemplates(grid).catch(e => console.warn('Шаблоны сайта', e));
   }
+
+  /* Шаблоны сайта (публикует администратор в админке): идут сразу после «Из PDF-шаблона», с меткой «сайт». */
+  let siteList = null, siteAt = 0;
+  async function siteTemplates(grid) {
+    if (!XS.Api?.available) return;
+    if (!siteList || Date.now() - siteAt > 60000) { siteList = (await XS.Api.call('GET', 'v1/templates')).templates; siteAt = Date.now(); }
+    if (!grid.isConnected || !siteList.length) return;
+    const cards = siteList.map(t => {
+      const b = presetCard({kind: t.kind, title: t.title, hint: t.description || Math.round(t.page.width) + '×' + Math.round(t.page.height) + ' мм'}, async () => UI.create(await UI.busy('Создаём «' + t.title + '»…', () => fromSite(t))));
+      b.classList.add('has-thumb', 'site-tpl');
+      b.insertAdjacentHTML('afterbegin', '<span class="pthumb">' + (t.thumb ? '<img alt="" src="' + XS.esc(t.thumb) + '">' : XS.Icons.icon('file', 26)) + '</span>');
+      b.querySelector('.kind').insertAdjacentHTML('beforeend', ' <em class="site">шаблон сайта</em>');
+      return b;
+    });
+    grid.querySelectorAll('.site-tpl').forEach(x => x.remove());
+    grid.children[0].after(...cards);
+  }
+  async function fromSite(t) {
+    const r = await XS.Api.call('GET', 'v1/templates/' + t.id);
+    const raw = {...r.doc, id: XS.uid('doc'), title: t.title};
+    const doc = XS.Model.normalizeDoc(await XS.Store.hydrate(raw));
+    const missing = [...Object.values(doc.assets || {}), ...(doc.fonts || [])].filter(x => !x.data && x.sha256);
+    if (missing.length) UI.toast('Часть файлов шаблона не загрузилась — попробуйте ещё раз.', true);
+    return doc;
+  }
+  UI.siteTemplatesReset = () => { siteList = null; };
 
   /* Списки: «На сервере» (mine), «Доступные мне» (shared), «В этом браузере» (local), «Корзина» (trash). */
   let scope = 'local';
