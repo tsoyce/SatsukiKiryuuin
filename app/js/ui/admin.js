@@ -164,7 +164,7 @@
     'login': 'Вход', 'setup': 'Установка сайта', 'register': 'Регистрация', 'password': 'Смена пароля', 'settings': 'Настройки сайта',
     'project.create': 'Создан проект', 'project.trash': 'Проект в корзину', 'project.restore': 'Проект восстановлен', 'project.purge': 'Проект удалён навсегда',
     'project.share': 'Открыт доступ', 'project.share.update': 'Изменён доступ', 'project.unshare': 'Доступ отозван', 'project.link': 'Гостевая ссылка', 'project.version': 'Сохранена версия',
-    'project.transfer': 'Проект передан', 'form.create': 'Анкета создана', 'form.delete': 'Анкета удалена',
+    'project.transfer': 'Проект передан', 'form.create': 'Анкета создана', 'form.delete': 'Анкета удалена', 'form.close': 'Анкета закрыта', 'form.open': 'Анкета открыта',
     'user.create': 'Новый пользователь', 'user.update': 'Изменён пользователь', 'user.reset': 'Временный пароль', 'user.sessions': 'Завершены сеансы', 'user.delete': 'Удалён пользователь',
     'invite.create': 'Приглашение', 'invite.revoke': 'Приглашение отозвано', 'audit.export': 'Выгрузка журнала', 'maintenance.cleanup': 'Обслуживание',
     'link.revoke': 'Ссылка отозвана', 'link.update': 'Ссылка изменена', 'template.publish': 'Шаблон сайта', 'template.update': 'Шаблон изменён', 'template.delete': 'Шаблон удалён',
@@ -172,7 +172,7 @@
   };
   const KEYS = {registration: 'регистрация', localMode: 'работа без входа', siteName: 'название', notice: 'объявление', trashDays: 'корзина', auditDays: 'журнал', defaultQuotaMb: 'квота по умолчанию', maintenance: 'режим обслуживания', maintenanceText: 'текст о работах',
     files: 'файлов', trash: 'корзина', sessions: 'сеансов', attempts: 'попыток входа', rate: 'отметок', links: 'ссылок', audit: 'журнал', note: 'заметка',
-    role: 'роль', status: 'статус', name: 'имя', email: 'почта', quotaMb: 'квота', password: 'пароль', reason: 'причина', login: 'логин', title: 'название', permission: 'права', label: 'для кого', to: 'кому', projects: 'проектов', ended: 'сеансов', uses: 'мест', days: 'дней', rows: 'строк', by: 'гость'};
+    role: 'роль', status: 'статус', name: 'имя', email: 'почта', quotaMb: 'квота', password: 'пароль', reason: 'причина', login: 'логин', title: 'название', permission: 'права', label: 'для кого', to: 'кому', projects: 'проектов', from: 'от', expired: 'истёкших', ended: 'сеансов', uses: 'мест', days: 'дней', rows: 'строк', by: 'гость'};
   const VALUES = {admin: 'администратор', user: 'пользователь', blocked: 'заблокирован', active: 'активен', view: 'просмотр', edit: 'правка'};
   H.action = a => ACTIONS[a] || a;
   H.detail = d => {
