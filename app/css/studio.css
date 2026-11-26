@@ -1,11 +1,13 @@
 /* XSatsu Студия · интерфейс */
 :root {
-  --bg: #f4f5f8; --panel: #ffffff; --line: #e3e5ea; --line-strong: #cfd3da;
-  --text: #1b2030; --muted: #6b7280; --accent: #4f46e5; --accent-2: #7c3aed; --accent-soft: #eef0ff; --accent-text: #ffffff;
-  --brand: linear-gradient(135deg, #4f46e5, #7c3aed); --hover: #f3f4f7;
+  --bg: #f3f5f9; --panel: #ffffff; --line: #e2e6ee; --line-strong: #cdd3df;
+  --text: #11172c; --muted: #646d82; --accent: #023bb9; --accent-2: #2f6bff; --accent-soft: #ebf0fd; --accent-text: #ffffff;
+  --accent-rgb: 2, 59, 185; --brand: linear-gradient(135deg, #0b1d5e 0%, #023bb9 55%, #2f6bff 100%); --hover: #f1f3f8;
+  /* цвета мундира с логотипа: золото погон, красный кант воротника, сталь волос, чернила кителя */
+  --gold: #c99a45; --gold-2: #e7c27d; --crimson: #a82028; --steel: #9ea4be; --ink: #11172c; --guide: #e0314b;
   --danger: #c62828; --warn: #b45309; --warn-soft: #fff7e6; --ok: #15803d;
-  --stage: #e7e9ee; --sel: #4f46e5; --radius: 8px;
-  --soft: #f7f8fa; --accent-soft-2: #dfe2ff; --accent-line: #c9ccff; --line-hover: #9aa1ad; --warn-line: #f3d9a4; --warn-text: #7c4a03;
+  --stage: #e5e9f1; --sel: #1f5bff; --radius: 8px;
+  --soft: #f7f8fa; --accent-soft-2: #d6e1fb; --accent-line: #b3c6f2; --line-hover: #9aa1ad; --warn-line: #f3d9a4; --warn-text: #7c4a03;
   --shadow: 0 1px 2px rgba(16,24,40,.06), 0 4px 16px rgba(16,24,40,.08);
   font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "PT Sans", sans-serif;
   color: var(--text); color-scheme: light;
@@ -139,7 +141,7 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 .page canvas { display: block; width: 100%; height: 100%; }
 .overlay { position: absolute; inset: 0; }
 .box { position: absolute; cursor: move; outline: 1px dashed transparent; }
-.box:hover { outline-color: rgba(79,70,229,.6); }
+.box:hover { outline-color: rgba(var(--accent-rgb),.6); }
 .box.locked { cursor: default; }
 .box.sel { outline: 1.5px solid var(--sel); }
 .box.warn { outline: 1.5px dashed var(--warn); }
@@ -151,9 +153,9 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 .box .h[data-h=w] { top: calc(50% - 5px); left: -5px; cursor: ew-resize; } .box .h[data-h=e] { top: calc(50% - 5px); right: -5px; cursor: ew-resize; }
 .box .h[data-h=rot] { left: calc(50% - 6px); top: -26px; width: 12px; height: 12px; border-radius: 50%; cursor: grab; }
 .box .h[data-h=rot]::after { content: ''; position: absolute; left: 4px; top: 11px; width: 1.5px; height: 12px; background: var(--sel); }
-.guide { position: absolute; background: #e11d8f; pointer-events: none; }
+.guide { position: absolute; background: var(--guide); pointer-events: none; }
 .guide.v { width: 1px; top: 0; bottom: 0; } .guide.hz { height: 1px; left: 0; right: 0; }
-.drop-hint { position: absolute; inset: 12px; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(79,70,229,.08); display: grid; place-items: center; font-weight: 600; color: var(--accent); pointer-events: none; }
+.drop-hint { position: absolute; inset: 12px; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(var(--accent-rgb),.08); display: grid; place-items: center; font-weight: 600; color: var(--accent); pointer-events: none; }
 .warnings { background: var(--warn-soft); border-top: 1px solid var(--warn-line); color: var(--warn-text); padding: 6px 12px; font-size: 13px; max-height: 90px; overflow: auto; }
 
 /* Инспектор */
@@ -312,7 +314,7 @@ i[data-icon] { display: inline-flex; font-style: normal; }
 .home-nav { margin-left: auto; display: flex; gap: 8px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; letter-spacing: -.01em; }
 .brand-name b { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero { margin: 26px 0 6px; padding: 28px 30px; border-radius: 16px; color: #fff; background: radial-gradient(120% 140% at 100% 0%, #8b5cf6 0%, transparent 55%), var(--brand); box-shadow: 0 10px 30px rgba(79,70,229,.25); }
+.hero { margin: 26px 0 6px; padding: 28px 30px; border-radius: 16px; color: #fff; background: var(--brand); box-shadow: 0 10px 30px rgba(var(--accent-rgb),.25); }
 .hero h1 { margin: 0 0 8px; font-size: 26px; line-height: 1.2; letter-spacing: -.02em; }
 .hero p { margin: 0; max-width: 720px; opacity: .92; font-size: 15px; }
 .steps { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 18px 0 0; }
@@ -364,7 +366,7 @@ i[data-icon] { display: inline-flex; font-style: normal; }
 .viewport.panning, .viewport.panning .box { cursor: grabbing !important; }
 .box.grouped:hover { outline-style: dotted; }
 .multi-frame { position: absolute; pointer-events: none; outline: 1px dashed var(--sel); outline-offset: 3px; }
-.marquee { position: absolute; pointer-events: none; background: rgba(79,70,229,.08); border: 1px solid rgba(79,70,229,.7); z-index: 5; }
+.marquee { position: absolute; pointer-events: none; background: rgba(var(--accent-rgb),.08); border: 1px solid rgba(var(--accent-rgb),.7); z-index: 5; }
 .side-tabs .side { display: inline-flex; align-items: center; gap: 4px; }
 .side-tabs .side.add { border-style: dashed; color: var(--muted); background: transparent; }
 .side-tabs .side.add:hover { color: var(--accent); border-color: var(--accent); }
@@ -417,18 +419,20 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; font: 600 11px/1
 
 /* ---------- Тёмная тема (настройка «Тема»; «как в системе» — по prefers-color-scheme) ---------- */
 :root[data-theme="dark"] {
-  --bg: #12141b; --panel: #1b1e27; --line: #2a2e3a; --line-strong: #3a3f4d; --line-hover: #596074;
-  --text: #e6e8ef; --muted: #9aa1b2; --accent: #7c74ff; --accent-2: #a78bfa; --accent-soft: #262a48; --accent-soft-2: #30356a; --accent-line: #4a4f8f;
-  --hover: #232733; --soft: #202430; --stage: #0d0f14; --sel: #8b85ff;
+  --bg: #0b0f1c; --panel: #131a2c; --line: #232c45; --line-strong: #34405f; --line-hover: #56628a;
+  --text: #e7eaf4; --muted: #98a1bb; --accent: #4a7dff; --accent-2: #8fb0ff; --accent-soft: #17244a; --accent-soft-2: #1f3168; --accent-line: #33509c;
+  --accent-rgb: 74, 125, 255; --hover: #1a2238; --soft: #161e33; --stage: #070a13; --sel: #6f9bff;
+  --gold: #e7c27d; --gold-2: #f3dba6; --crimson: #e0525c; --steel: #9ea4be; --ink: #0b0f1c; --guide: #ff5a6e;
   --danger: #ff6b6b; --warn: #f0a64b; --warn-soft: #2d2416; --warn-line: #5a4320; --warn-text: #f3c98b; --ok: #4ade80;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #12141b; --panel: #1b1e27; --line: #2a2e3a; --line-strong: #3a3f4d; --line-hover: #596074;
-    --text: #e6e8ef; --muted: #9aa1b2; --accent: #7c74ff; --accent-2: #a78bfa; --accent-soft: #262a48; --accent-soft-2: #30356a; --accent-line: #4a4f8f;
-    --hover: #232733; --soft: #202430; --stage: #0d0f14; --sel: #8b85ff;
+    --bg: #0b0f1c; --panel: #131a2c; --line: #232c45; --line-strong: #34405f; --line-hover: #56628a;
+    --text: #e7eaf4; --muted: #98a1bb; --accent: #4a7dff; --accent-2: #8fb0ff; --accent-soft: #17244a; --accent-soft-2: #1f3168; --accent-line: #33509c;
+    --accent-rgb: 74, 125, 255; --hover: #1a2238; --soft: #161e33; --stage: #070a13; --sel: #6f9bff;
+    --gold: #e7c27d; --gold-2: #f3dba6; --crimson: #e0525c; --steel: #9ea4be; --ink: #0b0f1c; --guide: #ff5a6e;
     --danger: #ff6b6b; --warn: #f0a64b; --warn-soft: #2d2416; --warn-line: #5a4320; --warn-text: #f3c98b; --ok: #4ade80;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.35);
     color-scheme: dark;
@@ -575,7 +579,7 @@ b.accent { color: var(--accent); }
 .form-fields td { padding: 3px 4px; }
 .form-fields input[type=text], .form-fields select { width: 100%; }
 /* v4: анкета гостя */
-.form-page { min-height: 100vh; background: radial-gradient(1200px 500px at 50% -10%, rgba(124,58,237,.18), transparent), var(--bg); }
+.form-page { min-height: 100vh; background: radial-gradient(1200px 500px at 50% -10%, rgba(var(--accent-rgb),.16), transparent), var(--bg); }
 .form-shell { max-width: 620px; margin: 0 auto; padding: 32px 18px 60px; }
 .form-brand { display: flex; align-items: center; gap: 8px; color: var(--muted); margin-bottom: 18px; }
 .form-brand b { color: var(--accent); }
