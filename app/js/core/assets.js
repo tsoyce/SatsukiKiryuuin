@@ -9,6 +9,7 @@
   const isPdf = asset => asset && (asset.mime === 'application/pdf' || /^data:application\/pdf/.test(asset.data));
 
   function image(asset) {
+    if (!asset.data) return Promise.reject(new Error('Файл «' + (asset.name || '') + '» не загрузился с сервера.'));
     const k = asset.id;
     if (!images.has(k)) {
       images.set(k, new Promise((resolve, reject) => {
@@ -31,6 +32,7 @@
     return lib;
   }
   function pdfDoc(asset) {
+    if (!asset.data) return Promise.reject(new Error('Файл «' + (asset.name || '') + '» не загрузился с сервера.'));
     if (!pdfDocs.has(asset.id)) {
       const task = pdfjs().getDocument({data: XS.dataUrlToBytes(asset.data).bytes, isEvalSupported: false}).promise;
       task.catch(() => pdfDocs.delete(asset.id));

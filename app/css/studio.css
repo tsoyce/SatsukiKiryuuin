@@ -55,14 +55,27 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 .project .thumb img { max-width: 92%; max-height: 136px; box-shadow: 0 1px 4px rgba(0,0,0,.2); background: var(--panel); }
 .project .info { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .project .info b { cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.project .acts { display: flex; gap: 4px; padding: 0 8px 10px; }
+.project { container-type: inline-size; }
+.project .acts { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 0 8px 10px; margin-top: auto; }
+.project .acts .btn { flex: none; width: 28px; padding: 0; }
+.project .acts .btn.main { flex: 1 1 auto; width: auto; min-width: 28px; padding: 0 8px; }
+.project .acts .btn.main .ic { display: none; }
+.project .acts .spacer { flex: 0 1 auto; }
+/* Узкая карточка: «Открыть» становится значком, чтобы все кнопки влезли в строку. */
+@container (max-width: 212px) {
+  .project .acts .btn.main span { display: none; }
+  .project .acts .btn.main .ic { display: inline-block; }
+  .project .acts .btn.main { flex: 0 0 auto; width: 36px; padding: 0; }
+  .project .acts .spacer { flex: 1 1 auto; }
+}
 .home .search { width: 280px; max-width: 100%; }
 
 /* Редактор */
 .editor { display: flex; flex-direction: column; height: 100vh; }
 .topbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
-.title-input { font-size: 16px; font-weight: 600; border-color: transparent !important; width: min(380px, 30vw); }
+.title-input { font-size: 16px; font-weight: 600; border-color: transparent !important; background: transparent; width: min(380px, 30vw); }
 .title-input:hover { border-color: var(--line-strong) !important; }
+.title-input:focus { background: var(--panel); }
 .kind-select { width: auto; }
 .save-state { color: var(--muted); font-size: 12px; min-width: 90px; text-align: right; }
 .save-state.error { color: var(--danger); }
@@ -238,7 +251,16 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 .f .row { flex-wrap: wrap; min-width: 0; }
 .f select, .f > .row > select, .f > input, .f > select { max-width: 100%; }
 .f > .row > select, .f > .row > input[type=text] { flex: 1 1 120px; min-width: 0; }
-.seg { flex-wrap: wrap; }
+.seg { flex-wrap: nowrap; max-width: 100%; }
+.seg button { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg button + button { border-left: 0; }
+.f.f-stack { grid-template-columns: 1fr; gap: 4px; }
+.f.f-stack > span { justify-self: start; }
+.f > span { overflow-wrap: anywhere; hyphens: auto; line-height: 1.25; }
+.f .seg.long button { padding: 0 4px; }
+.f.f-stack .row, .f .seg.long { width: 100%; }
+.f .seg.long { display: flex; }
+.f .seg.long button { flex: 1 1 0; }
 
 /* ===== Айдентика и компоненты 2-й версии интерфейса (см. docs/ui-spec.md) ===== */
 .ic { flex: none; display: inline-block; vertical-align: middle; }

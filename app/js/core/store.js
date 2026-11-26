@@ -15,7 +15,8 @@
         if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', {keyPath: 'id'});
         if (!d.objectStoreNames.contains('blobs')) d.createObjectStore('blobs', {keyPath: 'sha'}); // кэш файлов с сервера
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => { const d = req.result; d.onversionchange = () => { d.close(); dbPromise = null; }; resolve(d); };
+      req.onblocked = () => { dbPromise = null; reject(new Error('Студия открыта в другой вкладке со старой версией — закройте её и обновите страницу.')); };
       req.onerror = () => reject(new Error('Браузер не даёт сохранить проекты (IndexedDB). Проверьте режим «инкогнито».'));
     });
     return dbPromise;
@@ -60,7 +61,9 @@
   /* ---------- на сервере ---------- */
   const remoteMeta = new Map(); // id → {revision, permission}
   const shaCache = new Map();   // asset/font id + длина данных → sha256
-  async function blobGet(sha) { try { return (await tx(['blobs'], 'readonly', t => req(t.objectStore('blobs').get(sha))))?.data || null; } catch (e) { return null; } }
+  /* Кэш файлов в браузере необязателен: если IndexedDB не ответила за 3 с — идём на сервер. */
+  const soon = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+  async function blobGet(sha) { try { return (await soon(tx(['blobs'], 'readonly', t => req(t.objectStore('blobs').get(sha))), 3000))?.data || null; } catch (e) { return null; } }
   async function blobPut(sha, data) { try { await tx(['blobs'], 'readwrite', t => { t.objectStore('blobs').put({sha, data, at: Date.now()}); }); } catch (e) { /* кэш не обязателен */ } }
 
   async function shaOf(item) {
@@ -95,22 +98,39 @@
     return out;
   }
   /* Документ с сервера: файлы — из кэша браузера или с сервера. */
-  async function hydrate(doc, {link} = {}) {
+  async function hydrate(doc, {link, progress} = {}) {
+    const items = [...Object.values(doc.assets || {}), ...(doc.fonts || [])].filter(i => !i.data && i.sha256);
+    let done = 0;
+    const missing = [];
+    const tell = () => progress?.(items.length > 1 ? `Загружаем файлы проекта: ${done} из ${items.length}…` : 'Загружаем файлы проекта…');
     const load = async item => {
-      if (item.data || !item.sha256) return;
-      let data = await blobGet(item.sha256);
-      if (!data) {
-        const r = await XS.Api.call('GET', 'v1/assets/' + item.sha256, undefined, {query: link ? {link} : undefined});
-        data = XS.bytesToDataUrl(r.bytes, item.mime || r.mime || (item.family ? 'font/ttf' : 'application/octet-stream'));
-        blobPut(item.sha256, data);
-      }
-      item.data = data;
-      shaCache.set(item.id + ':' + data.length, item.sha256);
+      try {
+        let data = await blobGet(item.sha256);
+        if (!data) {
+          const r = await XS.Api.call('GET', 'v1/assets/' + item.sha256, undefined, {query: link ? {link} : undefined});
+          data = XS.bytesToDataUrl(r.bytes, item.mime || r.mime || (item.family ? 'font/ttf' : 'application/octet-stream'));
+          blobPut(item.sha256, data);
+        }
+        item.data = data;
+        shaCache.set(item.id + ':' + data.length, item.sha256);
+      } catch (e) {
+        if (e.status === 401 || e.status === 403) throw e;
+        missing.push({name: item.name || item.family || item.id, error: e.message});
+      } finally { done++; tell(); }
     };
-    await Promise.all([...Object.values(doc.assets || {}), ...(doc.fonts || [])].map(load));
+    if (items.length) tell();
+    // по 3 файла одновременно — не забиваем канал и показываем ход загрузки
+    const queue = items.slice();
+    await Promise.all(Array.from({length: Math.min(3, queue.length)}, async () => { while (queue.length) await load(queue.shift()); }));
+    if (missing.length) Object.defineProperty(doc, '_missingFiles', {value: missing, enumerable: false, configurable: true});
     return doc;
   }
 
+  /* normalizeDoc может вернуть новый объект — переносим список недогруженных файлов. */
+  function keepMissing(doc, src) {
+    if (src && src._missingFiles && doc !== src) Object.defineProperty(doc, '_missingFiles', {value: src._missingFiles, enumerable: false, configurable: true});
+    return doc;
+  }
   const remote = {
     meta: remoteMeta,
     async list(scope = 'mine') {
@@ -118,10 +138,10 @@
       for (const p of r.projects) if (scope !== 'trash') remoteMeta.set(p.id, {...remoteMeta.get(p.id), permission: p.permission});
       return r.projects.map(p => ({...p, where: 'remote', scope}));
     },
-    async get(id) {
+    async get(id, {progress} = {}) {
       const r = await XS.Api.call('GET', 'v1/projects/' + encodeURIComponent(id));
       remoteMeta.set(id, {revision: r.revision, permission: r.permission});
-      return XS.Model.normalizeDoc(await hydrate(r.doc));
+      return keepMissing(XS.Model.normalizeDoc(await hydrate(r.doc, {progress})), r.doc);
     },
     async create(doc, thumb, note) {
       const r = await XS.Api.call('POST', 'v1/projects', {doc: await dehydrate(doc), thumb, note});
@@ -153,7 +173,7 @@
     unshare: (id, shareId) => XS.Api.call('DELETE', 'v1/projects/' + encodeURIComponent(id) + '/shares/' + shareId),
     async byLink(token) {
       const r = await XS.Api.call('GET', 'v1/links/' + encodeURIComponent(token));
-      return XS.Model.normalizeDoc(await hydrate(r.doc, {link: token}));
+      return keepMissing(XS.Model.normalizeDoc(await hydrate(r.doc, {link: token})), r.doc);
     }
   };
 

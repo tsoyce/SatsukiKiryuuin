@@ -33,7 +33,16 @@
   function registerWorker() {
     if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && !/[?&]sw=1/.test(location.search)) return; // в разработке не мешаем свежему коду
-    navigator.serviceWorker.register('sw.js').catch(e => console.warn('Service worker:', e));
+    // updateViaCache: 'none' — новую версию Студии браузер ищет сразу, а не через сутки.
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js', {updateViaCache: 'none'}).then(r => r.update?.()).catch(e => console.warn('Service worker:', e));
+    // Вышла новая версия, а страница открыта со старой: на главной — тихо перезагружаемся, в редакторе — подсказываем.
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded) return;
+      if (!UI.S?.doc && !document.querySelector('dialog[open]')) { reloaded = true; location.reload(); }
+      else UI.toast('Вышла новая версия Студии — обновите страницу, когда закончите (всё уже сохранено).');
+    });
   }
   function offlineBadge() {
     const set = () => document.body.classList.toggle('is-offline', !navigator.onLine);

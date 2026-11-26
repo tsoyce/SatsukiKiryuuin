@@ -265,6 +265,7 @@
     const doc = await UI.busy('Открываем проект по ссылке…', () => XS.Store.remote.byLink(token));
     await UI.open(doc, {readOnly: true, link: token});
     UI.toast('Проект открыт только для просмотра. Выгрузка и печать работают; чтобы менять — «Проект → Сделать копию».');
+    UI.warnMissingFiles(doc);
   }
 
   async function init() {
