@@ -51,7 +51,7 @@
 ```
 app/
 ├── index.html              одна страница: главная (#/), редактор (#/doc/<id>), диалоги; порядок подключения скриптов
-├── img/                    знак Студии: logo-160.webp (шапка), favicon-32/64.png, apple-touch-icon.png, icon-192/512.png и icon-maskable-512.png (приложение)
+├── img/                    знак Студии: hero-portrait.webp (портрет в герое главной), logo-160.webp (шапка), favicon-32/64.png, apple-touch-icon.png, icon-192/512.png и icon-maskable-512.png (приложение)
 ├── manifest.webmanifest    v4: установка как приложение (PWA)
 ├── sw.js                   v4: service worker — Студия открывается без сети; API не кэшируется. Новая версия → новое имя CACHE
 ├── css/studio.css          весь интерфейс; цвета — переменные в :root, в конце — компоненты 2-й версии

@@ -23,7 +23,22 @@
 
   function decorate() {
     const hero = document.querySelector('.hero');
-    if (hero && !hero.querySelector('.hero-emblem')) hero.insertAdjacentHTML('afterbegin', emblem(260, 'hero-emblem'));
+    if (hero && !hero.querySelector('.hero-emblem')) hero.insertAdjacentHTML('afterbegin', emblem(220, 'hero-emblem'));
+    /* Портрет чуть следует за мышью — глубина без тяжёлых эффектов. */
+    const portrait = hero && hero.querySelector('.hero-portrait');
+    if (portrait && !hero.dataset.parallax && global.matchMedia?.('(pointer: fine)').matches) {
+      hero.dataset.parallax = '1';
+      let raf = 0;
+      hero.addEventListener('mousemove', e => {
+        if (UI.Motion?.reduced()) return;
+        const r = hero.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => { portrait.style.setProperty('--px', (x * -10).toFixed(1) + 'px'); portrait.style.setProperty('--py', (y * -5).toFixed(1) + 'px'); });
+      });
+      hero.addEventListener('mouseleave', () => { portrait.style.setProperty('--px', '0px'); portrait.style.setProperty('--py', '0px'); });
+    }
+    const wn = document.querySelector('.whats-new .dialog-head h2');
+    if (wn && !wn.querySelector('[data-logo]')) { wn.insertAdjacentHTML('afterbegin', '<span data-logo="28"></span>'); XS.Icons.hydrate?.(wn); }
 
     /* Пасхалка: пять щелчков по знаку на главной — Студия отдаёт честь. */
     const brand = document.querySelector('.home .brand');
