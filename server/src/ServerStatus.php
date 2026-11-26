@@ -88,7 +88,7 @@ final class ServerStatus
             'storage' => [
                 'assets' => self::dirSize($dir . '/assets') + ['db' => (int)App::one('SELECT COALESCE(SUM(bytes),0) n FROM assets')['n'], 'rows' => (int)App::one('SELECT COUNT(*) n FROM assets')['n']],
                 'fontCache' => self::dirSize($dir . '/font-cache'), 'backups' => self::dirSize($dir . '/backups', 2000),
-                'orphans' => (int)App::one('SELECT COUNT(*) n FROM assets a LEFT JOIN project_assets pa ON pa.sha256 = a.sha256 WHERE pa.sha256 IS NULL')['n'],
+                'orphans' => (int)App::one('SELECT COUNT(*) n FROM assets a LEFT JOIN project_assets pa ON pa.sha256 = a.sha256 WHERE pa.sha256 IS NULL AND NOT EXISTS (SELECT 1 FROM site_template_assets sa WHERE sa.sha256 = a.sha256) AND NOT EXISTS (SELECT 1 FROM site_fonts sf WHERE sf.sha256 = a.sha256)')['n'],
             ],
             'database' => self::database(),
             'backups' => array_slice(self::backups(), 0, 20),

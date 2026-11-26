@@ -288,6 +288,34 @@ const ok = (r, status = 200) => { assert.strictEqual(r.status, status, JSON.stri
   assert.ok(stor.users.length >= 2 && stor.totals.files > 0 && stor.bigProjects.length >= 1 && stor.types.length >= 1, JSON.stringify(stor).slice(0, 300));
   ok(await a.call('POST', 'v1/admin/trash/empty'));
   ok(await anon.call('GET', 'v1/admin/storage'), 401);
+  // Библиотека сайта: шаблон из проекта (без личных строк), скачивание файлов шаблона без входа, шрифты сайта
+  assert.deepStrictEqual(ok(await anon.call('GET', 'v1/templates')).templates, []);
+  ok(await b.call('POST', 'v1/admin/templates', {projectId: 'doc-test-1'}), 401);
+  const tplPub = ok(await a.call('POST', 'v1/admin/templates', {projectId: 'doc-test-1', title: 'Диплом кафедры', description: 'Официальный бланк'}));
+  const tpl = ok(await anon.call('GET', 'v1/templates')).templates;
+  assert.strictEqual(tpl.length, 1); assert.strictEqual(tpl[0].title, 'Диплом кафедры');
+  const tdoc = ok(await anon.call('GET', 'v1/templates/' + tplPub.id)).doc;
+  assert.strictEqual(tdoc.data.rows.length, 1); assert.strictEqual(Object.values(tdoc.data.rows[0].cells).join(''), '', 'имена из таблицы в шаблон не попадают');
+  assert.ok(!('id' in tdoc));
+  const tsha = Object.values(tdoc.assets).map(x => x.sha256).find(Boolean);
+  if (tsha) assert.strictEqual(ok(await anon.call('GET', 'v1/assets/' + tsha)).length > 0, true, 'файлы шаблона доступны всем');
+  ok(await a.call('PATCH', 'v1/admin/templates/' + tplPub.id, {published: false}));
+  assert.strictEqual(ok(await anon.call('GET', 'v1/templates')).templates.length, 0);
+  ok(await anon.call('GET', 'v1/templates/' + tplPub.id), 404);
+  if (tsha) ok(await anon.call('GET', 'v1/assets/' + tsha), 404);
+  assert.strictEqual(ok(await a.call('PATCH', 'v1/admin/templates/' + tplPub.id, {published: true, refresh: true, title: 'Диплом'})).templates[0].title, 'Диплом');
+  ok(await a.call('POST', 'v1/admin/templates/order', {ids: [tplPub.id]}));
+  const fontBytes = Buffer.concat([Buffer.from([0, 1, 0, 0]), Buffer.alloc(200, 7)]);
+  const fsha = crypto.createHash('sha256').update(fontBytes).digest('hex');
+  ok(await a.call('POST', 'v1/admin/fonts', {sha256: fsha, family: 'Кафедральный', variant: 'regular'}), 422);
+  ok(await a.call('PUT', 'v1/assets/' + fsha, fontBytes, {raw: true}));
+  ok(await a.call('POST', 'v1/admin/fonts', {sha256: sha, family: 'Не шрифт'}), 415);
+  const sf = ok(await a.call('POST', 'v1/admin/fonts', {sha256: fsha, family: 'Кафедральный', variant: 'regular', name: 'kaf.ttf'}));
+  assert.strictEqual(sf.fonts[0].variants[0].variant, 'regular');
+  assert.strictEqual(ok(await anon.call('GET', 'v1/fonts/site')).fonts[0].family, 'Кафедральный');
+  assert.ok(ok(await anon.call('GET', 'v1/assets/' + fsha)).length === fontBytes.length, 'шрифт сайта доступен всем');
+  ok(await a.call('DELETE', 'v1/admin/fonts/' + sf.fonts[0].variants[0].id));
+  ok(await anon.call('GET', 'v1/assets/' + fsha), 404);
   // Сервер и обслуживание
   const srvInfo = ok(await a.call('GET', 'v1/admin/server'));
   assert.ok(srvInfo.database.bytes > 0 && srvInfo.disk.total > 0 && srvInfo.jobs.length === 2 && !('setup_token' in srvInfo.security), JSON.stringify(srvInfo).slice(0, 300));

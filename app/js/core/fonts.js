@@ -26,7 +26,7 @@
 
   /* Категории: код из каталога → подпись. */
   const CATEGORY = {s: 'Без засечек', r: 'С засечками', d: 'Акцидентный', h: 'Рукописный', m: 'Моноширинный'};
-  const SOURCE = {google: 'Google Fonts', local: 'С компьютера', upload: 'Загруженный'};
+  const SOURCE = {google: 'Google Fonts', local: 'С компьютера', upload: 'Загруженный', site: 'Шрифт сайта'};
   const WEIGHT_NAMES = {100: 'Thin', 200: 'ExtraLight', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold', 900: 'Black'};
   const WEIGHT_RU = {100: 'тонкий', 200: 'сверхсветлый', 300: 'светлый', 400: 'обычный', 500: 'средний', 600: 'полужирный', 700: 'жирный', 800: 'сверхжирный', 900: 'чёрный'};
 

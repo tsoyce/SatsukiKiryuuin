@@ -101,6 +101,7 @@ final class Assets
             $link = Links::projectFor('view');
             $ok = (bool)App::one('SELECT 1 FROM project_assets WHERE project_id = ? AND sha256 = ?', [$link['project_id'], $sha]);
         }
+        if (!$ok) $ok = SiteLibrary::publicAsset($sha); // шаблоны и шрифты сайта — всем
         $row = $ok ? App::one('SELECT mime, bytes FROM assets WHERE sha256 = ?', [$sha]) : null;
         $file = self::path($sha);
         if (!$row || !is_file($file)) throw new HttpError(404, 'Файл не найден.');
@@ -126,7 +127,8 @@ final class Assets
     public static function gc(): int
     {
         $n = 0;
-        foreach (App::all('SELECT a.sha256 FROM assets a LEFT JOIN project_assets pa ON pa.sha256 = a.sha256 WHERE pa.sha256 IS NULL AND a.created_at < ?', [App::now(-86400)]) as $r) {
+        foreach (App::all('SELECT a.sha256 FROM assets a LEFT JOIN project_assets pa ON pa.sha256 = a.sha256 WHERE pa.sha256 IS NULL AND a.created_at < ?
+            AND NOT EXISTS (SELECT 1 FROM site_template_assets sa WHERE sa.sha256 = a.sha256) AND NOT EXISTS (SELECT 1 FROM site_fonts sf WHERE sf.sha256 = a.sha256)', [App::now(-86400)]) as $r) {
             @unlink(self::path($r['sha256']));
             App::q('DELETE FROM assets WHERE sha256 = ?', [$r['sha256']]);
             $n++;
