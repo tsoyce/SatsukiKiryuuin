@@ -75,8 +75,9 @@
     }
     return shaCache.get(k);
   }
-  /* Документ для сервера: вместо data:URL — sha256; недостающие файлы закачиваются. */
-  async function dehydrate(doc) {
+  /* Документ для сервера: вместо data:URL — sha256; недостающие файлы закачиваются (гость — по своей ссылке). */
+  async function dehydrate(doc, link = '') {
+    const headers = link ? {'X-XS-Link': link} : undefined;
     const out = {...doc, assets: {}, fonts: []};
     const files = new Map();
     for (const a of Object.values(doc.assets)) {
@@ -92,8 +93,8 @@
       out.fonts.push({id: f.id, family: f.family, variant: f.variant, name: f.name, ...(f.source ? {source: f.source} : {}), ...(f.category ? {category: f.category} : {}), sha256: sha, data: ''});
     }
     if (files.size) {
-      const {missing} = await XS.Api.call('POST', 'v1/assets/missing', {hashes: [...files.keys()]});
-      for (const sha of missing) await XS.Api.call('PUT', 'v1/assets/' + sha, undefined, {raw: XS.dataUrlToBytes(files.get(sha)).bytes});
+      const {missing} = await XS.Api.call('POST', 'v1/assets/missing', {hashes: [...files.keys()]}, {headers});
+      for (const sha of missing) await XS.Api.call('PUT', 'v1/assets/' + sha, undefined, {raw: XS.dataUrlToBytes(files.get(sha)).bytes, headers});
     }
     return out;
   }
@@ -107,7 +108,7 @@
       try {
         let data = await blobGet(item.sha256);
         if (!data) {
-          const r = await XS.Api.call('GET', 'v1/assets/' + item.sha256, undefined, {query: link ? {link} : undefined});
+          const r = await XS.Api.call('GET', 'v1/assets/' + item.sha256, undefined, {headers: link ? {'X-XS-Link': link} : undefined});
           data = XS.bytesToDataUrl(r.bytes, item.mime || r.mime || (item.family ? 'font/ttf' : 'application/octet-stream'));
           blobPut(item.sha256, data);
         }
@@ -153,9 +154,12 @@
       const m = remoteMeta.get(doc.id);
       if (!m) throw new Error('Проект не открыт с сервера.');
       doc.updatedAt = new Date().toISOString();
-      const body = {doc: await dehydrate(doc), revision: m.revision, thumb: thumb || undefined, note};
+      const body = {doc: await dehydrate(doc, m.link), revision: m.revision, thumb: thumb || undefined, note};
+      if (m.link) body.guest = guestName();
       try {
-        const r = await XS.Api.call('PUT', 'v1/projects/' + encodeURIComponent(doc.id), body);
+        // по гостевой ссылке — в проект владельца через v1/link (токен в заголовке, не в адресе)
+        const r = m.link ? await XS.Api.call('PUT', 'v1/link', body, {headers: {'X-XS-Link': m.link}})
+          : await XS.Api.call('PUT', 'v1/projects/' + encodeURIComponent(doc.id), body);
         m.revision = r.revision;
         return r;
       } catch (e) {
@@ -170,12 +174,28 @@
     saveVersion: (id, note) => XS.Api.call('POST', 'v1/projects/' + encodeURIComponent(id) + '/revisions', {note}),
     shares: id => XS.Api.call('GET', 'v1/projects/' + encodeURIComponent(id) + '/shares'),
     share: (id, body) => XS.Api.call('POST', 'v1/projects/' + encodeURIComponent(id) + '/shares', body),
+    updateShare: (id, shareId, body) => XS.Api.call('PATCH', 'v1/projects/' + encodeURIComponent(id) + '/shares/' + shareId, body),
     unshare: (id, shareId) => XS.Api.call('DELETE', 'v1/projects/' + encodeURIComponent(id) + '/shares/' + shareId),
-    async byLink(token) {
-      const r = await XS.Api.call('GET', 'v1/links/' + encodeURIComponent(token));
-      return keepMissing(XS.Model.normalizeDoc(await hydrate(r.doc, {link: token})), r.doc);
+    /* Гостевая ссылка: проект владельца, права view | edit. Сохранение идёт по той же ссылке. */
+    async byLink(token, {progress} = {}) {
+      const r = await XS.Api.call('GET', 'v1/link', undefined, {headers: {'X-XS-Link': token}});
+      const id = r.id || r.doc.id;
+      remoteMeta.set(id, {revision: r.revision, permission: r.permission, link: token, owner: r.owner, label: r.label, expiresAt: r.expiresAt});
+      const doc = keepMissing(XS.Model.normalizeDoc(await hydrate(r.doc, {link: token, progress})), r.doc);
+      doc.id = id;
+      return doc;
     }
   };
+
+  /* Как подписать правки гостя в версиях проекта (хранится в этом браузере). */
+  const GUEST_KEY = 'xsatsu-guest-name';
+  function guestName(value) {
+    try {
+      if (value !== undefined) localStorage.setItem(GUEST_KEY, String(value).trim().slice(0, 60));
+      return localStorage.getItem(GUEST_KEY) || '';
+    } catch (e) { return ''; }
+  }
+  remote.guestName = guestName;
 
   /* ---------- фасад ---------- */
   const where = id => (remoteMeta.has(id) ? 'remote' : 'local');

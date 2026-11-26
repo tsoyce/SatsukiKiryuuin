@@ -3,9 +3,10 @@
 (function (global) {
   'use strict';
   const XS = global.XS, UI = XS.UI, $ = UI.$;
-  const VERSION = '4.5', KEY = 'xs-seen-version';
+  const VERSION = '4.7', KEY = 'xs-seen-version';
 
   const ITEMS = [
+    ['link', 'Ссылка для гостя — без регистрации', 'Проект → «Доступ и ссылка…»: коллега открывает ссылку, правит, печатает. Срок, «только просмотр» и отзыв — в том же окне; правки гостя подписаны в «Версиях».'],
     ['font', 'Шрифты: Google Fonts, с компьютера, свои', 'Нажмите на гарнитуру в свойствах текста: поиск по ~1900 семействам Google Fonts (почти 300 с кириллицей) с превью, шрифты, установленные на компьютере, и файлы TTF/OTF/WOFF/WOFF2. Шрифт сохраняется в проекте и встраивается в PDF.'],
     ['search', 'Палитра команд — Ctrl+K', 'Любое действие, шаблон, запись или слой — набором пары букв. Ctrl+H — найти и заменить.'],
     ['sparkle', 'Пять новых шаблонов', 'Бейджи с фото и QR, сертификаты с номером, благодарственные письма, карточки рассадки, билеты с корешком.'],
@@ -28,7 +29,8 @@
   function maybeShow() {
     let seen = '';
     try { seen = localStorage.getItem(KEY) || ''; } catch (e) { return; }
-    if (seen !== VERSION) setTimeout(() => { if (!document.querySelector('dialog[open]')) open(); }, 700);
+    // гостю по ссылке или анкете «Что нового» ни к чему
+    if (seen !== VERSION) setTimeout(() => { if (!document.querySelector('dialog[open]') && !/^#\/(link|form)\//.test(location.hash)) open(); }, 700);
   }
 
   function registerWorker() {
