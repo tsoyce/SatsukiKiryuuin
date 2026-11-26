@@ -25,6 +25,7 @@ a { color: var(--accent); }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
 .btn.primary:hover { filter: brightness(1.08); }
+.btn.primary .ic, .btn.primary i[data-icon] { color: inherit; }
 .btn.ghost { border-color: transparent; background: transparent; }
 .btn.icon { width: 32px; padding: 0; }
 .btn.small { height: 28px; padding: 0 9px; font-size: 13px; }
@@ -213,15 +214,51 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 .progress .bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p, 0%); background: var(--accent); transition: width .2s; }
 .progress .label { font-size: 12px; color: var(--muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table-wrap { overflow: auto; flex: 1; padding: 0; }
-.data-table { border-collapse: collapse; font-size: 13px; min-width: 100%; }
-.data-table th, .data-table td { border: 1px solid var(--line); padding: 0; }
-.data-table th { background: var(--soft); position: sticky; top: 0; z-index: 1; }
-.data-table th input { font-weight: 600; background: transparent; }
-.data-table input, .data-table textarea { border: 0; border-radius: 0; width: 100%; min-width: 120px; height: 30px; background: transparent; }
-.data-table td.n, .data-table th.n { width: 44px; text-align: center; color: var(--muted); padding: 0 6px; }
-.data-table td.copies input { min-width: 50px; width: 60px; }
-.data-table .col-del { border: 0; background: none; cursor: pointer; color: var(--muted); }
-.data-table img { height: 28px; display: block; }
+/* Таблица записей «как в Excel» (ui/sheet.js) */
+.sheet { outline: none; user-select: none; -webkit-user-select: none; background: var(--panel); }
+.data-table { border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 100%; table-layout: auto; }
+.data-table th, .data-table td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; }
+.data-table thead th { background: var(--soft); position: sticky; top: 0; z-index: 3; height: 36px; font-weight: 600; text-align: left; }
+.data-table thead th.hl { background: var(--accent-soft); box-shadow: inset 0 -2px 0 var(--accent); }
+.data-table .corner { left: 0; z-index: 4 !important; width: 64px; min-width: 64px; text-align: center; cursor: cell; }
+.data-table .colh { min-width: 170px; }
+.data-table .colh.copies { min-width: 64px; width: 64px; text-align: center; color: var(--muted); padding: 0 6px; }
+.colh-in { display: flex; align-items: center; gap: 2px; padding: 0 4px 0 2px; }
+.colh-in .col-name { flex: 1; min-width: 60px; width: 100%; height: 30px; border: 1px solid transparent; border-radius: 4px; background: transparent; font-weight: 600; padding: 0 6px; }
+.colh-in .col-name:hover { border-color: var(--line-strong); }
+.colh-in .col-name:focus { border-color: var(--accent); background: var(--panel); }
+.colh-in select { flex: none; width: auto; height: 26px; font-size: 12px; padding: 0 2px; border-color: transparent; background: transparent; color: var(--muted); }
+.colh-in select:hover { border-color: var(--line-strong); }
+.data-table .col-del { flex: none; width: 24px; height: 24px; border: 0; border-radius: 4px; background: none; cursor: pointer; color: var(--muted); display: grid; place-items: center; }
+.data-table .col-del:hover { background: var(--danger-soft, #fee2e2); color: var(--danger); }
+.data-table .rowh { position: sticky; left: 0; z-index: 2; background: var(--soft); width: 64px; min-width: 64px; color: var(--muted); font-weight: 500; font-size: 12px; cursor: e-resize; white-space: nowrap; padding: 0 6px; text-align: right; }
+.data-table .rowh.hl { background: var(--accent-soft); color: var(--accent); box-shadow: inset -2px 0 0 var(--accent); }
+.data-table .rowh span { display: inline-block; min-width: 22px; }
+.data-table .row-check { width: 15px; height: 15px; min-width: 0; margin: 0 6px 0 0; vertical-align: middle; cursor: pointer; accent-color: var(--accent); }
+.data-table .corner .row-check { margin: 0; }
+.data-table tbody td { height: 30px; padding: 0 8px; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: cell; position: relative; background: var(--panel); }
+.data-table tbody td.num { text-align: right; width: 64px; }
+.data-table tbody td.in-sel { background: var(--accent-soft); }
+.data-table tbody td.sel-top { box-shadow: inset 0 2px 0 var(--accent); }
+.data-table tbody td.sel-bottom { box-shadow: inset 0 -2px 0 var(--accent); }
+.data-table tbody td.sel-top.sel-bottom { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+.data-table tbody td.sel-left::before, .data-table tbody td.sel-right::after { content: ''; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+.data-table tbody td.sel-left::before { left: 0; }
+.data-table tbody td.sel-right::after { right: 0; }
+.data-table tbody td.active { background: var(--panel); outline: 2px solid var(--accent); outline-offset: -2px; }
+.data-table tbody td.editing { padding: 0; overflow: visible; }
+.data-table .cell-edit { width: 100%; min-width: 120px; height: 30px; border: 0; border-radius: 0; outline: 2px solid var(--accent); outline-offset: -2px; padding: 0 8px; background: var(--panel); font: inherit; }
+.data-table img { height: 26px; display: block; }
+.sheet { position: relative; }
+.sheet-keys-input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; resize: none; pointer-events: none; }
+.data-table tr.ghost td { background: var(--soft); }
+.data-table tr.ghost td.in-sel { background: var(--accent-soft); }
+.data-table tr.ghost td .muted { font-size: 12px; }
+.data-table tr.ghost td:first-of-type { overflow: visible; }
+.data-table tr.ghost .rowh { text-align: center; }
+.data-table .sheet-empty td { height: 120px; text-align: center; color: var(--muted); white-space: normal; cursor: default; }
+.sheet-foot { display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 8px 18px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--soft); flex-wrap: wrap; }
+#tableDialog .data-bar { gap: 6px; margin-left: auto; }
 .check-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 .check-list a { cursor: pointer; }
 
@@ -366,6 +403,7 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; font: 600 11px/1
 .align-bar .sep { width: 1px; background: var(--line); margin: 3px 3px; }
 .insp-actions .btn .ic { color: var(--muted); }
 .insp-actions .btn.danger .ic { color: var(--danger); }
+.insp-actions .btn.primary .ic { color: inherit; }
 .dialog-head .btn.icon { margin-left: auto; }
 .menu button { display: flex; align-items: center; gap: 8px; }
 .menu button .ic { color: var(--muted); }
@@ -408,6 +446,15 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; font: 600 11px/1
 .icon-toggle { display: inline-flex; }
 .inline-tabs { border: 0; position: static; flex: 1; gap: 2px; background: none; }
 .inline-tabs .tab { flex: none; padding: 0 12px; height: 34px; }
+/* Вкладки в шапке окна никогда не наезжают на кнопку «Закрыть»: сжимаются и прокручиваются. */
+.inline-tabs { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.inline-tabs::-webkit-scrollbar { display: none; }
+/* Окно «Инструменты»: вкладок много — отдельной строкой под заголовком, на всю ширину. */
+#toolsDialog .dialog-head, #settingsDialog .dialog-head { flex-wrap: wrap; row-gap: 0; padding-bottom: 0; }
+#toolsDialog .dialog-head h2, #settingsDialog .dialog-head h2 { order: 1; }
+#toolsDialog .dialog-head .btn.icon, #settingsDialog .dialog-head .btn.icon { order: 2; }
+#toolsDialog .inline-tabs, #settingsDialog .inline-tabs { order: 3; flex: 1 0 100%; margin: 8px -18px 0; padding: 0 12px; border-top: 0; }
+#toolsDialog .inline-tabs .tab, #settingsDialog .inline-tabs .tab { height: 40px; }
 .warn-note { background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-line); display: flex; align-items: center; gap: 6px; margin: 0 0 12px; }
 .link { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
 
