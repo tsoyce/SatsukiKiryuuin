@@ -134,7 +134,7 @@
   }
 
   /* ---------- шаблоны v4 ---------- */
-  const INDIGO = '#4f46e5', INK = '#1b2030', SOFT = '#eef0ff', MUTED = '#5b6474';
+  const INDIGO = '#023bb9', INK = '#11172c', SOFT = '#ebf0fd', MUTED = '#5b6474';
   const R = props => M().element('rect', {stroke: '', strokeWidth: 0, ...props});
 
   /* Бейдж 70×100: фото из столбца (или буквы имени), фамилия крупно, роль, организация, QR. */
