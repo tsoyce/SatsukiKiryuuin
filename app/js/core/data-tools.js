@@ -121,5 +121,70 @@
     return null;
   }
 
-  XS.DataTools = {sortRows, duplicates, dedupe, count, replace, matchPhotos, applyPhotos, norm, sheetCsvUrl};
+  /* ---------- таблица как в Excel: диапазоны, буфер обмена ---------- */
+  /* Буфер из Excel / Google Таблиц (TSV, кавычки для многострочных ячеек) → матрица строк. */
+  function parseClip(text) {
+    const s = String(text ?? '').replace(/\r\n?/g, '\n').replace(/\n$/, '');
+    if (!s.includes('\t') && !s.includes('\n')) return [[s]];
+    const rows = [];
+    let row = [], cell = '', quoted = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (quoted) {
+        if (ch === '"' && s[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') quoted = false;
+        else cell += ch;
+      } else if (ch === '"' && cell === '') quoted = true;
+      else if (ch === '\t') { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    row.push(cell); rows.push(row);
+    return rows;
+  }
+  /* Матрица → TSV, как его понимает Excel. */
+  function toTsv(matrix) {
+    const q = v => /[\t\n"]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    return matrix.map(r => r.map(v => q(String(v ?? ''))).join('\t')).join('\r\n');
+  }
+  const norm4 = ({r1, c1, r2, c2}) => ({r1: Math.min(r1, r2), r2: Math.max(r1, r2), c1: Math.min(c1, c2), c2: Math.max(c1, c2)});
+  /* Значения прямоугольника {r1,c1,r2,c2} (индексы записей и столбцов). Картинки — пустые. */
+  function copyRange(doc, range) {
+    const {r1, r2, c1, c2} = norm4(range), cols = doc.data.columns, out = [];
+    for (let r = r1; r <= r2 && r < doc.data.rows.length; r++) {
+      const line = [];
+      for (let c = c1; c <= c2 && c < cols.length; c++) line.push(cols[c].type === 'image' ? '' : String(doc.data.rows[r].cells[cols[c].id] ?? ''));
+      out.push(line);
+    }
+    return out;
+  }
+  /* Очистить прямоугольник (Delete). → сколько ячеек было непустых. */
+  function clearRange(doc, range) {
+    const {r1, r2, c1, c2} = norm4(range), cols = doc.data.columns;
+    let n = 0;
+    for (let r = r1; r <= r2 && r < doc.data.rows.length; r++) for (let c = c1; c <= c2 && c < cols.length; c++) {
+      const row = doc.data.rows[r], id = cols[c].id;
+      if (row.cells[id] != null && row.cells[id] !== '') { n++; row.cells[id] = ''; }
+    }
+    return n;
+  }
+  /* Вставка матрицы с ячейки (r, c). Не хватает записей — добавляются, не хватает столбцов — «Столбец N».
+   * Одно значение и выделен диапазон — заполняет весь диапазон (как в Excel). Картинки не перезаписываются. */
+  function pasteRange(doc, range, matrix) {
+    const {r1, r2, c1, c2} = norm4(range);
+    if (matrix.length === 1 && matrix[0].length === 1 && (r2 > r1 || c2 > c1)) {
+      matrix = Array.from({length: r2 - r1 + 1}, () => Array(c2 - c1 + 1).fill(matrix[0][0]));
+    }
+    const width = Math.max(...matrix.map(r => r.length));
+    while (doc.data.columns.length < c1 + width) XS.Model.addColumn(doc, 'Столбец ' + (doc.data.columns.length + 1));
+    while (doc.data.rows.length < r1 + matrix.length) doc.data.rows.push({id: XS.uid('r'), cells: {}, copies: 1});
+    const cols = doc.data.columns;
+    matrix.forEach((line, i) => line.forEach((v, j) => {
+      const col = cols[c1 + j];
+      if (col.type !== 'image') doc.data.rows[r1 + i].cells[col.id] = v;
+    }));
+    return {r1, c1, r2: r1 + matrix.length - 1, c2: c1 + width - 1};
+  }
+
+  XS.DataTools = {parseClip, toTsv, copyRange, clearRange, pasteRange,sortRows, duplicates, dedupe, count, replace, matchPhotos, applyPhotos, norm, sheetCsvUrl};
 })(typeof window !== 'undefined' ? window : globalThis);

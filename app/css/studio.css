@@ -531,3 +531,28 @@ b.accent { color: var(--accent); }
 .guest-form .f { text-align: left; }
 .guest-form .choice { justify-content: flex-start; padding: 4px 0; }
 .form-new textarea { font-family: inherit; font-size: 13px; }
+
+/* Таблица «Данные» как в Excel */
+.data-table { min-width: 0; user-select: none; }
+.data-table input[type=checkbox] { min-width: 0; width: auto; height: auto; }
+.data-table th .th-row { display: flex; align-items: center; min-width: 160px; }
+.data-table th .th-row input { min-width: 90px; flex: 1; }
+.data-table th .th-row select { width: auto; border: 0; background: transparent; font-size: 12px; color: var(--muted); }
+.data-table td.n.chk, .data-table th.n.chk { width: 30px; padding: 0 4px; }
+.data-table th.corner, .data-table td.rowhead { cursor: pointer; }
+.data-table th.hl, .data-table td.rowhead.hl { background: var(--accent-soft-2); color: var(--accent); }
+.data-table td.cell { min-width: 140px; max-width: 420px; height: 30px; padding: 4px 8px; white-space: pre-wrap; word-break: break-word; vertical-align: top; cursor: cell; }
+.data-table td.cell.sel { background: var(--accent-soft); }
+.data-table td.cell.cur { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--panel); }
+.data-table td.cell.sel.cur { background: var(--accent-soft); }
+.data-table td.cell.editing { padding: 0; outline: 2px solid var(--accent); outline-offset: -2px; }
+.data-table .cell-edit { width: 100%; min-height: 30px; border: 0; border-radius: 0; resize: none; padding: 4px 8px; font: inherit; font-family: inherit; font-size: 13px; background: var(--panel); outline: none; }
+.data-table td.grid-empty { padding: 24px; text-align: center; color: var(--muted); }
+.table-wrap:focus { outline: none; }
+.grid-info { margin-left: 8px; }
+/* Окно «Инструменты»: вкладки отдельной строкой под заголовком */
+#toolsDialog .dialog-head { flex-wrap: wrap; row-gap: 6px; }
+#toolsDialog .dialog-head h2 { flex: 1; }
+#toolsDialog .inline-tabs { order: 3; flex: 1 0 100%; display: flex; overflow-x: auto; margin: 0 -8px -15px; }
+#toolsDialog .inline-tabs .tab { white-space: nowrap; }
+.grid-sink { position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0; }
