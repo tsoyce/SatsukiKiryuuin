@@ -110,11 +110,11 @@
       row('Размер, pt', numInput(el.size, v => { el.size = v; el.minSize = Math.min(el.minSize, v); }, key('size'), {step: 0.5, min: 2, max: 400}),
         seg([['bold', 'Ж', 'Полужирный'], ['italic', 'К', 'Курсив'], ['uppercase', 'АА', 'Все прописные']], el, (p, on) => { el[p] = on; }, key('style'), {multi: true}));
       row('Цвет', colorInput(el.color, v => { el.color = v; }, key('color')));
-      row('По горизонт.', seg([['left', '⟸', 'Влево'], ['center', '⟺', 'По центру'], ['right', '⟹', 'Вправо']], el.align, v => { el.align = v; }, key('align')));
-      row('По вертикали', seg([['top', 'верх'], ['middle', 'центр'], ['bottom', 'низ']], el.valign, v => { el.valign = v; }, key('valign')));
+      row('Выравнивание', seg([['left', XS.Icons.icon('textLeft', 16), 'Влево'], ['center', XS.Icons.icon('textCenter', 16), 'По центру'], ['right', XS.Icons.icon('textRight', 16), 'Вправо']], el.align, v => { el.align = v; }, key('align')));
+      row('По вертикали', seg([['top', XS.Icons.icon('vTop', 16), 'Сверху'], ['middle', XS.Icons.icon('vMiddle', 16), 'По центру'], ['bottom', XS.Icons.icon('vBottom', 16), 'Снизу']], el.valign, v => { el.valign = v; }, key('valign')));
       row('Интерлиньяж', numInput(el.lineHeight, v => { el.lineHeight = v; }, key('lh'), {step: 0.05, min: 0.6, max: 4}));
       row('Разрядка, pt', numInput(el.letterSpacing, v => { el.letterSpacing = v; }, key('ls'), {step: 0.1, min: -5, max: 50}));
-      row('Не влезает', check('уменьшать до', el.autoFit, v => { el.autoFit = v; }, key('fit')), numInput(el.minSize, v => { el.minSize = v; }, key('min'), {step: 0.5, min: 2, max: el.size}), h('span', 'muted small', 'pt'));
+      row('Не влезает', check('сжать до', el.autoFit, v => { el.autoFit = v; }, key('fit')), numInput(el.minSize, v => { el.minSize = v; }, key('min'), {step: 0.5, min: 2, max: el.size, width: '62px'}), h('span', 'muted small', 'pt')).title = 'Если текст не помещается в рамку, кегль уменьшается, но не меньше этого размера';
 
       section('Выделение подставленных полей');
       const a = el.accent;
@@ -330,7 +330,7 @@
       const common = {bold: texts.every(e => e.bold), italic: texts.every(e => e.italic), uppercase: texts.every(e => e.uppercase)};
       row('Размер, pt', size, seg([['bold', 'Ж', 'Полужирный'], ['italic', 'К', 'Курсив'], ['uppercase', 'АА', 'Все прописные']], common, (p, on) => { for (const e of texts) e[p] = on; }, 'multi:style', {multi: true}));
       row('Цвет', colorInput(same('color') || texts[0].color, v => { for (const e of texts) e.color = v; }, 'multi:color'));
-      row('По горизонт.', seg([['left', '⟸', 'Влево'], ['center', '⟺', 'По центру'], ['right', '⟹', 'Вправо']], same('align'), v => { for (const e of texts) e.align = v; }, 'multi:align'));
+      row('Выравнивание', seg([['left', XS.Icons.icon('textLeft', 16), 'Влево'], ['center', XS.Icons.icon('textCenter', 16), 'По центру'], ['right', XS.Icons.icon('textRight', 16), 'Вправо']], same('align'), v => { for (const e of texts) e.align = v; }, 'multi:align'));
       void set;
     }
     section('Печать');
