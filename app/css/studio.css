@@ -301,7 +301,7 @@ input[type=color] { width: 36px; height: 30px; padding: 2px; border: 1px solid v
 
 /* ===== Айдентика и компоненты 2-й версии интерфейса (см. docs/ui-spec.md) ===== */
 .ic { flex: none; display: inline-block; vertical-align: middle; }
-.logo { flex: none; display: block; border-radius: 22%; }
+.logo { flex: none; display: block; border-radius: 19%; object-fit: cover; user-select: none; }
 i[data-icon] { display: inline-flex; font-style: normal; }
 .btn i[data-icon], .tab i[data-icon], .add-bar i[data-icon], .menu i[data-icon] { color: inherit; }
 .btn { gap: 6px; }

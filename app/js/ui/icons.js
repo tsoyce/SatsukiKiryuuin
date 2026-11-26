@@ -85,11 +85,9 @@
   function icon(name, size = 16) {
     return `<svg class="ic" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
   }
-  /* Знак: две карточки крест-накрест образуют «X» — один макет, много экземпляров. */
-  let logoN = 0;
+  /* Знак Студии — картинка img/logo-160.webp (исходник прислал владелец проекта, иконки приложения — img/icon-*.png). */
   function logo(size = 32) {
-    const id = 'xsg' + (++logoN);
-    return `<svg class="logo" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#${id})"/><rect x="25" y="9" width="14" height="46" rx="3" fill="#fff" opacity=".55" transform="rotate(-40 32 32)"/><rect x="25" y="9" width="14" height="46" rx="3" fill="#fff" transform="rotate(40 32 32)"/></svg>`;
+    return `<img class="logo" src="img/logo-160.webp" width="${size}" height="${size}" alt="" decoding="async" draggable="false">`;
   }
   /* Заменяет <i data-icon="name"></i> в разметке на SVG. */
   function hydrate(root = document) {
