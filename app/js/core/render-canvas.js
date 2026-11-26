@@ -18,7 +18,7 @@
       ctx.fillStyle = 'rgba(148, 163, 184, .16)'; ctx.fillRect(op.x * k, op.y * k, op.w * k, op.h * k);
       ctx.strokeStyle = 'rgba(148, 163, 184, .55)'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.5; ctx.strokeRect(op.x * k + 1, op.y * k + 1, op.w * k - 2, op.h * k - 2);
       ctx.fillStyle = '#64748b'; ctx.font = Math.max(10, Math.min(16, op.w * k / 22)) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('«' + (op.asset.name || 'файл') + '» не загрузился', (op.x + op.w / 2) * k, op.y * k + Math.min(op.h * k / 2, 22));
+      ctx.fillText(op.asset.pending ? 'картинка по ссылке…' : '«' + (op.asset.name || 'файл') + '» не загрузился', (op.x + op.w / 2) * k, op.y * k + Math.min(op.h * k / 2, 22));
       ctx.restore(); return;
     }
     const isPdf = XS.Assets.isPdf(op.asset);

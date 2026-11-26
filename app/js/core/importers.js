@@ -26,9 +26,10 @@
     }
     row.push(cell); rows.push(row);
     const width = Math.max(...rows.map(r => r.length));
-    const headers = rows.shift().map((h, i) => h.trim() || 'Столбец ' + (i + 1));
+    const firstRaw = rows.shift().map(h => h.trim());
+    const headers = firstRaw.map((h, i) => h || 'Столбец ' + (i + 1));
     while (headers.length < width) headers.push('Столбец ' + (headers.length + 1));
-    return {headers, rows: rows.filter(r => r.some(c => c.trim())).map(r => headers.map((_, i) => (r[i] ?? '').trim()))};
+    return {headers, first: headers.map((_, i) => firstRaw[i] ?? ''), rows: rows.filter(r => r.some(c => c.trim())).map(r => headers.map((_, i) => (r[i] ?? '').trim()))};
   }
 
   /* ---- XLSX / ODS без сторонних парсеров: распаковка fflate + разбор XML ---- */
@@ -54,7 +55,8 @@
     let width = 0;
     for (const r of rows) for (let i = r.length - 1; i >= 0; i--) if (r[i]) { width = Math.max(width, i + 1); break; }
     const headers = Array.from({length: width}, (_, i) => rows[0][i] || 'Столбец ' + (i + 1));
-    return {headers, rows: rows.slice(1).filter(r => r.some(Boolean)).map(r => headers.map((_, i) => r[i] ?? ''))};
+    // first — первая строка как есть: если заголовков в файле нет (просто список ФИО), она тоже данные (см. XS.ImportMap)
+    return {headers, first: headers.map((_, i) => rows[0][i] ?? ''), rows: rows.slice(1).filter(r => r.some(Boolean)).map(r => headers.map((_, i) => r[i] ?? ''))};
   }
 
   function readXlsx(bytes) {

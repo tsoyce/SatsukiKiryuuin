@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-use XSatsu\{App, Auth, Projects, Assets, Settings, Admin, Migrate, Forms, Fonts, HttpError};
+use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, Migrate, Forms, Fonts, RemoteImage, HttpError};
 
 App::route('GET', '/v1/health', function () {
     $db = false; $schema = null; $pending = null;
@@ -32,8 +32,12 @@ App::route('POST', '/v1/projects/{id}/revisions', fn($p) => Projects::saveVersio
 App::route('GET', '/v1/projects/{id}/revisions/{rev}', fn($p) => Projects::revision($p));
 App::route('GET', '/v1/projects/{id}/shares', fn($p) => Projects::shares($p));
 App::route('POST', '/v1/projects/{id}/shares', fn($p) => Projects::share($p));
+App::route('PATCH', '/v1/projects/{id}/shares/{share}', fn($p) => Projects::updateShare($p));
 App::route('DELETE', '/v1/projects/{id}/shares/{share}', fn($p) => Projects::unshare($p));
-App::route('GET', '/v1/links/{token}', fn($p) => Projects::byLink($p));
+// Гостевая ссылка без входа: токен — в заголовке X-XS-Link (старые ссылки — в пути)
+App::route('GET', '/v1/link', fn() => Links::open());
+App::route('PUT', '/v1/link', fn() => Links::save());
+App::route('GET', '/v1/links/{token}', fn($p) => Links::open($p));
 
 // v4: анкеты регистрации (владелец/редактор) и публичная анкета (без входа)
 App::route('GET', '/v1/projects/{id}/forms', fn($p) => Forms::list($p));
@@ -51,6 +55,7 @@ App::route('GET', '/v1/assets/{sha}', fn($p) => Assets::download($p));
 
 // Шрифты Google Fonts целым файлом (для вёрстки и PDF), без входа: Студия работает и без аккаунта
 App::route('GET', '/v1/fonts/google', fn() => Fonts::google());
+App::route('GET', '/v1/images/fetch', fn() => RemoteImage::fetch());
 
 App::route('GET', '/v1/settings', fn() => Settings::get());
 App::route('PUT', '/v1/settings/user', fn() => Settings::putUser());

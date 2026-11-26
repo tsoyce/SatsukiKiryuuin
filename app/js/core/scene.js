@@ -28,7 +28,10 @@
     if (!value) return null;
     if (/^\{[^{}]+\}$/.test(value)) value = String(XS.Fields.lookup(ctx, value.slice(1, -1)) || '').trim();
     if (/^asset:/.test(value)) return doc.assets[value.slice(6)] || null;
-    if (/^(data:image\/|https?:|presets\/)/.test(value)) return {id: value, data: value, mime: /^data:([^;,]+)/.exec(value)?.[1] || 'image/*', external: true};
+    // Картинка по ссылке рисуется только из сохранённой в проекте копии (XS.RemoteImages): чужая картинка напрямую
+    // «загрязняет» холст — и PNG/PDF уже не выгрузить. Пока копии нет — заглушка без данных.
+    if (/^https?:/i.test(value)) return XS.RemoteImages?.find(doc, value) || {id: 'url:' + value, data: '', name: 'картинка по ссылке', mime: 'image/*', pending: true, url: value};
+    if (/^(data:image\/|presets\/)/.test(value)) return {id: value, data: value, mime: /^data:([^;,]+)/.exec(value)?.[1] || 'image/*', external: true};
     return null;
   }
 
@@ -75,6 +78,7 @@
       } else if (el.type === 'image') {
         const asset = resolveImage(doc, el.src, ctx);
         if (!asset) { if (el.src && row) warn(el, 'Изображение не найдено.'); continue; }
+        if (asset.pending) warn(el, 'Картинка по ссылке ещё не скачана: ' + asset.url);
         ops.push({...base, op: 'image', asset, page: 1, fit: el.fit, shape: el.shape, radius: el.radius, x: el.x, y: el.y, w: el.w, h: el.h});
       } else if (el.type === 'rect') {
         ops.push({...base, op: 'rect', x: el.x, y: el.y, w: el.w, h: el.h, fill: color(el.fill), stroke: color(el.stroke), sw: el.strokeWidth, radius: el.radius, shape: el.shape});

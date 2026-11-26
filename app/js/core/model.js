@@ -138,7 +138,7 @@
     };
     doc.greeting = {...doc.greeting, ...(input.greeting || {})};
     doc.assets = {};
-    for (const [id, a] of Object.entries(input.assets || {})) if (a && typeof a.data === 'string') doc.assets[id] = {id, name: String(a.name || id), mime: String(a.mime || ''), data: a.data, width: a.width, height: a.height, pages: a.pages, ...(/^[0-9a-f]{64}$/.test(a.sha256 || '') ? {sha256: a.sha256} : {})};
+    for (const [id, a] of Object.entries(input.assets || {})) if (a && typeof a.data === 'string') doc.assets[id] = {id, name: String(a.name || id), mime: String(a.mime || ''), data: a.data, width: a.width, height: a.height, pages: a.pages, ...(Array.isArray(a.urls) && a.urls.length ? {urls: a.urls.filter(u => typeof u === 'string').slice(0, 20)} : {}), ...(/^[0-9a-f]{64}$/.test(a.sha256 || '') ? {sha256: a.sha256} : {})};
     doc.fonts = (Array.isArray(input.fonts) ? input.fonts : []).filter(f => f && f.family && typeof f.data === 'string').map(f => ({id: String(f.id || uid('font')), family: String(f.family), variant: ['regular', 'bold', 'italic', 'bolditalic'].includes(f.variant) ? f.variant : 'regular', name: String(f.name || f.family), data: f.data, ...(['google', 'local', 'upload'].includes(f.source) ? {source: f.source} : {}), ...(/^[srdhm]$/.test(f.category || '') ? {category: f.category} : {}), ...(/^[0-9a-f]{64}$/.test(f.sha256 || '') ? {sha256: f.sha256} : {})}));
     doc.output = {...defaultOutput(doc.kind), ...(input.output || {})};
     return doc;
@@ -174,6 +174,14 @@
     doc.data.columns.push(col);
     return col;
   }
+  /* Столбец, которым подписывается запись в списке и навигации: ФИО (по обращению или названию), иначе первый текстовый.
+   * Не просто «первый»: столбцы можно переставлять, и подпись не должна превращаться в «Организацию». */
+  function labelColumn(doc) {
+    const text = doc.data.columns.filter(c => c.type !== 'image');
+    const byName = doc.greeting?.nameField && columnByName(doc, doc.greeting.nameField);
+    if (byName && byName.type !== 'image') return byName;
+    return text.find(c => /^(фио|ф\s*и\s*о|участник|получатель|имя|name|full ?name|команда|автор|название)$/i.test(XS.key(c.name).replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim())) || text[0] || null;
+  }
   function addRow(doc, values = {}) {
     const row = {id: uid('r'), cells: {}, copies: 1};
     for (const [name, value] of Object.entries(values)) row.cells[addColumn(doc, name).id] = value;
@@ -186,11 +194,15 @@
     for (const c of doc.data.columns) out[c.name] = row.cells[c.id] ?? '';
     return out;
   }
-  function addAsset(doc, {name, mime, data, width, height, pages}) {
+  /* urls — ссылки, по которым эта картинка скачана (картинка по ссылке хранится в проекте, см. XS.RemoteImages). */
+  function addAsset(doc, {name, mime, data, width, height, pages, urls}) {
     // Одинаковые файлы не дублируются.
-    for (const a of Object.values(doc.assets)) if (a.data.length === data.length && a.data === data) return a;
+    for (const a of Object.values(doc.assets)) if (a.data.length === data.length && a.data === data) {
+      if (urls?.length) a.urls = [...new Set([...(a.urls || []), ...urls])].slice(-20);
+      return a;
+    }
     const id = uid('asset');
-    doc.assets[id] = {id, name, mime, data, width, height, pages};
+    doc.assets[id] = {id, name, mime, data, width, height, pages, ...(urls?.length ? {urls: [...urls]} : {})};
     return doc.assets[id];
   }
   function usedAssets(doc) {
@@ -200,6 +212,15 @@
       for (const el of s.elements) if (el.type === 'image' && /^asset:/.test(el.src)) used.add(el.src.slice(6));
     }
     for (const c of doc.data.columns) if (c.type === 'image') for (const r of doc.data.rows) { const v = r.cells[c.id]; if (/^asset:/.test(v || '')) used.add(v.slice(6)); }
+    // картинки, скачанные по ссылкам: нужны, пока ссылка где-то есть (в любой ячейке или в источнике картинки)
+    const linked = Object.values(doc.assets).filter(a => a.urls?.length);
+    if (linked.length) {
+      const refs = new Set();
+      const add = v => { v = String(v ?? '').trim(); if (/^https?:\/\//i.test(v)) refs.add(v); };
+      for (const s of doc.sides) for (const el of s.elements) if (el.type === 'image') add(el.src);
+      for (const r of doc.data.rows) for (const v of Object.values(r.cells)) add(v);
+      for (const a of linked) if (a.urls.some(u => refs.has(u))) used.add(a.id);
+    }
     return used;
   }
   function pruneAssets(doc) {
@@ -207,5 +228,5 @@
     for (const id of Object.keys(doc.assets)) if (!used.has(id)) delete doc.assets[id];
   }
 
-  XS.Model = {KINDS, PAGE_PRESETS, PAPER, TYPE_LABELS, CONDITIONS, ELEMENT_DEFAULTS, element, normalizeElement, side, cleanGroups, blankDoc, defaultOutput, normalizeDoc, columnByName, addColumn, addRow, rowValues, addAsset, usedAssets, pruneAssets};
+  XS.Model = {KINDS, PAGE_PRESETS, PAPER, TYPE_LABELS, CONDITIONS, ELEMENT_DEFAULTS, element, normalizeElement, side, cleanGroups, blankDoc, defaultOutput, normalizeDoc, columnByName, labelColumn, addColumn, addRow, rowValues, addAsset, usedAssets, pruneAssets};
 })(typeof window !== 'undefined' ? window : globalThis);

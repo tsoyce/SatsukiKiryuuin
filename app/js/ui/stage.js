@@ -76,7 +76,7 @@
       tabs.append(add);
     }
     const rows = doc.data.rows, row = UI.row();
-    const first = doc.data.columns.find(c => c.type !== 'image');
+    const first = XS.Model.labelColumn(doc);
     const label = row ? String(row.cells[first?.id] || '').trim() || '(пусто — бланк)' : '';
     $('rowLabel').textContent = rows.length ? (S.row + 1) + ' / ' + rows.length + ' · ' + label : 'Нет записей — показан макет';
     $('prevRow').disabled = S.row <= 0; $('nextRow').disabled = S.row >= rows.length - 1;

@@ -1,7 +1,7 @@
 /* XSatsu Студия · service worker: Студия открывается без сети после первого визита.
  * Страница — «сначала сеть» (свежая версия, без сети — из кэша); скрипты, стили, шрифты, картинки шаблонов —
  * «из кэша, обновляя в фоне». API (/api/) не кэшируется никогда. Новая версия — новое имя кэша. */
-const CACHE = 'xsatsu-v4.8';
+const CACHE = 'xsatsu-v4.9';
 const SHELL = ['./', 'index.html', 'img/favicon-32.png', 'img/logo-160.webp', 'manifest.webmanifest'];
 
 self.addEventListener('install', e => {

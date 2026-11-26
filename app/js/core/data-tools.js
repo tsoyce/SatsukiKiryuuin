@@ -80,25 +80,35 @@
     if (/[a-z]/.test(t) && !/[а-я]/.test(t)) t = translit(t).replace(/й/g, 'и');
     return t.replace(/й/g, 'и').replace(/ъ|ь/g, '');
   }
-  function matchPhotos(doc, files, keyColumnId) {
+  function matchPhotos(doc, files, keyColumnId, {imageColumnId = ''} = {}) {
     const rows = doc.data.rows, keyOf = r => norm(r.cells[keyColumnId]);
-    const byFull = new Map(), byTwo = new Map(), byLast = new Map();
+    const byFull = new Map(), byTwo = new Map(), byLast = new Map(), byInit = new Map(), byFile = new Map();
+    const once = (map, k, i) => map.set(k, map.has(k) && map.get(k) !== i ? -1 : i);
     rows.forEach((r, i) => {
+      // в столбце фото уже записано имя файла (пришло из Excel: «ivanov.jpg») — самое точное совпадение
+      const fileCell = imageColumnId ? String(r.cells[imageColumnId] ?? '').trim() : '';
+      if (fileCell && !/^asset:|^https?:/i.test(fileCell)) once(byFile, XS.key(fileCell.split(/[\\/]/).pop()), i);
       const k = keyOf(r); if (!k) return;
       const w = k.split(' ');
-      byFull.set(k, i);
-      if (w.length >= 2) { const two = w[0] + ' ' + w[1]; byTwo.set(two, byTwo.has(two) ? -1 : i); }
-      byLast.set(w[0], byLast.has(w[0]) ? -1 : i);
+      once(byFull, k, i);
+      if (w.length >= 2) once(byTwo, w[0] + ' ' + w[1], i);
+      if (w.length >= 2) once(byInit, w[0] + ' ' + w.slice(1, 3).map(x => x[0]).join(''), i); // «Долгих Е.С.»
+      once(byLast, w[0], i);
     });
+    const ok = v => v !== undefined && v >= 0 ? v : undefined;
     const matched = [], unmatched = [];
     for (const f of files) {
       const k = norm(f.name), w = k.split(' ');
-      let i = byFull.get(k);
-      if (i === undefined && w.length >= 2) { const v = byTwo.get(w[0] + ' ' + w[1]); if (v >= 0) i = v; }
-      if (i === undefined && w.length >= 2) { const v = byTwo.get(w[1] + ' ' + w[0]); if (v >= 0) i = v; } // «Иван Иванов»
-      if (i === undefined && w.length === 1 && /^\d+$/.test(w[0])) { const n = +w[0] - 1; if (n >= 0 && n < rows.length) i = n; }
-      if (i === undefined) { const v = byLast.get(w[0]); if (v >= 0) i = v; }
-      if (i === undefined) unmatched.push(f.name); else matched.push({file: f, index: i});
+      let i = ok(byFile.get(XS.key(f.name)));
+      let how = i !== undefined ? 'file' : '';
+      const tryKey = (v, h) => { if (i === undefined && ok(v) !== undefined) { i = v; how = h; } };
+      tryKey(byFull.get(k), 'name');
+      if (w.length >= 2) tryKey(byTwo.get(w[0] + ' ' + w[1]), 'name');
+      if (w.length >= 2) tryKey(byTwo.get(w[1] + ' ' + w[0]), 'name'); // «Иван Иванов»
+      if (w.length >= 2 && w.slice(1).every(x => x.length <= 2)) tryKey(byInit.get(w[0] + ' ' + w.slice(1).join('').slice(0, 2)), 'initials');
+      if (w.length === 1 && /^\d+$/.test(w[0])) { const n = +w[0] - 1; if (i === undefined && n >= 0 && n < rows.length) { i = n; how = 'number'; } }
+      tryKey(byLast.get(w[0]), 'surname');
+      if (i === undefined) unmatched.push(f.name); else matched.push({file: f, index: i, how});
     }
     return {matched, unmatched};
   }

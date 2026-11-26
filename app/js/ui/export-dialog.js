@@ -109,6 +109,7 @@
     try {
       const opts = {...o, current: S.row, selected: S.selectedRows};
       const result = await XS.Export.run(S.doc, opts, {progress, cancelled: () => cancel});
+      if (result.localized && !S.readOnly) UI.changed({skip: ['layers', 'inspector']}); // картинки по ссылкам сохранились в проект
       if (print) openForPrint(result.blob, result.name, win); else XS.download(result.blob, result.name);
       const warn = result.warnings.length ? ' Предупреждений: ' + result.warnings.length + ' — см. «Проект → Проверить все записи».' : '';
       UI.toast((print ? 'Листы для печати открыты в новой вкладке.' : 'Готово: ' + result.name + (result.files > 1 ? ' (' + result.files + ' файлов)' : '')) + warn, !!warn, {seal: !print});

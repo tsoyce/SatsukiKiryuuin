@@ -59,6 +59,7 @@
     setSaveState('Изменения…');
     scheduleSave();
     UI.refresh(opts);
+    UI.Photos?.schedule(); // картинки по ссылкам — скачать в проект
   };
   UI.refresh = (opts = {}) => {
     const skip = new Set(opts.skip || []);
@@ -93,7 +94,9 @@
     const el = $('saveState');
     const remote = S.doc && XS.Store.where(S.doc.id) === 'remote';
     el.innerHTML = (S.readOnly ? XS.Icons.icon('eye', 14) : XS.Icons.icon(remote ? (error ? 'cloudOff' : 'cloud') : 'file', 14)) + '<span>' + XS.esc(S.readOnly ? 'Только просмотр' : text) + '</span>';
-    el.title = S.readOnly ? 'Изменения не сохраняются' : remote ? 'Проект хранится на сервере, в вашем аккаунте' : 'Проект хранится только в этом браузере';
+    const owner = S.link ? XS.Store.remote.meta.get(S.doc?.id)?.owner : '';
+    el.title = S.readOnly ? 'Изменения не сохраняются' : S.link ? 'Открыто по ссылке: правки сохраняются в проект' + (owner ? ' (владелец — ' + owner + ')' : '') + ' и видны в его версиях' : remote ? 'Проект хранится на сервере, в вашем аккаунте' : 'Проект хранится только в этом браузере';
+    el.classList.toggle('via-link', !!S.link && !S.readOnly);
     el.dataset.state = text;
     el.classList.toggle('error', error);
   }
@@ -117,7 +120,12 @@
     try { await XS.Store.save(doc, thumb); if (doc === S.doc) { setSaveState('Сохранено'); retry.cancel(); } }
     catch (e) {
       if (e.status === 409 && UI.Account) { setSaveState('Конфликт', true); UI.Account.conflict(e); return; }
-      if (e.offline || e.status >= 500 || e.status === 0) { setSaveState('Нет связи — повторим', true); retry(); return; }
+      if (e.offline || e.status >= 500 || e.status === 0 || e.status === 429) { setSaveState('Нет связи — повторим', true); retry(); return; }
+      if (S.link && (e.status === 403 || e.status === 404)) { // владелец отозвал ссылку или оставил только просмотр
+        setSaveState('Не сохранено', true);
+        UI.toast(e.message + ' Последние правки не сохранены — заберите их файлом: «Проект → Сохранить файл проекта».', true);
+        S.readOnly = true; document.body.classList.add('read-only'); return;
+      }
       setSaveState('Не сохранено', true);
       UI.toast('Не удалось сохранить: ' + e.message + ' Скачайте файл проекта.', true);
     }
@@ -174,7 +182,7 @@
   };
   /* Новый фон текущей стороны: картинка или PDF. */
   UI.setBackground = async (file, {resizePage} = {}) => {
-    const a = await UI.busy('Загружаем ' + file.name + '…', () => XS.Assets.fromFile(file));
+    const a = await UI.busy('Загружаем ' + file.name + '…', () => XS.Assets.fromFile(file, {maxPx: 8000}));
     const doc = S.doc;
     const first = !doc.sides.some(s => s.background);
     UI.edit(d => {

@@ -28,9 +28,19 @@ final class Assets
         return null;
     }
 
+    /* Загружать файлы может вошедший пользователь или гость по ссылке с правкой. */
+    private static function uploader(): ?array
+    {
+        $u = Auth::current();
+        if ($u) return $u;
+        if (!Links::present()) throw new HttpError(401, 'Войдите в аккаунт.');
+        Links::projectFor('edit');
+        return null;
+    }
+
     public static function missing(): array
     {
-        Auth::user();
+        self::uploader();
         $hashes = App::body()['hashes'] ?? [];
         if (!is_array($hashes) || count($hashes) > 2000) throw new HttpError(422, 'Ожидался список хэшей.');
         $hashes = array_values(array_unique(array_filter($hashes, fn($h) => is_string($h) && self::validSha($h))));
@@ -43,7 +53,8 @@ final class Assets
     /* PUT assets/{sha}: тело — сам файл. Хэш проверяется на сервере. */
     public static function upload(array $p): array
     {
-        $u = Auth::user();
+        $u = self::uploader();
+        if (!$u) RateLimit::take('link-upload', Links::UPLOAD_LIMIT, 3600, 'Слишком много файлов с вашего адреса.');
         $sha = $p['sha'];
         if (!self::validSha($sha)) throw new HttpError(422, 'Неверный хэш.');
         $max = (int)App::$config['max_asset_mb'] * 1024 * 1024;
@@ -68,11 +79,11 @@ final class Assets
         $mime = self::sniff($head);
         if (!$mime) { @unlink($tmp); throw new HttpError(415, 'Этот тип файла не поддерживается (нужны PDF, картинки или шрифты).'); }
         if (is_file(self::path($sha))) @unlink($tmp); else rename($tmp, self::path($sha));
-        App::q('INSERT IGNORE INTO assets (sha256, mime, bytes, created_by, created_at) VALUES (?,?,?,?,?)', [$sha, $mime, $size, $u['id'], App::now()]);
+        App::q('INSERT IGNORE INTO assets (sha256, mime, bytes, created_by, created_at) VALUES (?,?,?,?,?)', [$sha, $mime, $size, $u['id'] ?? null, App::now()]);
         return ['sha256' => $sha, 'mime' => $mime, 'bytes' => $size];
     }
 
-    /* GET assets/{sha}: участникам проекта, где этот файл используется, или по ссылке доступа (?link=). */
+    /* GET assets/{sha}: участникам проекта, где этот файл используется, или по ссылке доступа (X-XS-Link). */
     public static function download(array $p): ?array
     {
         $sha = $p['sha'];
@@ -85,9 +96,10 @@ final class Assets
                  WHERE pa.sha256 = ? AND (p.owner_id = ? OR s.id IS NOT NULL) LIMIT 1', [$u['id'], $sha, $u['id']])
                 || (bool)App::one('SELECT 1 FROM assets WHERE sha256 = ? AND created_by = ?', [$sha, $u['id']]);
         }
-        if (!$ok && isset($_GET['link']) && is_string($_GET['link'])) {
-            $ok = (bool)App::one('SELECT 1 FROM project_shares s JOIN project_assets pa ON pa.project_id = s.project_id WHERE s.token_hash = ? AND pa.sha256 = ? AND (s.expires_at IS NULL OR s.expires_at > ?)',
-                [hash('sha256', $_GET['link']), $sha, App::now()]);
+        if (!$ok && Links::present()) {
+            // Ссылка (заголовок X-XS-Link или ?link= у старых клиентов): файлы её проекта
+            $link = Links::projectFor('view');
+            $ok = (bool)App::one('SELECT 1 FROM project_assets WHERE project_id = ? AND sha256 = ?', [$link['project_id'], $sha]);
         }
         $row = $ok ? App::one('SELECT mime, bytes FROM assets WHERE sha256 = ?', [$sha]) : null;
         $file = self::path($sha);

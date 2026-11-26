@@ -46,6 +46,20 @@
     if (!sides.length) throw new Error('В проекте нет оборотной стороны.');
     const recs = XS.Scene.records(doc, {...o, useCopies: o.packaging === 'sheets' && o.useCopies});
     if (!recs.length) throw new Error('Нет записей для выгрузки. Проверьте диапазон.');
+    // Картинки по ссылкам — сначала в проект (иначе холст «загрязняется» и PDF/PNG не собрать).
+    let localized = 0;
+    if (XS.RemoteImages) {
+      const need = XS.RemoteImages.missing(doc, recs.map(r => r.row));
+      if (need.length) {
+        progress(0, recs.length, 'Скачиваем картинки по ссылкам: ' + need.length + '…');
+        const res = await XS.RemoteImages.localize(doc, need);
+        localized = res.added;
+        if (res.failed.length) {
+          const f = res.failed[0];
+          throw new Error('Не скачались картинки по ссылкам: ' + res.failed.length + '. Например, ' + f.url + ' — ' + f.message + ' Загрузите такие картинки файлами (Данные → Фото) и повторите.');
+        }
+      }
+    }
     const warnings = [];
     const scene = (si, r) => { const s = XS.Scene.build(doc, si, r.row, r.index, sceneOpts(o)); for (const w of s.warnings) warnings.push({...w, record: r.index + 1}); return s; };
     const check = () => { if (cancelled()) throw new Error('Выгрузка отменена.'); };
@@ -73,9 +87,9 @@
         }
         await XS.pause();
       }
-      if (files.length === 1 && !o.forceZip) return {blob: files[0].blob, name: XS.Zip.sanitizeFilename(files[0].name), files: 1, warnings};
+      if (files.length === 1 && !o.forceZip) return {blob: files[0].blob, name: XS.Zip.sanitizeFilename(files[0].name), files: 1, warnings, localized};
       progress(recs.length, recs.length, 'Упаковываем ZIP…');
-      return {blob: await XS.Zip.zip(files), name: archiveName(doc, o, '.zip'), files: files.length, warnings};
+      return {blob: await XS.Zip.zip(files), name: archiveName(doc, o, '.zip'), files: files.length, warnings, localized};
     }
 
     const pdf = await newPdf(doc.title), cache = XS.PdfRender.createCache(pdf);
@@ -85,7 +99,7 @@
         for (const si of sides) await addCardPage(pdf, cache, scene(si, recs[i]));
         if (i % 5 === 4) await XS.pause();
       }
-      return {blob: new Blob([await pdf.save()], {type: 'application/pdf'}), name: archiveName(doc, o, '.pdf'), files: 1, pages: pdf.getPageCount(), warnings};
+      return {blob: new Blob([await pdf.save()], {type: 'application/pdf'}), name: archiveName(doc, o, '.pdf'), files: 1, pages: pdf.getPageCount(), warnings, localized};
     }
 
     // Печатные листы.
@@ -116,7 +130,7 @@
       if (o.cutMarks && !(it.back && duplex !== 'none')) XS.Impose.cutMarks(page, p, offset);
       await XS.pause();
     }
-    return {blob: new Blob([await pdf.save()], {type: 'application/pdf'}), name: archiveName(doc, o, ' — печать.pdf'), files: 1, pages: pdf.getPageCount(), plan: p, warnings};
+    return {blob: new Blob([await pdf.save()], {type: 'application/pdf'}), name: archiveName(doc, o, ' — печать.pdf'), files: 1, pages: pdf.getPageCount(), plan: p, warnings, localized};
   }
 
   /* Проверка всех записей без выгрузки: переполнения, нет символов, нет столбцов. */
