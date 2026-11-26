@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, AdminAudit, ServerStatus, Migrate, Forms, Fonts, RemoteImage, HttpError};
+use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, AdminAudit, AdminProjects, ServerStatus, Migrate, Forms, Fonts, RemoteImage, HttpError};
 
 App::route('GET', '/v1/health', function () {
     $db = false; $schema = null; $pending = null;
@@ -74,6 +74,15 @@ App::route('POST', '/v1/admin/invites', fn() => Admin::createInvite());
 App::route('DELETE', '/v1/admin/invites/{id}', fn($p) => Admin::deleteInvite($p));
 App::route('GET', '/v1/admin/audit', fn() => AdminAudit::list());
 App::route('GET', '/v1/admin/stats', fn() => Admin::stats());
+App::route('GET', '/v1/admin/projects', fn() => AdminProjects::list());
+App::route('POST', '/v1/admin/projects/{id}/transfer', fn($p) => AdminProjects::transfer($p));
+App::route('POST', '/v1/admin/trash/empty', fn() => AdminProjects::emptyTrash());
+App::route('GET', '/v1/admin/links', fn() => AdminProjects::links());
+App::route('PATCH', '/v1/admin/links/{id}', fn($p) => AdminProjects::updateLink($p));
+App::route('DELETE', '/v1/admin/links/{id}', fn($p) => AdminProjects::revoke($p));
+App::route('POST', '/v1/admin/links/purge-expired', fn() => AdminProjects::purgeExpired());
+App::route('PATCH', '/v1/admin/forms/{id}', fn($p) => AdminProjects::closeForm($p));
+App::route('GET', '/v1/admin/storage', fn() => AdminProjects::storage());
 App::route('GET', '/v1/admin/server', fn() => ServerStatus::get());
 App::route('POST', '/v1/admin/maintenance/cleanup', fn() => ServerStatus::runCleanup());
 

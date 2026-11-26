@@ -266,6 +266,28 @@ const ok = (r, status = 200) => { assert.strictEqual(r.status, status, JSON.stri
   assert.ok(ok(await a.call('GET', 'v1/admin/audit&actor=admin&q=petr')).events.some(e => e.action === 'user.create'));
   const csv = await a.call('GET', 'v1/admin/audit&format=csv&action=user.create');
   assert.strictEqual(csv.status, 200); assert.ok(Buffer.from(csv.data).toString().includes('petr'));
+  // Админка: проекты, передача, ссылки, анкеты, хранилище
+  const ap = ok(await a.call('GET', 'v1/admin/projects&q=doc-test-1'));
+  assert.ok(ap.total >= 1 && ap.projects[0].owner.login, JSON.stringify(ap).slice(0, 200));
+  const own = ap.projects.find(x => x.id === 'doc-test-1');
+  assert.ok(own && own.files > 0 && own.people >= 0);
+  ok(await a.call('GET', 'v1/admin/projects&sort=size&scope=all'));
+  ok(await a.call('POST', 'v1/admin/projects/doc-test-1/transfer', {to: petr.id}));
+  assert.strictEqual(ok(await a.call('GET', 'v1/admin/projects&owner=' + petr.id)).projects.some(x => x.id === 'doc-test-1'), true);
+  assert.strictEqual(ok(await a.call('GET', 'v1/projects/doc-test-1')).permission, 'owner', 'админ видит всё');
+  ok(await a.call('POST', 'v1/admin/projects/doc-test-1/transfer', {to: adminId}));
+  const links = ok(await a.call('GET', 'v1/admin/links&kind=link&state=all')).items;
+  assert.ok(links.length >= 1 && links[0].project.title);
+  ok(await a.call('PATCH', 'v1/admin/links/' + links[0].id, {days: 7, permission: 'view'}));
+  ok(await a.call('DELETE', 'v1/admin/links/' + links[0].id));
+  ok(await a.call('DELETE', 'v1/admin/links/' + links[0].id), 404);
+  ok(await a.call('GET', 'v1/admin/links&kind=user'));
+  ok(await a.call('GET', 'v1/admin/links&kind=form&state=all'));
+  ok(await a.call('POST', 'v1/admin/links/purge-expired'));
+  const stor = ok(await a.call('GET', 'v1/admin/storage'));
+  assert.ok(stor.users.length >= 2 && stor.totals.files > 0 && stor.bigProjects.length >= 1 && stor.types.length >= 1, JSON.stringify(stor).slice(0, 300));
+  ok(await a.call('POST', 'v1/admin/trash/empty'));
+  ok(await anon.call('GET', 'v1/admin/storage'), 401);
   // Сервер и обслуживание
   const srvInfo = ok(await a.call('GET', 'v1/admin/server'));
   assert.ok(srvInfo.database.bytes > 0 && srvInfo.disk.total > 0 && srvInfo.jobs.length === 2 && !('setup_token' in srvInfo.security), JSON.stringify(srvInfo).slice(0, 300));
