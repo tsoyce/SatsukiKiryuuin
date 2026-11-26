@@ -39,7 +39,14 @@ final class Auth
     }
     public static function publicUser(?array $u): ?array
     {
-        return $u ? ['id' => (int)$u['id'], 'login' => $u['login'], 'name' => $u['name'], 'email' => $u['email'], 'role' => $u['role']] : null;
+        return $u ? ['id' => (int)$u['id'], 'login' => $u['login'], 'name' => $u['name'], 'email' => $u['email'], 'role' => $u['role'], 'mustChangePassword' => !empty($u['must_change_password'])] : null;
+    }
+
+    /* Временный пароль (выдал администратор): пока его не сменили, менять можно только сам пароль. */
+    public static function guardTempPassword(string $path): void
+    {
+        $u = self::current();
+        if ($u && !empty($u['must_change_password']) && !str_starts_with($path, '/v1/auth/')) throw new HttpError(403, 'Сначала задайте свой пароль вместо временного.', ['mustChangePassword' => true]);
     }
 
     /* Запросы, меняющие данные: Origin своего сайта и CSRF-токен сессии. */
@@ -138,7 +145,7 @@ final class Auth
         $ok = $u && password_verify($password, $u['password_hash']);
         App::q('INSERT INTO login_attempts (ip, login, at, ok) VALUES (?,?,?,?)', [App::ip(), $login, App::now(), $ok ? 1 : 0]);
         if (!$ok) throw new HttpError(401, 'Неверный логин или пароль.');
-        if ($u['status'] !== 'active') throw new HttpError(403, 'Учётная запись заблокирована.');
+        if ($u['status'] !== 'active') throw new HttpError(403, 'Учётная запись заблокирована' . (!empty($u['blocked_reason']) ? ': ' . $u['blocked_reason'] : '') . '. Обратитесь к администратору сайта.');
         if (password_needs_rehash($u['password_hash'], defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT)) App::q('UPDATE users SET password_hash = ? WHERE id = ?', [self::hash($password), $u['id']]);
         self::startSession($u);
         App::audit('login', 'user', (string)$u['id']);
@@ -161,13 +168,13 @@ final class Auth
         $invite = null;
         if ($mode === 'invite') {
             $code = App::str($b, 'invite', 100, true);
-            $invite = App::one('SELECT * FROM invites WHERE code_hash = ? AND used_at IS NULL AND (expires_at IS NULL OR expires_at > ?)', [hash('sha256', $code), App::now()]);
-            if (!$invite) throw new HttpError(403, 'Приглашение не найдено или уже использовано.');
+            $invite = App::one('SELECT * FROM invites WHERE code_hash = ? AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)', [hash('sha256', strtoupper(trim($code))), App::now()]);
+            if (!$invite) throw new HttpError(403, 'Приглашение не найдено, истекло или уже использовано.');
         }
         $u = self::createUser(App::str($b, 'login', 100, true), App::str($b, 'name'), (string)($b['password'] ?? ''), $invite['role'] ?? 'user', App::str($b, 'email') ?: null);
-        if ($invite) App::q('UPDATE invites SET used_by = ?, used_at = ? WHERE code_hash = ?', [$u['id'], App::now(), $invite['code_hash']]);
+        if ($invite) App::q('UPDATE invites SET used_by = ?, used_at = ?, uses = uses + 1 WHERE code_hash = ?', [$u['id'], App::now(), $invite['code_hash']]);
         self::startSession($u);
-        App::audit('register', 'user', (string)$u['id']);
+        App::audit('register', 'user', (string)$u['id'], ['login' => $u['login']] + ($invite ? ['invite' => substr($invite['code_hash'], 0, 16)] : []));
         return self::state();
     }
 
@@ -181,7 +188,8 @@ final class Auth
         App::q('UPDATE users SET name = ?, email = ? WHERE id = ?', [$name, $email, $u['id']]);
         if (isset($b['newPassword']) && $b['newPassword'] !== '') {
             if (!password_verify((string)($b['password'] ?? ''), $u['password_hash'])) throw new HttpError(403, 'Текущий пароль неверный.');
-            App::q('UPDATE users SET password_hash = ? WHERE id = ?', [self::hash(self::validPassword((string)$b['newPassword'])), $u['id']]);
+            if (password_verify((string)$b['newPassword'], $u['password_hash'])) throw new HttpError(422, 'Новый пароль совпадает с текущим.');
+            App::q('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?', [self::hash(self::validPassword((string)$b['newPassword'])), $u['id']]);
             App::q('DELETE FROM sessions WHERE user_id = ? AND id <> ?', [$u['id'], App::$session['id']]);
             App::audit('password', 'user', (string)$u['id']);
         }

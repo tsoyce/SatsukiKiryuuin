@@ -203,6 +203,85 @@ const ok = (r, status = 200) => { assert.strictEqual(r.status, status, JSON.stri
   const stats = ok(await a.call('GET', 'v1/admin/stats'));
   assert.ok(stats.projects >= 1 && stats.assets === 2, JSON.stringify(stats)) // PDF владельца + картинка гостя;
   assert.ok(ok(await a.call('GET', 'v1/admin/audit')).events.some(e => e.action === 'project.share'));
+  // Админка 4.2: обзор, карточка пользователя, временный пароль, сеансы, квота, удаление с передачей проектов, приглашения, журнал, сервер
+  const ov = ok(await a.call('GET', 'v1/admin/overview'));
+  assert.ok(ov.counts.users >= 2 && ov.activity.length === 14 && Array.isArray(ov.warnings), JSON.stringify(ov).slice(0, 300));
+  ok(await b.call('GET', 'v1/admin/overview'), 401);
+  ok(await a.call('PATCH', 'v1/admin/users/' + maria.id, {status: 'active'}));
+  const mcard = ok(await a.call('GET', 'v1/admin/users/' + maria.id));
+  assert.ok(mcard.user.used > 0 && mcard.projects.length >= 1, 'у Марии есть проект (копия с тем же id)');
+  const reset = ok(await a.call('POST', 'v1/admin/users/' + maria.id + '/reset-password'));
+  assert.ok(reset.password.length >= 12);
+  ok(await c.call('POST', 'v1/auth/login', {login: 'maria', password: 'password9'}), 401);
+  st = ok(await c.call('POST', 'v1/auth/login', {login: 'maria', password: reset.password}));
+  assert.strictEqual(st.user.mustChangePassword, true);
+  const blockedWrite = await c.call('PUT', 'v1/settings/user', {prefs: {}});
+  assert.strictEqual(blockedWrite.status, 403); assert.ok(blockedWrite.data.mustChangePassword);
+  ok(await c.call('PATCH', 'v1/auth/me', {password: reset.password, newPassword: reset.password}), 422);
+  st = ok(await c.call('PATCH', 'v1/auth/me', {password: reset.password, newPassword: 'password10'}));
+  assert.strictEqual(st.user.mustChangePassword, false);
+  ok(await c.call('PUT', 'v1/settings/user', {prefs: {}}));
+  // Сеансы: завершить все
+  assert.ok(ok(await a.call('GET', 'v1/admin/users/' + maria.id)).sessions.length >= 1);
+  assert.ok(ok(await a.call('DELETE', 'v1/admin/users/' + maria.id + '/sessions')).ended >= 1);
+  assert.strictEqual(ok(await c.call('GET', 'v1/auth/state')).user, null);
+  // Блокировка с причиной — причина видна при входе
+  ok(await a.call('PATCH', 'v1/admin/users/' + maria.id, {status: 'blocked', reason: 'выпускница'}));
+  assert.ok(/выпускница/.test(ok(await c.call('POST', 'v1/auth/login', {login: 'maria', password: 'password10'}), 403).error));
+  ok(await a.call('PATCH', 'v1/admin/users/' + maria.id, {status: 'active'}));
+  // Квота: 0 МБ у Марии = без ограничения; 1 МБ при большом проекте — отказ 413
+  const big = {...doc, id: 'doc-big', assets: {}, data: {columns: [{id: 'c1', name: 'ФИО'}], rows: Array.from({length: 300}, (_, i) => ({id: 'r' + i, cells: {c1: 'x'.repeat(4000)}}))}};
+  ok(await a.call('PATCH', 'v1/admin/users/' + maria.id, {quotaMb: 1}));
+  ok(await c.call('POST', 'v1/auth/login', {login: 'maria', password: 'password10'}));
+  const over = await c.call('POST', 'v1/projects', {doc: big});
+  assert.strictEqual(over.status, 413); assert.ok(over.data.quota);
+  ok(await a.call('PATCH', 'v1/admin/users/' + maria.id, {quotaMb: 'abc'}), 422);
+  ok(await a.call('PATCH', 'v1/admin/users/' + maria.id, {quotaMb: null}));
+  const mariaDoc = ok(await c.call('POST', 'v1/projects', {doc: {...doc, id: 'doc-maria', assets: {}}}));
+  // Создание с временным паролем, последний админ, удаление
+  const created2 = ok(await a.call('POST', 'v1/admin/users', {login: 'petr', name: 'Пётр', role: 'user', note: 'кафедра', quotaMb: 50}));
+  assert.ok(created2.created.password && created2.created.mustChange);
+  const petr = created2.users.find(u => u.login === 'petr');
+  assert.strictEqual(petr.quotaMb, 50); assert.strictEqual(petr.note, 'кафедра');
+  const adminId = users.find(u => u.login === 'admin').id;
+  ok(await a.call('DELETE', 'v1/admin/users/' + adminId), 422);
+  ok(await a.call('DELETE', 'v1/admin/users/' + maria.id), 409);
+  ok(await a.call('DELETE', 'v1/admin/users/' + maria.id + '&projects=transfer&to=' + maria.id), 422);
+  ok(await a.call('DELETE', 'v1/admin/users/' + maria.id + '&projects=transfer&to=' + petr.id));
+  assert.ok(ok(await a.call('GET', 'v1/admin/users/' + petr.id)).projects.some(p => p.id === mariaDoc.id), 'проекты Марии у Петра');
+  assert.strictEqual(ok(await c.call('GET', 'v1/auth/state')).user, null);
+  // Приглашение на несколько человек; отзыв гасит остаток
+  ok(await a.call('PUT', 'v1/settings/system', {registration: 'invite'}));
+  const multi = ok(await a.call('POST', 'v1/admin/invites', {note: 'группа', maxUses: 2, days: 3}));
+  ok(await new Client().call('POST', 'v1/auth/register', {invite: multi.code.toLowerCase(), login: 'stud1', password: 'password1'}));
+  const invRow = ok(await a.call('GET', 'v1/admin/invites')).invites.find(i => i.note === 'группа');
+  assert.strictEqual(invRow.uses, 1); assert.strictEqual(invRow.state, 'active');
+  ok(await a.call('DELETE', 'v1/admin/invites/' + invRow.id));
+  ok(await new Client().call('POST', 'v1/auth/register', {invite: multi.code, login: 'stud2', password: 'password1'}), 403);
+  // Журнал: фильтры, страницы, CSV
+  const j1 = ok(await a.call('GET', 'v1/admin/audit&action=user.*&limit=10'));
+  assert.ok(j1.events.length && j1.events.every(e => e.action.startsWith('user.')) && j1.actions.includes('login'));
+  const j2 = ok(await a.call('GET', 'v1/admin/audit&limit=10'));
+  if (j2.next) assert.ok(ok(await a.call('GET', 'v1/admin/audit&limit=10&before=' + j2.next)).events.every(e => e.id < j2.next));
+  assert.ok(ok(await a.call('GET', 'v1/admin/audit&actor=admin&q=petr')).events.some(e => e.action === 'user.create'));
+  const csv = await a.call('GET', 'v1/admin/audit&format=csv&action=user.create');
+  assert.strictEqual(csv.status, 200); assert.ok(Buffer.from(csv.data).toString().includes('petr'));
+  // Сервер и обслуживание
+  const srvInfo = ok(await a.call('GET', 'v1/admin/server'));
+  assert.ok(srvInfo.database.bytes > 0 && srvInfo.disk.total > 0 && srvInfo.jobs.length === 2 && !('setup_token' in srvInfo.security), JSON.stringify(srvInfo).slice(0, 300));
+  const cl = ok(await a.call('POST', 'v1/admin/maintenance/cleanup'));
+  assert.ok(typeof cl.result.sessions === 'number');
+  assert.strictEqual(ok(await a.call('GET', 'v1/admin/server')).jobs.find(j => j.name === 'cleanup').ok, true);
+  // Режим обслуживания: пользователь не сохраняет, админ — да
+  const p2 = new Client();
+  ok(await p2.call('POST', 'v1/auth/login', {login: 'petr', password: created2.created.password}));
+  ok(await p2.call('PATCH', 'v1/auth/me', {password: created2.created.password, newPassword: 'password11'}));
+  ok(await a.call('PUT', 'v1/settings/system', {maintenance: true, maintenanceText: 'Обновляем сайт'}));
+  const mt = await p2.call('PUT', 'v1/settings/user', {prefs: {}});
+  assert.strictEqual(mt.status, 503); assert.strictEqual(mt.data.error, 'Обновляем сайт');
+  ok(await a.call('PUT', 'v1/settings/user', {prefs: {}}));
+  ok(await a.call('PUT', 'v1/settings/system', {maintenance: false}));
+  ok(await p2.call('PUT', 'v1/settings/user', {prefs: {}}));
   ok(await a.call('POST', 'v1/auth/logout'));
   assert.strictEqual(ok(await a.call('GET', 'v1/auth/state')).user, null);
   ok(await anon.call('GET', 'v1/nothing'), 404);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, Migrate, Forms, Fonts, RemoteImage, HttpError};
+use XSatsu\{App, Auth, Projects, Links, Assets, Settings, Admin, AdminAudit, ServerStatus, Migrate, Forms, Fonts, RemoteImage, HttpError};
 
 App::route('GET', '/v1/health', function () {
     $db = false; $schema = null; $pending = null;
@@ -61,14 +61,21 @@ App::route('GET', '/v1/settings', fn() => Settings::get());
 App::route('PUT', '/v1/settings/user', fn() => Settings::putUser());
 App::route('PUT', '/v1/settings/system', fn() => Settings::putSystem());
 
+App::route('GET', '/v1/admin/overview', fn() => Admin::overview());
 App::route('GET', '/v1/admin/users', fn() => Admin::users());
 App::route('POST', '/v1/admin/users', fn() => Admin::createUser());
+App::route('GET', '/v1/admin/users/{id}', fn($p) => Admin::user($p));
 App::route('PATCH', '/v1/admin/users/{id}', fn($p) => Admin::updateUser($p));
+App::route('DELETE', '/v1/admin/users/{id}', fn($p) => Admin::deleteUser($p));
+App::route('POST', '/v1/admin/users/{id}/reset-password', fn($p) => Admin::resetPassword($p));
+App::route('DELETE', '/v1/admin/users/{id}/sessions', fn($p) => Admin::endSessions($p));
 App::route('GET', '/v1/admin/invites', fn() => Admin::invites());
 App::route('POST', '/v1/admin/invites', fn() => Admin::createInvite());
 App::route('DELETE', '/v1/admin/invites/{id}', fn($p) => Admin::deleteInvite($p));
-App::route('GET', '/v1/admin/audit', fn() => Admin::audit());
+App::route('GET', '/v1/admin/audit', fn() => AdminAudit::list());
 App::route('GET', '/v1/admin/stats', fn() => Admin::stats());
+App::route('GET', '/v1/admin/server', fn() => ServerStatus::get());
+App::route('POST', '/v1/admin/maintenance/cleanup', fn() => ServerStatus::runCleanup());
 
 $route = $_GET['r'] ?? ($_SERVER['PATH_INFO'] ?? '');
 App::handle($_SERVER['REQUEST_METHOD'] ?? 'GET', is_string($route) ? $route : '');

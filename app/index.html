@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/studio.css?v=13">
   <link rel="stylesheet" href="css/motion.css?v=13">
   <link rel="stylesheet" href="css/brand.css?v=13">
+  <link rel="stylesheet" href="css/admin.css?v=14">
   <link rel="stylesheet" href="css/mobile.css?v=13">
   <script defer src="vendor/pdf-lib.min.js"></script>
   <script defer src="vendor/fontkit.umd.min.js"></script>
@@ -68,12 +69,14 @@
   <script defer src="js/ui/tools.js?v=13"></script>
   <script defer src="js/ui/import-dialog.js?v=13"></script>
   <script defer src="js/ui/photos.js?v=13"></script>
-  <script defer src="js/ui/palette.js?v=13"></script>
+  <script defer src="js/ui/palette.js?v=14"></script>
   <script defer src="js/ui/whats-new.js?v=13"></script>
   <script defer src="js/ui/forms.js?v=13"></script>
   <script defer src="js/ui/home.js?v=13"></script>
-  <script defer src="js/ui/account.js?v=13"></script>
-  <script defer src="js/ui/boot.js?v=13"></script>
+  <script defer src="js/ui/account.js?v=14"></script>
+  <script defer src="js/ui/admin.js?v=14"></script>
+  <script defer src="js/ui/admin-users.js?v=14"></script>
+  <script defer src="js/ui/boot.js?v=14"></script>
 </head>
 <body>
   <!-- ГЛАВНАЯ: создать / открыть проект -->
@@ -81,6 +84,7 @@
     <header class="home-top">
       <div class="brand"><span data-logo="36"></span><span class="brand-name">XSatsu <b>Студия</b></span></div>
       <nav class="home-nav">
+        <a class="btn admin-btn" href="#/admin" data-admin-only hidden title="Админка: пользователи, проекты, журнал, сервер"><i data-icon="shield" data-size="16"></i><span class="lbl">Админка</span></a>
         <button class="btn account-btn" type="button" data-account hidden></button>
         <button class="btn icon" type="button" data-whats-new title="Что нового в версии 4"><i data-icon="sparkle" data-size="17"></i></button>
         <button class="btn palette-btn" type="button" data-open-palette title="Все команды и поиск (Ctrl+K)"><i data-icon="search" data-size="15"></i><span>Команды</span><kbd>Ctrl K</kbd></button>
@@ -226,6 +230,9 @@
       <button type="button" data-mobile-export><i data-icon="download" data-size="20"></i><span>Выгрузить</span></button>
     </nav>
   </section>
+
+  <!-- Админка (#/admin): каркас и разделы рисует js/ui/admin.js -->
+  <section id="admin" class="admin" hidden></section>
 
   <!-- Настройки -->
   <dialog id="settingsDialog" class="dialog wide">
