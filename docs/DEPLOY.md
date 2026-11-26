@@ -11,8 +11,12 @@
 /home/tsoy/xsatsu/server/           код сервера: src/, public/, migrations/, bin/
 /home/tsoy/xsatsu/storage/assets/   файлы проектов по SHA-256 (фоны, картинки, шрифты)
 /home/tsoy/xsatsu/storage/backups/  резервные копии (bin/backup.php, 14 дней)
+/home/tsoy/xsatsu/storage/font-cache/  кэш шрифтов Google Fonts (до 400 МБ, можно удалить в любой момент)
 База: MariaDB, база xsatsu, пользователь xsatsu@localhost (права только на эту базу)
 ```
+
+Для каталога Google Fonts в редакторе серверу нужен исходящий HTTPS к `fonts.googleapis.com` и `fonts.gstatic.com`
+(PHP: расширение curl или `allow_url_fopen`). Без него Студия работает, но добавлять шрифты можно только файлом.
 
 Код сервера и секреты лежат вне web-root, наружу открыт только `api/index.php`.
 

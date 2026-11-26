@@ -32,6 +32,7 @@
       if (act === 'saveFile') UI.saveFile();
       if (act === 'duplicate') { const copy = XS.clone(S.doc); copy.id = XS.uid('doc'); copy.title += ' (копия)'; await UI.flush(); await UI.create(copy); UI.toast('Открыта копия проекта.'); }
       if (act === 'exportCsv') XS.download(new Blob([XS.Import.toCsv(S.doc)], {type: 'text/csv;charset=utf-8'}), XS.Zip.sanitizeFilename(S.doc.title) + '.csv');
+      if (act === 'fonts') UI.FontPicker?.open();
       if (act === 'check') await runCheck();
       if (act === 'versions') await UI.Account.versions();
       if (act === 'share') await UI.Account.share();

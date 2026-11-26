@@ -2,3 +2,7 @@
 - PT Sans, PT Serif, PT Sans Narrow — ParaType, https://github.com/google/fonts/tree/main/ofl
 - Montserrat Regular/SemiBold — из v25 (fonts/)
 - Marck Script, Bad Script, Lobster — https://github.com/google/fonts/tree/main/ofl
+
+Tinos (обычный, жирный, курсив, жирный курсив) — Google/Steve Matteson, лицензия Apache 2.0 (LICENSE-Tinos-Apache-2.0.txt),
+  https://fonts.google.com/specimen/Tinos. Метрически совместим с Times New Roman: строки и переносы совпадают.
+  В Студии называется «Times New Roman (Tinos)»; шрифт «Times New Roman» в старых проектах набирается им.

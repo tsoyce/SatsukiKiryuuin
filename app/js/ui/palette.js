@@ -15,6 +15,7 @@
         add(k.group, k.label, () => k.run({shiftKey: false, code: k.keys[0]?.split('+').pop() || ''}), {keys: k.show, icon: 'command'});
       }
       add('Проект', 'Выгрузить…', () => UI.ExportDialog.open(), {keys: 'Ctrl+E', icon: 'download'});
+      add('Проект', 'Шрифты: Google Fonts, с компьютера, из файла', () => UI.FontPicker.open({tab: 'google'}), {icon: 'font'});
       add('Проект', 'Проверить все записи', () => UI.runCheck(), {icon: 'check'});
       add('Проект', 'Мастер печати', () => UI.PrintMaster.open(), {keys: 'Ctrl+Shift+P', icon: 'printer'});
       add('Проект', 'Сохранить файл проекта (.json)', () => UI.saveFile(), {icon: 'download'});

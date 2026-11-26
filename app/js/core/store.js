@@ -89,7 +89,7 @@
       if (!f.data) { if (f.sha256) out.fonts.push({...f, data: ''}); continue; }
       const sha = await shaOf(f);
       files.set(sha, f.data);
-      out.fonts.push({id: f.id, family: f.family, variant: f.variant, name: f.name, sha256: sha, data: ''});
+      out.fonts.push({id: f.id, family: f.family, variant: f.variant, name: f.name, ...(f.source ? {source: f.source} : {}), ...(f.category ? {category: f.category} : {}), sha256: sha, data: ''});
     }
     if (files.size) {
       const {missing} = await XS.Api.call('POST', 'v1/assets/missing', {hashes: [...files.keys()]});

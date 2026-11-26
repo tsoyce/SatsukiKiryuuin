@@ -160,14 +160,16 @@
   };
 
   UI.saveFile = () => { XS.download(XS.Store.toFile(S.doc), XS.Zip.sanitizeFilename(S.doc.title) + '.xsatsu.json'); };
-  UI.addFont = async file => {
+  /* Свой файл шрифта (TTF/OTF/WOFF/WOFF2). Семейство и начертание берутся из самого файла. */
+  UI.addFont = async (file, {quiet = false} = {}) => {
     const data = await XS.readFileAsDataUrl(file);
     const info = XS.Fonts.inspect(XS.dataUrlToBytes(data).bytes);
     if (!info.cyrillic) UI.toast('В шрифте «' + info.family + '» нет кириллицы — русский текст будет пропадать.', true);
-    UI.edit(doc => { doc.fonts = doc.fonts.filter(f => !(f.family === info.family && f.variant === info.variant)); doc.fonts.push({id: XS.uid('font'), family: info.family, variant: info.variant, name: file.name, data}); });
+    else if (info.restricted) UI.toast('Автор шрифта «' + info.family + '» запретил встраивать его в документы — проверьте лицензию перед печатью в типографии.', true);
+    UI.edit(doc => { doc.fonts = doc.fonts.filter(f => !(f.family === info.family && f.variant === info.variant)); doc.fonts.push({id: XS.uid('font'), family: info.family, variant: info.variant, source: 'upload', name: file.name, data}); });
     await XS.Fonts.ensure(S.doc, info.family, info.variant.includes('bold'), info.variant.includes('italic'));
     UI.refresh();
-    UI.toast('Шрифт «' + info.family + '» добавлен в проект.');
+    if (!quiet) UI.toast('Шрифт «' + info.family + '» добавлен в проект.');
     return info;
   };
   /* Новый фон текущей стороны: картинка или PDF. */

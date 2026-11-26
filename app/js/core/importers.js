@@ -182,7 +182,7 @@
     const fontName = id => {
       const custom = (p.fonts || []).find(f => f.id === id);
       if (custom) return custom.name;
-      return {Arial: 'PT Sans', Verdana: 'PT Sans', 'Trebuchet MS': 'PT Sans', Georgia: 'PT Serif', 'Times New Roman': 'PT Serif', 'Courier New': 'PT Sans'}[id] || 'PT Sans';
+      return {Arial: 'PT Sans', Verdana: 'PT Sans', 'Trebuchet MS': 'PT Sans', Georgia: 'PT Serif', 'Times New Roman': 'Times New Roman (Tinos)', 'Courier New': 'PT Sans'}[id] || 'PT Sans';
     };
     for (const f of p.fonts || []) if (typeof f.data === 'string') doc.fonts.push({id: XS.uid('font'), family: f.name || 'Шрифт', variant: 'regular', name: f.name || 'Шрифт', data: f.data});
     const blocks = Array.isArray(p.blocks) && p.blocks.length ? p.blocks : [s];
