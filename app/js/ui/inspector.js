@@ -52,6 +52,8 @@
   function button(label, onclick, cls = 'btn small') { const b = h('button', cls, label); b.type = 'button'; b.onclick = UI.safe(onclick); return b; }
   function filePicker(accept, onFile) { const i = h('input'); i.type = 'file'; i.accept = accept; i.onchange = UI.safe(async () => { if (i.files[0]) await onFile(i.files[0]); }); i.click(); }
   function fontOptions() { return XS.Fonts.families(S.doc).map(f => [f.family, f.family + ' · ' + f.category]); }
+  /* Гарнитура — кнопка с названием, набранным самим шрифтом; открывает окно «Шрифты» (font-picker.js). */
+  function fontPick(value, set, key, o = {}) { return UI.fontButton ? UI.fontButton(value, v => apply(() => set(v), key), o) : select([...(o.allowEmpty ? [['', o.allowEmpty]] : []), ...fontOptions()], value, set, key); }
   function assetCard(asset, extra = '') {
     const c = h('div', 'asset-card');
     c.innerHTML = (asset && !XS.Assets.isPdf(asset) ? `<img src="${asset.data}" alt="">` : `<div class="pdf">${asset ? 'PDF' : '—'}</div>`) +
@@ -104,7 +106,7 @@
       box.append(chips);
       box.append(formBuilder(ta));
       section('Шрифт');
-      row('Гарнитура', select(fontOptions(), el.font, v => { el.font = v; }, key('font')));
+      row('Гарнитура', fontPick(el.font, v => { el.font = v; }, key('font')));
       row('Размер, pt', numInput(el.size, v => { el.size = v; el.minSize = Math.min(el.minSize, v); }, key('size'), {step: 0.5, min: 2, max: 400}),
         seg([['bold', 'Ж', 'Полужирный'], ['italic', 'К', 'Курсив'], ['uppercase', 'АА', 'Все прописные']], el, (p, on) => { el[p] = on; }, key('style'), {multi: true}));
       row('Цвет', colorInput(el.color, v => { el.color = v; }, key('color')));
@@ -120,7 +122,7 @@
       if (a.enabled) {
         const prev = box; box = h('div', 'sub'); prev.append(box);
         row('Какие поля', textInput(a.fields, v => { a.fields = v; }, key('accf'))).title = 'Через запятую. Пусто — все поля.';
-        row('Гарнитура', select([['', 'как основной'], ...fontOptions()], a.font, v => { a.font = v; }, key('accfont')));
+        row('Гарнитура', fontPick(a.font, v => { a.font = v; }, key('accfont'), {allowEmpty: 'как основной'}));
         row('Размер, pt', numInput(a.size, v => { a.size = v; }, key('accsize'), {min: 0, max: 400}), seg([['bold', 'Ж'], ['italic', 'К']], a, (p, on) => { a[p] = on; }, key('accst'), {multi: true}));
         row('Цвет', colorInput(a.color, v => { a.color = v; }, key('acccol'), true));
         box = prev;
@@ -275,9 +277,11 @@
     if (doc.sides.length > 1) box.append(button('Удалить сторону «' + side.name + '»', () => { if (confirm('Удалить сторону «' + side.name + '» со всеми элементами?')) UI.edit(d => { d.sides.splice(S.side, 1); S.side = 0; S.selection = []; }); }, 'btn small danger'));
 
     section('Шрифты');
-    const user = doc.fonts.map(f => f.family + ' (' + ({regular: 'обычный', bold: 'жирный', italic: 'курсив', bolditalic: 'жирный курсив'}[f.variant]) + ')');
-    box.append(h('p', 'note', 'Встроенные: ' + XS.Fonts.BUILTIN.map(f => f.family).join(', ') + '.' + (user.length ? '<br>Загружены в проект: ' + XS.esc(user.join(', ')) + '.' : '')));
-    box.append(button('Загрузить шрифт (TTF/OTF)…', () => filePicker('.ttf,.otf,font/ttf,font/otf', f => UI.addFont(f))));
+    const fams = XS.Fonts.families(doc).filter(f => f.source !== 'builtin');
+    box.append(h('p', 'note', 'Встроенных: ' + XS.Fonts.BUILTIN.length + '.' + (fams.length ? '<br>Добавлены в проект: ' + XS.esc(fams.map(f => f.family).join(', ')) + '.' : ' Добавьте любой из ~300 шрифтов Google Fonts с кириллицей, шрифт с компьютера или свой файл.')));
+    const facts = h('div', 'insp-actions');
+    facts.append(button('Шрифты проекта…', () => UI.FontPicker.open({tab: 'project'}), 'btn small primary'), button('Google Fonts…', () => UI.FontPicker.open({tab: 'google'})), button('Загрузить файл…', () => filePicker('.ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2', f => UI.addFont(f))));
+    box.append(facts);
 
     section('Подсказки');
     box.append(h('p', 'note', 'Выделите элемент мышью, чтобы изменить его. Стрелки — сдвиг на 0,5 мм (с Shift — 5 мм), Alt при перетаскивании — без привязки, Ctrl+D — копия, Delete — удалить, PageUp/PageDown — соседняя запись, Ctrl+колёсико — масштаб.'));
@@ -321,7 +325,7 @@
     if (texts.length === els.length) {
       section('Текст — для всех');
       const set = (prop, v) => UI.edit(() => { for (const e of texts) e[prop] = v; }, 'multi:' + prop, {skip: ['inspector']});
-      row('Гарнитура', select([['', '— разные —'], ...fontOptions()], same('font'), v => { if (v) for (const e of texts) e.font = v; }, 'multi:font'));
+      row('Гарнитура', fontPick(same('font'), v => { if (v) for (const e of texts) e.font = v; }, 'multi:font', {placeholder: '— разные —'}));
       const size = numInput(same('size') || texts[0].size, v => { for (const e of texts) { e.size = v; e.minSize = Math.min(e.minSize, v); } }, 'multi:size', {step: 0.5, min: 2, max: 400});
       const common = {bold: texts.every(e => e.bold), italic: texts.every(e => e.italic), uppercase: texts.every(e => e.uppercase)};
       row('Размер, pt', size, seg([['bold', 'Ж', 'Полужирный'], ['italic', 'К', 'Курсив'], ['uppercase', 'АА', 'Все прописные']], common, (p, on) => { for (const e of texts) e[p] = on; }, 'multi:style', {multi: true}));

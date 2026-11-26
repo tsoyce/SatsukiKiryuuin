@@ -450,11 +450,11 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; font: 600 11px/1
 .inline-tabs { min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .inline-tabs::-webkit-scrollbar { display: none; }
 /* Окно «Инструменты»: вкладок много — отдельной строкой под заголовком, на всю ширину. */
-#toolsDialog .dialog-head, #settingsDialog .dialog-head { flex-wrap: wrap; row-gap: 0; padding-bottom: 0; }
-#toolsDialog .dialog-head h2, #settingsDialog .dialog-head h2 { order: 1; }
-#toolsDialog .dialog-head .btn.icon, #settingsDialog .dialog-head .btn.icon { order: 2; }
-#toolsDialog .inline-tabs, #settingsDialog .inline-tabs { order: 3; flex: 1 0 100%; margin: 8px -18px 0; padding: 0 12px; border-top: 0; }
-#toolsDialog .inline-tabs .tab, #settingsDialog .inline-tabs .tab { height: 40px; }
+#toolsDialog .dialog-head, #settingsDialog .dialog-head, #fontsDialog .dialog-head { flex-wrap: wrap; row-gap: 0; padding-bottom: 0; }
+#toolsDialog .dialog-head h2, #settingsDialog .dialog-head h2, #fontsDialog .dialog-head h2 { order: 1; }
+#toolsDialog .dialog-head .btn.icon, #settingsDialog .dialog-head .btn.icon, #fontsDialog .dialog-head .btn.icon { order: 2; }
+#toolsDialog .inline-tabs, #settingsDialog .inline-tabs, #fontsDialog .inline-tabs { order: 3; flex: 1 0 100%; margin: 8px -18px 0; padding: 0 12px; border-top: 0; }
+#toolsDialog .inline-tabs .tab, #settingsDialog .inline-tabs .tab, #fontsDialog .inline-tabs .tab { height: 40px; }
 .warn-note { background: var(--warn-soft); color: var(--warn-text); border: 1px solid var(--warn-line); display: flex; align-items: center; gap: 6px; margin: 0 0 12px; }
 .link { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
 
@@ -600,3 +600,44 @@ b.accent { color: var(--accent); }
 .guest-form .f { text-align: left; }
 .guest-form .choice { justify-content: flex-start; padding: 4px 0; }
 .form-new textarea { font-family: inherit; font-size: 13px; }
+
+/* ---------- Шрифты: кнопка гарнитуры и окно «Шрифты» (js/ui/font-picker.js) ---------- */
+.font-pick { display: inline-flex; align-items: center; justify-content: space-between; gap: 6px; flex: 1; min-width: 0; height: 30px; padding: 0 8px 0 10px;
+  border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel); cursor: pointer; text-align: left; }
+.font-pick:hover { border-color: var(--line-hover); }
+.font-pick .fp-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.font-pick .ic { flex: none; color: var(--muted); }
+.fonts-dialog { height: min(760px, 92vh); }
+.fonts-dialog[open] { display: flex; flex-direction: column; }
+.fonts-dialog.drop { outline: 3px dashed var(--accent); outline-offset: -6px; }
+.fp-bar { display: flex; gap: 8px; padding: 12px 18px 0; flex-wrap: wrap; }
+.fp-bar label { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); border-radius: 8px; padding: 0 10px; height: 36px; background: var(--panel); color: var(--muted); }
+.fp-bar label:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.fp-bar input { border: 0; outline: 0; background: transparent; color: var(--text); flex: 1; min-width: 0; height: 100%; padding: 0; }
+.fp-search { flex: 1 1 260px; }
+.fp-sample { flex: 1 1 220px; }
+.fp-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px 18px 0; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.fp-filters .check { margin-left: auto; }
+.fp-body { flex: 1; overflow-y: auto; gap: 0; padding-top: 8px; }
+.fp-row { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-bottom: 1px solid var(--line); border-radius: 6px; }
+.fp-row.pickable { cursor: pointer; }
+.fp-row.pickable:hover, .fp-row:focus-visible { background: var(--hover); outline: none; }
+.fp-row.current { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.fp-main { flex: 1; min-width: 0; }
+.fp-name { font-size: 20px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fp-sample-text { font-size: 15px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.fp-meta { margin-top: 3px; }
+.fp-meta .ok { color: var(--ok); font-weight: 600; }
+.fp-actions { display: flex; gap: 6px; align-items: center; flex: none; }
+.fp-weight { height: 28px; max-width: 150px; font-size: 12px; }
+.icon-only { width: 28px; padding: 0; }
+.fp-more { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 14px 0 6px; }
+.fp-drop { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 34px 18px; border: 2px dashed var(--line-strong); border-radius: 12px; color: var(--muted); }
+.fp-drop b { color: var(--text); font-size: 15px; }
+.note.warn { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn-text); }
+@media (max-width: 640px) {
+  .fp-row { flex-wrap: wrap; }
+  .fp-actions { width: 100%; justify-content: flex-end; }
+  .fp-name { font-size: 18px; }
+}

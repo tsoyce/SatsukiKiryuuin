@@ -35,6 +35,10 @@ const ok = (r, status = 200) => { assert.strictEqual(r.status, status, JSON.stri
   // Здоровье и первый запуск
   const health = ok(await anon.call('GET', 'v1/health'));
   assert.ok(health.ok && health.db && health.storage, JSON.stringify(health));
+  // Шрифты Google Fonts: проверка параметров (без обращения к Google)
+  ok(await anon.call('GET', 'v1/fonts/google&family=' + encodeURIComponent('../etc/passwd')), 422);
+  ok(await anon.call('GET', 'v1/fonts/google&family=Rubik&weight=750'), 422);
+  ok(await anon.call('GET', 'v1/fonts/google&family=Rubik&weight=1000'), 422);
   let st = ok(await a.call('GET', 'v1/auth/state'));
   assert.ok(st.setupNeeded && st.setupAllowed && !st.user);
   ok(await a.call('POST', 'v1/auth/setup', {token: 'wrong', login: 'admin', password: 'password1'}), 403);

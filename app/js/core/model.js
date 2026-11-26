@@ -139,7 +139,7 @@
     doc.greeting = {...doc.greeting, ...(input.greeting || {})};
     doc.assets = {};
     for (const [id, a] of Object.entries(input.assets || {})) if (a && typeof a.data === 'string') doc.assets[id] = {id, name: String(a.name || id), mime: String(a.mime || ''), data: a.data, width: a.width, height: a.height, pages: a.pages, ...(/^[0-9a-f]{64}$/.test(a.sha256 || '') ? {sha256: a.sha256} : {})};
-    doc.fonts = (Array.isArray(input.fonts) ? input.fonts : []).filter(f => f && f.family && typeof f.data === 'string').map(f => ({id: String(f.id || uid('font')), family: String(f.family), variant: ['regular', 'bold', 'italic', 'bolditalic'].includes(f.variant) ? f.variant : 'regular', name: String(f.name || f.family), data: f.data, ...(/^[0-9a-f]{64}$/.test(f.sha256 || '') ? {sha256: f.sha256} : {})}));
+    doc.fonts = (Array.isArray(input.fonts) ? input.fonts : []).filter(f => f && f.family && typeof f.data === 'string').map(f => ({id: String(f.id || uid('font')), family: String(f.family), variant: ['regular', 'bold', 'italic', 'bolditalic'].includes(f.variant) ? f.variant : 'regular', name: String(f.name || f.family), data: f.data, ...(['google', 'local', 'upload'].includes(f.source) ? {source: f.source} : {}), ...(/^[srdhm]$/.test(f.category || '') ? {category: f.category} : {}), ...(/^[0-9a-f]{64}$/.test(f.sha256 || '') ? {sha256: f.sha256} : {})}));
     doc.output = {...defaultOutput(doc.kind), ...(input.output || {})};
     return doc;
   }

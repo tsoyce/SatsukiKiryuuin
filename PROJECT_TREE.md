@@ -39,6 +39,7 @@
 | `tools/dev-router.php` | Локальный запуск Студии вместе с API: `php -S 127.0.0.1:8091 -t app tools/dev-router.php`. |
 | `tools/deploy/server-install.sh` | Установка/обновление на сервере одной командой (база, config.php, миграции, обмен каталогов сайта, проверка). |
 | `docs/DEPLOY.md` | Как устроено на o.utmns.ru, выкладка, первый вход, обслуживание, локальная разработка. |
+| `tools/build-font-catalog.cjs` | Пересобирает `app/fonts/google-catalog.json` из npm-пакета `google-font-metadata` (команда — в начале файла). |
 | `tools/extract-legacy-presets.cjs` | Достаёт картинки и цитаты из base64-скриптов v25 в `app/presets/assets/`. |
 | `PROJECT_TREE.md` | Этот файл. |
 | `README.md` | Что это, как запустить и развернуть. |
@@ -57,7 +58,8 @@ app/
 ├── css/motion.css          движение: вход экранов, окна, меню, уведомления, очередь карточек, «уменьшить движение»
 ├── css/mobile.css          телефон (≤820px: нижняя панель, листы-панели, окна снизу) и узкое окно (821–1180px)
 ├── vendor/                 pdf-lib, fontkit, pdf.js, fflate (ZIP/XLSX), petrovich (падежи), qrcode-generator — см. vendor/README.md
-├── fonts/                  встроенные шрифты с кириллицей (PT Sans/Serif/Sans Narrow, Montserrat, Marck Script, Bad Script, Lobster) + лицензии OFL
+├── fonts/                  встроенные шрифты с кириллицей (PT Sans/Serif/Sans Narrow, Montserrat, Marck Script, Bad Script, Lobster) + лицензии OFL;
+│                           google-catalog.json — каталог Google Fonts (~1900 семейств: категория, начертания, курсив, кириллица)
 ├── presets/assets/         картинки шаблонов: макет Дня социолога, «Первый иней», логотипы, 46 портретов и цитаты закладок
 └── js/
     ├── core/               ЯДРО — без интерфейса, работает и в node (см. tests/)
@@ -73,7 +75,7 @@ app/
 | `model.js` | `XS.Model` | Схема документа, типы элементов и их значения по умолчанию, `normalizeDoc` (защита от битых файлов), столбцы/записи/ассеты, форматы листов и бумаги |
 | `names.js` | `XS.Names` | **Формы полей** `{Поле:мод}`: падежи ФИО (`род дат вин твор пред`, через petrovich), `фамилия имя отчество инициалы ио иф`, `верх низ заглав`; не-ФИО («Команда…») не склоняется |
 | `fields.js` | `XS.Fields` | Подстановка `{Поле}` и `{Поле:мод}` (без учёта регистра), встроенные поля `{№} {Проект} {Дата} {Обращение} {Сторона}`, **шаблон имени файла** (`fileName`, номер дополняется нулями) |
-| `fonts.js` | `XS.Fonts` | Встроенные и загруженные шрифты; одни и те же байты → fontkit (переносы), FontFace (экран), pdf-lib (PDF) |
+| `fonts.js` | `XS.Fonts` | Встроенные и добавленные в проект шрифты (`doc.fonts`: `source` google/local/upload, `category`); одни и те же байты → fontkit (переносы), FontFace (экран), pdf-lib (PDF). Каталог Google Fonts (`catalog`), какие начертания скачать (`plan`: обычный/жирный/курсивы, «Montserrat Light» для веса ≠ 400), скачивание через сервер (`fetchGoogle`), превью (`previewCss`), `usage` — где шрифт в макете, `inspect` — семейство/начертание/кириллица/запрет встраивания файла |
 | `layout.js` | `XS.Layout` | Вёрстка текста: переносы, автоуменьшение до мин. размера, выравнивание, интерлиньяж, разрядка, выделение полей другим стилем, поиск отсутствующих в шрифте символов |
 | `assets.js` | `XS.Assets` | Картинки и **PDF как шаблон**: размеры страниц (pdf-lib), растр для экрана (pdf.js), перекодирование WebP/SVG для PDF, вписывание (cover/contain/stretch) |
 | `qr.js` | `XS.QR` | QR-код → SVG-контур в мм (вектор и на экране, и в PDF) |
@@ -111,6 +113,7 @@ app/
 | `stage.js` | `UI.Stage` | Центр: предпросмотр, рамки элементов, мультивыделение (Shift/Ctrl-клик, рамка по пустому месту), клик по группе, перетаскивание и размер с привязкой, масштаб к курсору, пробел/средняя кнопка — двигать холст, стороны, записи, строка состояния, перетаскивание файлов на макет |
 | `layers.js` | `UI.Layers` | Левая вкладка «Слои»: дерево с группами-папками, Shift/Ctrl-выделение, переименование (двойной клик, F2), порядок перетаскиванием (в группу и из неё), видимость, закрепление, добавление элементов |
 | `data.js` | `UI.Data` | Левая вкладка «Данные»: записи, поиск, отметки для выгрузки, форма записи, экземпляры, вставка из Excel, CSV, таблица целиком (переименование столбца меняет `{поле}` везде), обращение по полу |
+| `font-picker.js` | `UI.FontPicker` | **Окно «Шрифты»** (кнопка «Гарнитура» в свойствах, «Проект → Шрифты…», палитра): вкладки «В проекте» (выбрать, убрать), «Google Fonts» (поиск, категории, «только с кириллицей», превью, выбор веса), «С компьютера» (Local Font Access API, Chrome/Edge), «Из файла» (TTF/OTF/WOFF/WOFF2, несколько сразу, перетаскивание). `UI.fontButton` — кнопка гарнитуры, набранная самим шрифтом |
 | `inspector.js` | `UI.Inspector` | Правая панель, три режима: один элемент (текст, шрифт, поля, картинка, фигура, положение, выравнивание, слой печати), **несколько** (выравнивание/распределение, общий шрифт/цвет/размер, видимость, группировка) или макет (размер, фон-PDF/картинка, страница PDF, шрифты) |
 | `export-dialog.js` | `UI.ExportDialog` | Окно «Выгрузить…» и кнопка «Печать»: что/как/в каком формате, раскладка, слой, **шаблон имени файлов с предпросмотром** |
 | `print-master.js` | `UI.PrintMaster` | Окно «Мастер печати» (Проект → Мастер печати, Ctrl+Shift+P): тираж, проходы с подсказками и отметкой «напечатан», профили принтеров (в аккаунте или браузере), лист совмещения |
@@ -147,6 +150,7 @@ app/
 - **Поворот** → `el.rotate` (градусы, по часовой, вокруг центра; у линий всегда 0): `scene.js` (`op.rot/cx/cy`), `render-canvas.js`, `render-pdf.js#rotation`, ручка и размер повёрнутого — `stage.js`.
 - **Новый формат поля** → `formats.js#apply` (+ подсказка в `HINTS`); слово по полу `{ФИО:принял/приняла}` и `{ФИО:буквы}` — `names.js`.
 - **Команда в палитре** → `palette.js#commands` (или строка в `keys.js#MAP` — попадёт туда сама).
+- **Шрифт: нет в списке / не скачивается / не тот в PDF** → каталог `app/fonts/google-catalog.json` (пересборка `tools/build-font-catalog.cjs`), скачивание `server/src/Fonts.php` (кэш `storage/font-cache`), выбор файла под начертание `fonts.js#pick`, окно `font-picker.js`.
 - **Старый проект не открывается** → `importers.js#projectFromJson`.
 - **Горячая клавиша / пункт контекстного меню** → `keys.js#MAP`, `context-menu.js`; само действие — в `selection.js`.
 - **Выделение, группы, выравнивание** → `selection.js` (логика), `stage.js` (мышь), `layers.js` (дерево).
@@ -165,6 +169,7 @@ server/
 │   ├── Assets.php       файлы по SHA-256: какие отсутствуют, загрузка с проверкой хэша и типа по содержимому, выдача участникам проекта или по ссылке, очистка
 │   ├── Settings.php     настройки сайта (регистрация, режим без входа, срок корзины, объявление) и пользователя (prefs, printers)
 │   ├── Admin.php        пользователи, приглашения, журнал, статистика
+│   ├── Fonts.php        шрифты Google Fonts целым TTF: берёт CSS у fonts.googleapis.com «как старый браузер», качает файл с fonts.gstatic.com, кэш storage/font-cache (до 400 МБ); без входа
 │   ├── Forms.php        v4: анкеты регистрации — поля из столбцов, публичная анкета без входа (ловушка для ботов, 30 ответов/час с адреса), ответы, «перенесено»
 │   └── Migrate.php      миграции из migrations/*.sql, учёт в schema_migrations
 ├── migrations/001_init.sql   users, sessions, login_attempts, invites, projects, project_revisions, project_shares, assets, project_assets, settings, audit_log
@@ -174,7 +179,7 @@ server/
 ```
 
 API (`api/index.php?r=…`): `v1/health`, `v1/auth/{state,setup,login,logout,register,me}`, `v1/projects[/{id}[/restore|/revisions[/{rev}]|/shares[/{share}]]]`,
-`v1/links/{код}`, `v1/projects/{id}/forms[/{form}[/responses|/ack]]`, `v1/f/{код}` (анкета гостя: GET — вопросы, POST — ответ), `v1/assets/{missing|{sha}}`, `v1/settings[/user|/system]`, `v1/admin/{users[/{id}],invites[/{id}],audit,stats}`.
+`v1/links/{код}`, `v1/projects/{id}/forms[/{form}[/responses|/ack]]`, `v1/f/{код}` (анкета гостя: GET — вопросы, POST — ответ), `v1/assets/{missing|{sha}}`, `v1/fonts/google` (`&family=&weight=&italic=`), `v1/settings[/user|/system]`, `v1/admin/{users[/{id}],invites[/{id}],audit,stats}`.
 
 ## `legacy/v25/` — исходная версия (не менять)
 

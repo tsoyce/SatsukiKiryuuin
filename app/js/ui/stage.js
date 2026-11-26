@@ -316,7 +316,7 @@
   async function onDrop(e) {
     e.preventDefault(); $('dropHint').hidden = true;
     for (const file of e.dataTransfer.files) {
-      if (/\.(ttf|otf)$/i.test(file.name)) await UI.addFont(file);
+      if (/\.(ttf|otf|woff2?)$/i.test(file.name)) await UI.addFont(file);
       else if (/\.json$/i.test(file.name)) UI.toast('Файл проекта откройте на главной странице.', true);
       else if (/\.(csv|tsv|txt)$/i.test(file.name)) await UI.Data.importFile(file);
       else if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name) || !UI.side().background) await UI.setBackground(file);
