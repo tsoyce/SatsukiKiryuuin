@@ -16,8 +16,8 @@
   /* Сколько ждать ответа сервера: обычные запросы — 45 с, файлы — 3 мин. Без этого обрыв связи
    * (или прокси, который не закрывает ответ) оставлял Студию висеть на «Загружаем…» навсегда. */
   Api.TIMEOUT = 45000; Api.FILE_TIMEOUT = 180000;
-  Api.call = async function (method, route, body, {query, raw, signal, timeout} = {}) {
-    const headers = {};
+  Api.call = async function (method, route, body, {query, raw, signal, timeout, headers: extra} = {}) {
+    const headers = {...extra};
     if (Api.csrf && method !== 'GET') headers['X-XS-CSRF'] = Api.csrf;
     let payload;
     if (raw) { payload = raw; headers['Content-Type'] = 'application/octet-stream'; }

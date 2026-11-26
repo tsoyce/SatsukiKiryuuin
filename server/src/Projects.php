@@ -1,6 +1,6 @@
 <?php
 /* XSatsu Студия · проекты на сервере: список, чтение, сохранение с проверкой версии (409 при конфликте),
- * история версий и откат, корзина, доступ людям и по ссылке. */
+ * история версий и откат, корзина, доступ людям и по ссылке (гостевые ссылки — Links.php). */
 declare(strict_types=1);
 
 namespace XSatsu;
@@ -71,10 +71,12 @@ final class Projects
         App::q('DELETE FROM project_assets WHERE project_id = ?', [$id]);
         foreach ($hashes as $h) App::q('INSERT IGNORE INTO project_assets (project_id, sha256) VALUES (?,?)', [$id, $h]);
     }
-    private static function snapshot(string $id, int $rev, string $json, string $note = ''): void
+    /* Версия в истории. Автор — текущий пользователь, если не передан явно; гость — подписью $label. */
+    private static function snapshot(string $id, int $rev, string $json, string $note = '', ?int $authorId = -1, ?string $label = null): void
     {
-        App::q('INSERT IGNORE INTO project_revisions (project_id, revision, doc_gz, author_id, created_at, note) VALUES (?,?,?,?,?,?)',
-            [$id, $rev, gzcompress($json, 6), App::$user['id'] ?? null, App::now(), mb_substr($note, 0, 200)]);
+        if ($authorId === -1) $authorId = isset(App::$user['id']) ? (int)App::$user['id'] : null;
+        App::q('INSERT IGNORE INTO project_revisions (project_id, revision, doc_gz, author_id, author_label, created_at, note) VALUES (?,?,?,?,?,?,?)',
+            [$id, $rev, gzcompress($json, 6), $authorId, $label, App::now(), mb_substr($note, 0, 200)]);
         $keep = max(5, (int)App::$config['revisions_keep']);
         $old = App::one('SELECT revision FROM project_revisions WHERE project_id = ? ORDER BY revision DESC LIMIT 1 OFFSET ' . $keep, [$id]);
         if ($old) App::q('DELETE FROM project_revisions WHERE project_id = ? AND revision <= ?', [$id, $old['revision']]);
@@ -137,30 +139,42 @@ final class Projects
 
     public static function update(array $p): array
     {
-        $b = App::body();
+        self::need($p['id'], 'edit');
+        return self::write($p['id'], App::body(), null);
+    }
+
+    /* Сохранение с проверкой ревизии. Права проверяет вызывающий (update — по аккаунту, Links::save — по ссылке).
+     * $label — подпись гостя; null — правит пользователь под своим именем.
+     * Когда правит другой человек, чем в прошлый раз, прежнее состояние и новое обязательно попадают в версии:
+     * чужую правку всегда можно откатить. */
+    public static function write(string $id, array $b, ?string $label): array
+    {
+        $userId = isset(App::$user['id']) ? (int)App::$user['id'] : null;
         App::db()->beginTransaction();
         try {
-            $proj = self::need($p['id'], 'edit');
-            $cur = App::one('SELECT revision, updated_at, updated_by FROM projects WHERE id = ? FOR UPDATE', [$p['id']]);
+            $cur = App::one('SELECT revision, doc, updated_at, updated_by, updated_by_label, deleted_at FROM projects WHERE id = ? FOR UPDATE', [$id]);
+            if (!$cur || $cur['deleted_at']) throw new HttpError(404, 'Проект не найден.');
             $base = (int)($b['revision'] ?? 0);
             if ($base !== (int)$cur['revision']) {
-                $who = $cur['updated_by'] ? App::one('SELECT name, login FROM users WHERE id = ?', [$cur['updated_by']]) : null;
-                throw new HttpError(409, 'Проект уже изменён в другом окне или другим человеком.', ['revision' => (int)$cur['revision'], 'updatedAt' => App::iso($cur['updated_at']), 'updatedBy' => $who ? ($who['name'] ?: $who['login']) : null]);
+                $who = $cur['updated_by_label'] ?: (($w = $cur['updated_by'] ? App::one('SELECT name, login FROM users WHERE id = ?', [$cur['updated_by']]) : null) ? ($w['name'] ?: $w['login']) : null);
+                throw new HttpError(409, 'Проект уже изменён в другом окне или другим человеком.', ['revision' => (int)$cur['revision'], 'updatedAt' => App::iso($cur['updated_at']), 'updatedBy' => $who]);
             }
-            [$json, $doc, $hashes] = self::validateDoc($b['doc'] ?? null, $p['id']);
+            [$json, $doc, $hashes] = self::validateDoc($b['doc'] ?? null, $id);
             $m = self::meta($doc);
             $rev = $base + 1;
             $thumb = self::thumb($b['thumb'] ?? null);
-            App::q('UPDATE projects SET title = ?, kind = ?, revision = ?, doc = ?, rows_count = ?, sides_count = ?, page_w = ?, page_h = ?, size_bytes = ?, updated_at = ?, updated_by = ?' . ($thumb ? ', thumb = ?' : '') . ' WHERE id = ?',
-                array_merge([$m['title'], $m['kind'], $rev, $json, $m['rows'], $m['sides'], $m['w'], $m['h'], strlen($json), App::now(), App::$user['id']], $thumb ? [$thumb] : [], [$p['id']]));
-            self::linkAssets($p['id'], $hashes);
+            App::q('UPDATE projects SET title = ?, kind = ?, revision = ?, doc = ?, rows_count = ?, sides_count = ?, page_w = ?, page_h = ?, size_bytes = ?, updated_at = ?, updated_by = ?, updated_by_label = ?' . ($thumb ? ', thumb = ?' : '') . ' WHERE id = ?',
+                array_merge([$m['title'], $m['kind'], $rev, $json, $m['rows'], $m['sides'], $m['w'], $m['h'], strlen($json), App::now(), $userId, $label], $thumb ? [$thumb] : [], [$id]));
+            self::linkAssets($id, $hashes);
             $note = trim((string)($b['note'] ?? ''));
-            $last = App::one('SELECT created_at FROM project_revisions WHERE project_id = ? ORDER BY revision DESC LIMIT 1', [$p['id']]);
-            if ($note !== '' || !$last || $last['created_at'] < App::now(-60 * (int)App::$config['revision_every_minutes'])) self::snapshot($p['id'], $rev, $json, $note);
+            $switch = ($cur['updated_by'] !== null ? (int)$cur['updated_by'] : null) !== $userId || $cur['updated_by_label'] !== $label;
+            if ($switch) self::snapshot($id, (int)$cur['revision'], $cur['doc'], '', $cur['updated_by'] !== null ? (int)$cur['updated_by'] : null, $cur['updated_by_label']);
+            $last = App::one('SELECT created_at FROM project_revisions WHERE project_id = ? ORDER BY revision DESC LIMIT 1', [$id]);
+            if ($switch || $note !== '' || !$last || $last['created_at'] < App::now(-60 * (int)App::$config['revision_every_minutes'])) self::snapshot($id, $rev, $json, $note, $userId, $label);
             App::db()->commit();
         } catch (\Throwable $e) { if (App::db()->inTransaction()) App::db()->rollBack(); throw $e; }
-        if ($note !== '') App::audit('project.version', 'project', $p['id'], ['note' => $note]);
-        return ['id' => $p['id'], 'revision' => $rev, 'updatedAt' => App::iso(App::now())];
+        if ($note !== '') App::audit('project.version', 'project', $id, ['note' => $note] + ($label ? ['by' => $label] : []));
+        return ['id' => $id, 'revision' => $rev, 'updatedAt' => App::iso(App::now())];
     }
 
     public static function remove(array $p): array
@@ -195,8 +209,8 @@ final class Projects
     public static function revisions(array $p): array
     {
         self::need($p['id'], 'view');
-        $rows = App::all('SELECT r.revision, r.created_at, r.note, LENGTH(r.doc_gz) bytes, u.name, u.login FROM project_revisions r LEFT JOIN users u ON u.id = r.author_id WHERE r.project_id = ? ORDER BY r.revision DESC', [$p['id']]);
-        return ['revisions' => array_map(fn($r) => ['revision' => (int)$r['revision'], 'at' => App::iso($r['created_at']), 'note' => $r['note'], 'author' => $r['name'] ?: $r['login'], 'bytes' => (int)$r['bytes']], $rows)];
+        $rows = App::all('SELECT r.revision, r.created_at, r.note, r.author_label, LENGTH(r.doc_gz) bytes, u.name, u.login FROM project_revisions r LEFT JOIN users u ON u.id = r.author_id WHERE r.project_id = ? ORDER BY r.revision DESC', [$p['id']]);
+        return ['revisions' => array_map(fn($r) => ['revision' => (int)$r['revision'], 'at' => App::iso($r['created_at']), 'note' => $r['note'], 'author' => $r['author_label'] ?: ($r['name'] ?: $r['login']), 'guest' => $r['author_label'] !== null, 'bytes' => (int)$r['bytes']], $rows)];
     }
     public static function revision(array $p): array
     {
@@ -219,8 +233,19 @@ final class Projects
     public static function shares(array $p): array
     {
         $proj = self::need($p['id'], 'owner');
-        $rows = App::all('SELECT s.id, s.user_id, s.permission, s.created_at, s.expires_at, s.token_hash IS NOT NULL is_link, u.login, u.name FROM project_shares s LEFT JOIN users u ON u.id = s.user_id WHERE s.project_id = ? ORDER BY s.id', [$proj['id']]);
-        return ['shares' => array_map(fn($r) => ['id' => (int)$r['id'], 'link' => (bool)$r['is_link'], 'login' => $r['login'], 'name' => $r['name'], 'permission' => $r['permission'], 'createdAt' => App::iso($r['created_at']), 'expiresAt' => App::iso($r['expires_at'])], $rows)];
+        $rows = App::all('SELECT s.id, s.user_id, s.permission, s.label, s.created_at, s.expires_at, s.last_used_at, s.opens, s.edits, s.token_hash IS NOT NULL is_link, u.login, u.name
+            FROM project_shares s LEFT JOIN users u ON u.id = s.user_id WHERE s.project_id = ? ORDER BY s.id', [$proj['id']]);
+        $now = App::now();
+        return ['shares' => array_map(fn($r) => [
+            'id' => (int)$r['id'], 'link' => (bool)$r['is_link'], 'login' => $r['login'], 'name' => $r['name'], 'permission' => $r['permission'], 'label' => $r['label'],
+            'createdAt' => App::iso($r['created_at']), 'expiresAt' => App::iso($r['expires_at']), 'expired' => $r['expires_at'] !== null && $r['expires_at'] <= $now,
+            'lastUsedAt' => App::iso($r['last_used_at']), 'opens' => (int)$r['opens'], 'edits' => (int)$r['edits'],
+        ], $rows)];
+    }
+    private static function expiry(mixed $days): ?string
+    {
+        $d = (int)$days;
+        return $d > 0 ? App::now(min($d, Links::MAX_DAYS) * 86400) : null;
     }
     public static function share(array $p): array
     {
@@ -228,11 +253,13 @@ final class Projects
         $b = App::body();
         $perm = ($b['permission'] ?? 'view') === 'edit' ? 'edit' : 'view';
         if (!empty($b['link'])) {
-            $token = App::token(18);
-            $days = (int)($b['days'] ?? 0);
-            App::q('INSERT INTO project_shares (project_id, token_hash, permission, created_by, created_at, expires_at) VALUES (?,?,?,?,?,?)',
-                [$proj['id'], hash('sha256', $token), 'view', App::$user['id'], App::now(), $days > 0 ? App::now(min($days, 365) * 86400) : null]);
-            App::audit('project.link', 'project', $proj['id']);
+            $n = (int)App::one('SELECT COUNT(*) n FROM project_shares WHERE project_id = ? AND token_hash IS NOT NULL', [$proj['id']])['n'];
+            if ($n >= 50) throw new HttpError(422, 'У проекта уже 50 ссылок — уберите ненужные.');
+            $token = App::token(24); // 192 бита
+            $label = App::str($b, 'label', 100) ?: null;
+            App::q('INSERT INTO project_shares (project_id, token_hash, permission, label, created_by, created_at, expires_at) VALUES (?,?,?,?,?,?,?)',
+                [$proj['id'], hash('sha256', $token), $perm, $label, App::$user['id'], App::now(), self::expiry($b['days'] ?? 0)]);
+            App::audit('project.link', 'project', $proj['id'], ['permission' => $perm] + ($label ? ['label' => $label] : []));
             return self::shares($p) + ['token' => $token];
         }
         $login = mb_strtolower(App::str($b, 'login', 100, true));
@@ -244,19 +271,26 @@ final class Projects
         App::audit('project.share', 'project', $proj['id'], ['login' => $login, 'permission' => $perm]);
         return self::shares($p);
     }
+    /* PATCH shares/{share}: права, срок (days: 0 — бессрочно) и подпись ссылки. */
+    public static function updateShare(array $p): array
+    {
+        $proj = self::need($p['id'], 'owner');
+        $s = App::one('SELECT * FROM project_shares WHERE project_id = ? AND id = ?', [$proj['id'], (int)$p['share']]);
+        if (!$s) throw new HttpError(404, 'Доступ не найден.');
+        $b = App::body();
+        $perm = array_key_exists('permission', $b) ? (($b['permission'] === 'edit') ? 'edit' : 'view') : $s['permission'];
+        $expires = array_key_exists('days', $b) ? self::expiry($b['days']) : $s['expires_at'];
+        $label = array_key_exists('label', $b) ? (App::str($b, 'label', 100) ?: null) : $s['label'];
+        App::q('UPDATE project_shares SET permission = ?, expires_at = ?, label = ? WHERE id = ?', [$perm, $s['token_hash'] ? $expires : $s['expires_at'], $s['token_hash'] ? $label : null, $s['id']]);
+        App::audit('project.share.update', 'project', $proj['id'], ['share' => (int)$s['id'], 'permission' => $perm]);
+        return self::shares($p);
+    }
     public static function unshare(array $p): array
     {
         $proj = self::need($p['id'], 'owner');
         App::q('DELETE FROM project_shares WHERE project_id = ? AND id = ?', [$proj['id'], (int)$p['share']]);
         App::audit('project.unshare', 'project', $proj['id']);
         return self::shares($p);
-    }
-    /* Открыть проект по ссылке (без входа, только просмотр и выгрузка). */
-    public static function byLink(array $p): array
-    {
-        $s = App::one('SELECT s.*, p.doc, p.title, p.revision, p.deleted_at FROM project_shares s JOIN projects p ON p.id = s.project_id WHERE s.token_hash = ? AND (s.expires_at IS NULL OR s.expires_at > ?)', [hash('sha256', $p['token']), App::now()]);
-        if (!$s || $s['deleted_at']) throw new HttpError(404, 'Ссылка недействительна или проект удалён.');
-        return ['doc' => json_decode($s['doc'], true), 'title' => $s['title'], 'revision' => (int)$s['revision'], 'permission' => 'view'];
     }
 
     /* Корзина старше N дней — навсегда (bin/cleanup.php). */

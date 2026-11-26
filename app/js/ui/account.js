@@ -1,5 +1,5 @@
 /* XSatsu Студия · аккаунт: вход и регистрация, первый администратор, вкладки настроек (аккаунт, сайт, пользователи, журнал),
- * конфликт сохранения, версии проекта, доступ (люди и ссылка). Работает, только если на сайте установлен сервер (XS.Api.available). */
+ * конфликт сохранения, версии проекта, доступ (люди и гостевые ссылки: просмотр или правка без входа). Работает, только если на сайте установлен сервер (XS.Api.available). */
 (function (global) {
   'use strict';
   const XS = global.XS, UI = XS.UI, S = UI.S, $ = UI.$, Api = XS.Api;
@@ -206,7 +206,7 @@
       const c = ev.target.closest('[data-c]')?.dataset.c; if (!c) return;
       d.close();
       if (c === 'force') { await XS.Store.remote.save(S.doc, null, {force: true, note: 'Перезапись при конфликте'}); UI.setSaveState('Сохранено'); UI.toast('Сохранено поверх. Прошлая версия — в «Версиях».'); }
-      if (c === 'theirs') { const fresh = await XS.Store.remote.get(S.doc.id); await UI.open(fresh); }
+      if (c === 'theirs') { if (S.link) { const t = S.link; S.link = ''; await openLink(t); } else await UI.open(await XS.Store.remote.get(S.doc.id)); }
       if (c === 'copy') { const copy = XS.clone(S.doc); copy.id = XS.uid('doc'); copy.title += ' (мои изменения)'; await UI.create(copy); UI.toast('Ваши изменения сохранены копией.'); }
     });
     show();
@@ -215,6 +215,7 @@
   /* ---------- версии ---------- */
   async function versions() {
     if (XS.Store.where(S.doc.id) !== 'remote') throw new Error('Версии есть у проектов в аккаунте. Перенесите проект: на главной «В этом браузере → В аккаунт».');
+    if (S.link) throw new Error('Проект открыт по ссылке: версии видит владелец. Ваши правки сохраняются в них с вашей подписью.');
     await UI.flush();
     const {body, show} = dialog('versionsDialog', 'Версии проекта', {wide: true});
     const draw = async () => {
@@ -240,21 +241,52 @@
   }
 
   /* ---------- доступ ---------- */
+  const DAYS = [[1, '1 день'], [7, '7 дней'], [30, '30 дней'], [365, 'год'], [0, 'без срока']];
+  const linkUrl = t => location.origin + location.pathname + '#/link/' + t;
+  function linkLine(s) {
+    const until = s.expired ? '<span class="bad">срок истёк</span>' : s.expiresAt ? 'до ' + fmt(s.expiresAt) : 'без срока';
+    const used = s.opens ? 'открывали ' + s.opens + ' раз' + (s.edits ? ' · сохранений правок: ' + s.edits : '') + ' · последний раз ' + fmt(s.lastUsedAt) : 'ещё не открывали';
+    return `<li class="share-link${s.expired ? ' is-expired' : ''}">${I(s.permission === 'edit' ? 'text' : 'eye', 15)}<div class="share-main"><b>${esc(s.label || 'Гостевая ссылка')}</b>
+      <span class="muted small">${until} · ${used}</span></div><span class="spacer"></span>
+      <select data-perm="${s.id}" aria-label="Права по ссылке"><option value="edit"${s.permission === 'edit' ? ' selected' : ''}>правит и печатает</option><option value="view"${s.permission === 'view' ? ' selected' : ''}>смотрит и печатает</option></select>
+      <select data-days="${s.id}" aria-label="Срок ссылки"><option value="">продлить…</option>${DAYS.map(([d, t]) => `<option value="${d}">${d ? 'на ' + t : t}</option>`).join('')}</select>
+      <button class="link" data-del="${s.id}">отозвать</button></li>`;
+  }
   async function share() {
     if (XS.Store.where(S.doc.id) !== 'remote') throw new Error('Делиться можно проектами в аккаунте. Перенесите проект на главной: «В этом браузере → В аккаунт».');
-    if (XS.Store.remote.meta.get(S.doc.id)?.permission !== 'owner') throw new Error('Доступ настраивает владелец проекта.');
-    const {body, show} = dialog('shareDialog', 'Доступ к проекту');
-    const linkUrl = t => location.origin + location.pathname + '#/link/' + t;
-    const draw = (r, token) => {
-      body.innerHTML = `<form class="row-form-inline" data-add><input type="text" name="login" placeholder="Логин коллеги" required><select name="permission"><option value="edit">может редактировать</option><option value="view">только просмотр</option></select><button class="btn primary">Открыть доступ</button></form>
-        <ul class="plain-list shares">${r.shares.map(s => `<li>${s.link ? I('link', 15) + ' Ссылка для просмотра' + (s.expiresAt ? ' до ' + fmt(s.expiresAt) : '') : I('user', 15) + ' ' + esc(s.name || s.login) + ' <span class="muted small">' + esc(s.login) + '</span> · ' + (s.permission === 'edit' ? 'редактирует' : 'смотрит')}<span class="spacer"></span><button class="link" data-del="${s.id}">убрать</button></li>`).join('') || '<li class="muted">Проект видите только вы.</li>'}</ul>
-        ${token ? `<p class="note">Ссылка создана — скопируйте её сейчас, второй раз она не показывается:<br><input type="text" class="copy-input" readonly value="${esc(linkUrl(token))}"> <button type="button" class="btn small" data-copylink>Копировать</button></p>` : ''}
-        <div class="dialog-actions"><button type="button" class="btn" data-link>${I('link', 15)}Создать ссылку только для просмотра</button></div>
-        <p class="muted small">По ссылке проект можно открыть без входа, посмотреть и выгрузить PDF/ZIP, но не изменить. Убрать ссылку — «убрать» в списке.</p>`;
+    if (XS.Store.remote.meta.get(S.doc.id)?.permission !== 'owner' || S.link) throw new Error('Доступ настраивает владелец проекта.');
+    const {body, show} = dialog('shareDialog', 'Доступ к проекту', {wide: true});
+    const draw = (r, token, perm) => {
+      const people = r.shares.filter(s => !s.link), links = r.shares.filter(s => s.link);
+      body.innerHTML = `<h3 class="share-h">${I('link', 16)} Ссылка для гостей — без регистрации</h3>
+        <p class="muted small">Отправьте ссылку коллеге: он откроет проект в браузере без входа, сможет поправить, выгрузить PDF и распечатать. Правки сохраняются в этот проект, в «Версиях» они подписаны, и любую можно откатить.</p>
+        <form class="share-form" data-link>
+          <label class="f f-stack"><span>Что можно</span><select name="permission"><option value="edit">править и печатать</option><option value="view">только смотреть и печатать</option></select></label>
+          <label class="f f-stack"><span>Срок</span><select name="days">${DAYS.map(([d, t]) => `<option value="${d}"${d === 7 ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+          <label class="f f-stack"><span>Для кого (необязательно)</span><input type="text" name="label" maxlength="100" placeholder="например, Петрову — подписи"></label>
+          <button class="btn primary">${I('link', 15)}Создать ссылку</button></form>
+        ${token ? `<div class="note share-new"><b>Ссылка ${perm === 'edit' ? 'на правку' : 'на просмотр'} готова.</b> Скопируйте её сейчас — второй раз она не показывается (можно создать новую).
+          <div class="row-form-inline"><input type="text" class="copy-input" readonly value="${esc(linkUrl(token))}"><button type="button" class="btn small" data-copylink>${I('copy', 14)}Копировать</button>${navigator.share ? `<button type="button" class="btn small" data-sendlink>${I('share', 14)}Отправить</button>` : ''}</div>
+          ${perm === 'edit' ? '<span class="muted small">Любой, у кого есть эта ссылка, может менять проект. Отправляйте её лично, а когда работа сделана — отзовите.</span>' : ''}</div>` : ''}
+        <ul class="plain-list shares">${links.map(linkLine).join('') || '<li class="muted">Ссылок пока нет.</li>'}</ul>
+        <h3 class="share-h">${I('users', 16)} Коллеги с аккаунтом</h3>
+        <form class="row-form-inline" data-add><input type="text" name="login" placeholder="Логин коллеги" required><select name="permission"><option value="edit">может редактировать</option><option value="view">только просмотр</option></select><button class="btn">Открыть доступ</button></form>
+        <ul class="plain-list shares">${people.map(s => `<li>${I('user', 15)} ${esc(s.name || s.login)} <span class="muted small">${esc(s.login)}</span> · ${s.permission === 'edit' ? 'редактирует' : 'смотрит'}<span class="spacer"></span><button class="link" data-del="${s.id}">убрать</button></li>`).join('') || '<li class="muted">Проект видите только вы.</li>'}</ul>`;
       body.querySelector('[data-add]').onsubmit = UI.safe(async e => { e.preventDefault(); draw(await XS.Store.remote.share(S.doc.id, formData(e.target))); UI.toast('Доступ открыт.'); });
-      body.querySelector('[data-link]').onclick = UI.safe(async () => { const r2 = await XS.Store.remote.share(S.doc.id, {link: true}); draw(r2, r2.token); });
-      body.querySelector('[data-copylink]')?.addEventListener('click', () => { const i = body.querySelector('.copy-input'); i.select(); navigator.clipboard?.writeText(i.value); UI.toast('Ссылка скопирована.'); });
+      body.querySelector('[data-link]').onsubmit = UI.safe(async e => {
+        e.preventDefault();
+        const f = formData(e.target);
+        await UI.flush(); // гость должен увидеть последние правки
+        const r2 = await XS.Store.remote.share(S.doc.id, {link: true, permission: f.permission, days: +f.days, label: f.label});
+        draw(r2, r2.token, f.permission);
+        body.querySelector('.copy-input')?.select();
+      });
+      const url = () => body.querySelector('.copy-input')?.value || '';
+      body.querySelector('[data-copylink]')?.addEventListener('click', () => { body.querySelector('.copy-input').select(); navigator.clipboard?.writeText(url()); UI.toast('Ссылка скопирована.'); });
+      body.querySelector('[data-sendlink]')?.addEventListener('click', () => navigator.share({title: S.doc.title, text: 'Проект «' + S.doc.title + '» в XSatsu Студии', url: url()}).catch(() => {}));
       body.querySelectorAll('[data-del]').forEach(b => { b.onclick = UI.safe(async () => draw(await XS.Store.remote.unshare(S.doc.id, b.dataset.del))); });
+      body.querySelectorAll('[data-perm]').forEach(sel => { sel.onchange = UI.safe(async () => { draw(await XS.Store.remote.updateShare(S.doc.id, sel.dataset.perm, {permission: sel.value})); UI.toast(sel.value === 'edit' ? 'По ссылке снова можно править.' : 'По ссылке теперь только просмотр.'); }); });
+      body.querySelectorAll('[data-days]').forEach(sel => { sel.onchange = UI.safe(async () => { if (sel.value === '') return; draw(await XS.Store.remote.updateShare(S.doc.id, sel.dataset.days, {days: +sel.value})); UI.toast('Срок ссылки изменён.'); }); });
     };
     draw(await XS.Store.remote.shares(S.doc.id));
     show();
@@ -262,10 +294,25 @@
 
   /* ---------- открыть по ссылке ---------- */
   async function openLink(token) {
-    const doc = await UI.busy('Открываем проект по ссылке…', () => XS.Store.remote.byLink(token));
-    await UI.open(doc, {readOnly: true, link: token});
-    UI.toast('Проект открыт только для просмотра. Выгрузка и печать работают; чтобы менять — «Проект → Сделать копию».');
+    const doc = await UI.busy('Открываем проект по ссылке…', () => XS.Store.remote.byLink(token, {progress: UI.busyText}));
+    const m = XS.Store.remote.meta.get(doc.id) || {};
+    const edit = m.permission === 'edit';
+    await UI.open(doc, {readOnly: !edit, link: token});
     UI.warnMissingFiles(doc);
+    if (!edit) { UI.toast('Проект открыт по ссылке для просмотра: выгрузка и печать работают. Чтобы менять — «Проект → Сделать копию».'); return; }
+    if (!Api.user() && !XS.Store.remote.guestName()) guestDialog(doc, m);
+    else UI.toast('Проект «' + doc.title + '» открыт по ссылке' + (m.owner ? ' от ' + m.owner : '') + ': правки сохраняются сами и попадают владельцу.');
+  }
+  /* Гость: как подписать правки (необязательно), коротко — что можно. */
+  function guestDialog(doc, m) {
+    const {d, body, show} = dialog('guestDialog', 'Вас пригласили поправить проект');
+    body.innerHTML = `<p><b>${esc(doc.title)}</b>${m.owner ? ' · владелец — ' + esc(m.owner) : ''}${m.expiresAt ? '<br><span class="muted small">Ссылка действует до ' + fmt(m.expiresAt) + '.</span>' : ''}</p>
+      <p class="muted small">Регистрироваться не нужно. Правки сохраняются сами и сразу попадают владельцу, в «Версиях» видно, кто что менял. Печать и PDF — кнопка «Печать» сверху.</p>
+      <form class="auth-form" data-guest>${field('Как вас подписать в истории правок', 'name', 'text', '', 'maxlength="60" autocomplete="name" placeholder="Имя и фамилия"')}
+      <div class="dialog-actions"><span class="spacer"></span><button type="submit" class="btn primary">Начать</button></div></form>`;
+    body.querySelector('[data-guest]').onsubmit = e => { e.preventDefault(); XS.Store.remote.guestName(e.target.querySelector('[name=name]').value); d.close(); };
+    show();
+    body.querySelector('input')?.focus();
   }
 
   async function init() {

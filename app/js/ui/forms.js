@@ -119,7 +119,7 @@
 
   /* При открытии проекта — тихо проверить, есть ли новые ответы. */
   async function notifyPending() {
-    if (!S.doc || !Api().user() || XS.Store.where(S.doc.id) !== 'remote' || S.readOnly) return;
+    if (!S.doc || !Api().user() || XS.Store.where(S.doc.id) !== 'remote' || S.readOnly || S.link) return;
     try {
       const {forms} = await Api().call('GET', route());
       const n = forms.reduce((a, f) => a + f.pending, 0);

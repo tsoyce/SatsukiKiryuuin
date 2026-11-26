@@ -16,7 +16,7 @@ final class HttpError extends \RuntimeException
 
 final class App
 {
-    public const VERSION = '4.0.0';
+    public const VERSION = '4.1.0';
     public static array $config = [];
     private static ?PDO $pdo = null;
     public static ?array $user = null;        // текущий пользователь (после Auth::current)

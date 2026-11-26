@@ -497,6 +497,18 @@ kbd { display: inline-block; min-width: 22px; padding: 1px 6px; font: 600 11px/1
 .versions li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
 .versions li > div { display: flex; flex-direction: column; }
 .copy-input { width: 100%; margin: 6px 0; }
+.share-h { display: flex; align-items: center; gap: 6px; font-size: 14px; margin: 14px 0 4px; }
+.share-h:first-child { margin-top: 0; }
+.dialog-body form.share-form { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(110px, .6fr) minmax(180px, 1.4fr) auto; gap: 8px; align-items: end; }
+@media (max-width: 720px) { .dialog-body form.share-form { grid-template-columns: 1fr 1fr; } .dialog-body form.share-form .btn { grid-column: 1 / -1; } }
+.share-link { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.share-link .share-main { display: flex; flex-direction: column; min-width: 0; }
+.share-link select { height: 28px; font-size: 12px; }
+.share-link.is-expired { opacity: .7; }
+.share-link .bad { color: var(--danger, #c0392b); }
+.share-new { margin: 8px 0; display: flex; flex-direction: column; gap: 4px; }
+.share-new .copy-input { flex: 1 1 260px; margin: 0; }
+.save-state.via-link { color: var(--accent); }
 body.read-only .add-bar, body.read-only #addRowBtn, body.read-only #pasteBtn { opacity: .45; pointer-events: none; }
 .dialog-body form.row-form-inline { display: flex; }
 .dialog-body form.stack, .dialog-body form.auth-form { display: flex; }
