@@ -159,7 +159,7 @@
   background: linear-gradient(90deg, var(--crimson) 0 44px, var(--gold-2) 44px 76px);
 }
 dialog[open] .dialog-head::after { animation: piping-in 600ms var(--ease-out, ease) both 120ms; transform-origin: left; }
-.whats-new .dialog-head h2 { display: flex; align-items: center; gap: 10px; }
+.whats-new .dialog-head h2 { display: flex; align-items: center; gap: 10px; background: linear-gradient(120deg, var(--accent) 10%, var(--accent-2) 90%); -webkit-background-clip: text; background-clip: text; }
 
 /* ---------- пустой список проектов: знак и подсказка ---------- */
 .empty-brand {
@@ -170,3 +170,44 @@ dialog[open] .dialog-head::after { animation: piping-in 600ms var(--ease-out, ea
 .empty-brand .portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .empty-brand b { display: block; color: var(--text); font-size: 15px; margin-bottom: 2px; }
 .empty-brand .emblem { margin-left: auto; color: var(--accent); opacity: .25; }
+
+/* ===================== Редактор: шлифовка ===================== */
+/* Стол: едва заметная сетка точек, как на чертёжной доске; лист — с мягкой многослойной тенью. */
+.stage .viewport {
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--steel) 45%, transparent) 1px, transparent 1.2px);
+  background-size: 22px 22px; background-position: 11px 11px;
+}
+.page { box-shadow: 0 0 0 1px rgba(17,23,44,.06), 0 2px 4px rgba(17,23,44,.06), 0 12px 32px -6px rgba(17,23,44,.22); border-radius: 1px; }
+:root[data-theme="dark"] .page { box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 16px 40px -8px rgba(0,0,0,.7); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .page { box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 16px 40px -8px rgba(0,0,0,.7); } }
+
+/* Ручки рамки: чуть крупнее под пальцем мыши, мягкая тень, отклик при наведении. */
+.box .h { box-shadow: 0 1px 2px rgba(17,23,44,.25); transition: transform var(--dur-1, 120ms) var(--ease-out, ease), background-color var(--dur-1, 120ms) ease; }
+.box .h:hover { transform: scale(1.35); background: var(--sel); }
+.box .h[data-h=rot] { background: var(--panel); }
+.box .h[data-h=rot]:hover { background: var(--gold-2); border-color: var(--gold); }
+
+/* Подписи разделов свойств: короткая риска канта слева. */
+.inspector h3 { display: flex; align-items: center; gap: 8px; }
+.inspector h3::before { content: ""; flex: none; width: 10px; height: 2px; border-radius: 1px; background: linear-gradient(90deg, var(--crimson) 0 4px, var(--gold-2) 4px); }
+
+/* Переключатели со значками: значки по центру, ровная высота. */
+.seg button { display: inline-flex; align-items: center; justify-content: center; }
+.seg button .ic { pointer-events: none; }
+
+/* Активный слой и активная запись: полоска кобальта слева. */
+.layer.active, .row-item.active { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* Вкладки панели: подчёркивание выезжает. */
+.tab { position: relative; }
+.tab::after { content: ""; position: absolute; left: 18%; right: 18%; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); transform: scaleX(0); transition: transform var(--dur-2, 200ms) var(--ease-out, ease); }
+.tab.active::after { transform: none; }
+.tab.active { border-bottom-color: transparent; }
+
+/* Счётчики-бейджи в цвет действия. */
+.tab .badge { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* Галочки, переключатели и ползунки — в цвет действия. */
+:root { accent-color: var(--accent); }
+/* Вариант выбора в окнах: выбранный — с тонкой золотой риской слева. */
+.choice:has(input:checked) { box-shadow: inset 3px 0 0 var(--accent); }
