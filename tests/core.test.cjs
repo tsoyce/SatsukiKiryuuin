@@ -275,5 +275,16 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   const fontNames = [];
   fdoc.context.enumerateIndirectObjects().forEach(([, o]) => { const bf = o?.dict?.get?.(PDFLib.PDFName.of('BaseFont')) || o?.get?.(PDFLib.PDFName.of('BaseFont')); if (bf) fontNames.push(String(bf)); });
   assert.ok(fontNames.some(n => /Lobster/.test(n)), 'шрифт проекта встроен в PDF: ' + fontNames.join(', '));
+  // 20. Times New Roman: встроенный метрический аналог Tinos (все 4 начертания), старые названия → он же
+  assert.ok(/Tinos-BoldItalic/.test(XS.Fonts.pick(fntN, 'Times New Roman (Tinos)', true, true).source));
+  assert.ok(/Tinos-BoldItalic/.test(XS.Fonts.pick(fntN, 'Times New Roman', true, true).source), 'название из Word');
+  const tnr = XS.Model.blankDoc('diploma');
+  tnr.sides[0].elements = [XS.Model.element('text', {text: 'ИВАНОВА МАРИЯ ПЕТРОВНА', font: 'Times New Roman (Tinos)', bold: true, italic: true, color: '#315BA7', x: 10, y: 95, w: 128, h: 20, size: 20})];
+  XS.Model.addRow(tnr, {});
+  await XS.Fonts.ensureForDoc(tnr);
+  const tnrFace = XS.Fonts.get(tnr, 'Times New Roman (Tinos)', true, true);
+  assert.ok(tnrFace && tnrFace.fk.hasGlyphForCodePoint(0x0416) && /Bold Italic/.test(tnrFace.fk.subfamilyName), 'жирный курсив с кириллицей');
+  const tnrPdf = await XS.Export.run(tnr, {...tnr.output, packaging: 'single', format: 'pdf'});
+  fs.writeFileSync(path.join(out, 'times-bold-italic.pdf'), Buffer.from(await tnrPdf.blob.arrayBuffer()));
   console.log('Все проверки ядра пройдены. Файлы:', fs.readdirSync(out).join(', '));
 })().catch(e => { console.error(e); process.exit(1); });

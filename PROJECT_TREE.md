@@ -58,7 +58,7 @@ app/
 ├── css/motion.css          движение: вход экранов, окна, меню, уведомления, очередь карточек, «уменьшить движение»
 ├── css/mobile.css          телефон (≤820px: нижняя панель, листы-панели, окна снизу) и узкое окно (821–1180px)
 ├── vendor/                 pdf-lib, fontkit, pdf.js, fflate (ZIP/XLSX), petrovich (падежи), qrcode-generator — см. vendor/README.md
-├── fonts/                  встроенные шрифты с кириллицей (PT Sans/Serif/Sans Narrow, Montserrat, Marck Script, Bad Script, Lobster) + лицензии OFL;
+├── fonts/                  встроенные шрифты с кириллицей (PT Sans/Serif/Sans Narrow, Montserrat, Marck Script, Bad Script, Lobster, Tinos = «Times New Roman (Tinos)») + лицензии;
 │                           google-catalog.json — каталог Google Fonts (~1900 семейств: категория, начертания, курсив, кириллица)
 ├── presets/assets/         картинки шаблонов: макет Дня социолога, «Первый иней», логотипы, 46 портретов и цитаты закладок
 └── js/

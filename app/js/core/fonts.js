@@ -11,8 +11,12 @@
     {family: 'PT Sans Narrow', category: 'Узкий', variants: {regular: 'fonts/PTSansNarrow-Regular.ttf', bold: 'fonts/PTSansNarrow-Bold.ttf'}},
     {family: 'Marck Script', category: 'Рукописный', variants: {regular: 'fonts/MarckScript-Regular.ttf'}},
     {family: 'Bad Script', category: 'Рукописный', variants: {regular: 'fonts/BadScript-Regular.ttf'}},
-    {family: 'Lobster', category: 'Акцидентный', variants: {regular: 'fonts/Lobster-Regular.ttf'}}
+    {family: 'Lobster', category: 'Акцидентный', variants: {regular: 'fonts/Lobster-Regular.ttf'}},
+    // Tinos — свободный шрифт с теми же метриками, что у Times New Roman (сам Times New Roman распространять нельзя).
+    {family: 'Times New Roman (Tinos)', category: 'С засечками', variants: {regular: 'fonts/Tinos-Regular.ttf', bold: 'fonts/Tinos-Bold.ttf', italic: 'fonts/Tinos-Italic.ttf', bolditalic: 'fonts/Tinos-BoldItalic.ttf'}}
   ];
+  /* Названия из старых проектов и Word → встроенный аналог (если такого шрифта нет в самом проекте). */
+  const ALIASES = {'times new roman': 'Times New Roman (Tinos)', 'times': 'Times New Roman (Tinos)', 'tinos': 'Times New Roman (Tinos)'};
   const faces = new Map();     // key → {key, css, fk, bytes}
   const loading = new Map();   // key → Promise
   let counter = 0;
@@ -90,7 +94,7 @@
     if (user.length) {
       for (const v of FALLBACK[wanted]) { const f = user.find(x => x.variant === v); if (f) return {key: 'u:' + f.id, source: f.data, variant: v, exact: v === wanted}; }
     }
-    const b = BUILTIN.find(f => f.family === family) || BUILTIN[0];
+    const b = BUILTIN.find(f => f.family === family) || BUILTIN.find(f => f.family === ALIASES[String(family || '').toLowerCase()]) || BUILTIN[0];
     for (const v of FALLBACK[wanted]) if (b.variants[v]) return {key: 'b:' + b.family + ':' + v, source: b.variants[v], variant: v, exact: v === wanted && b.family === family};
   }
 
@@ -139,7 +143,8 @@
     const bold = /bold|black|heavy|полужир|жирн/.test(sub) || (os2.usWeightClass >= 600 && !/regular|normal/.test(sub));
     const italic = /italic|oblique|курсив/.test(sub) || !!(os2.fsSelection && os2.fsSelection.italic);
     // fsType 0x0002 — автор запретил встраивать шрифт в документы.
-    const restricted = ((os2.fsType ?? 0) & 0x000F) === 2;
+    const fs = os2.fsType;
+    const restricted = typeof fs === 'number' ? (fs & 0x000F) === 2 : !!fs?.noEmbedding;
     return {family: String(fk.familyName || 'Шрифт').trim(), variant: variantName(bold, italic), weight: os2.usWeightClass || (bold ? 700 : 400),
       cyrillic: fk.hasGlyphForCodePoint(0x0416), restricted, glyphs: fk.numGlyphs};
   }
