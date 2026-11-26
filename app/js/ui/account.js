@@ -1,4 +1,4 @@
-/* XSatsu Студия · аккаунт: вход и регистрация, первый администратор, вкладки настроек (аккаунт, сайт, пользователи, журнал),
+/* XSatsu Студия · аккаунт: вход и регистрация (и по ссылке-приглашению), первый администратор, смена временного пароля, вкладки настроек (аккаунт, вход в админку),
  * конфликт сохранения, версии проекта, доступ (люди и гостевые ссылки: просмотр или правка без входа). Работает, только если на сайте установлен сервер (XS.Api.available). */
 (function (global) {
   'use strict';
@@ -23,10 +23,9 @@
   const field = (label, name, type = 'text', value = '', extra = '') => `<label class="f wide"><span>${label}</span><input type="${type}" name="${name}" value="${esc(value)}" ${extra}></label>`;
   const formData = form => Object.fromEntries([...form.querySelectorAll('[name]')].map(i => [i.name, i.type === 'checkbox' ? i.checked : i.value]));
 
-  const newPassword = () => { const a = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(12)); return [...r].map(x => a[x % a.length]).join(''); };
 
   /* ---------- вход / регистрация / установка ---------- */
-  function authDialog(mode = 'login', {locked = false} = {}) {
+  function authDialog(mode = 'login', {locked = false, invite = ''} = {}) {
     const st = Api.state || {};
     if (st.setupNeeded) mode = 'setup';
     const {d, body, show} = dialog('authDialog', mode === 'setup' ? 'Первый запуск: администратор' : mode === 'register' ? 'Регистрация' : 'Вход в XSatsu Студию');
@@ -39,7 +38,7 @@
            ${field('Код установки', 'token', 'text', '', 'autocomplete="off" required')}${field('Логин', 'login', 'text', '', 'autocomplete="username" required')}${field('Имя', 'name')}${field('Пароль (от 8 символов)', 'password', 'password', '', 'autocomplete="new-password" required')}`
         : '<p class="note">На сервере ещё нет пользователей. Администратор сайта создаёт первую учётную запись командой <code>php bin/create-admin.php</code> или задаёт код установки в config.php.</p>';
     } else if (mode === 'register') {
-      html = `${reg === 'invite' ? field('Код приглашения', 'invite', 'text', '', 'autocomplete="off" required') : ''}${field('Логин', 'login', 'text', '', 'autocomplete="username" required')}${field('Имя и фамилия', 'name')}${field('Почта (необязательно)', 'email', 'email')}${field('Пароль (от 8 символов)', 'password', 'password', '', 'autocomplete="new-password" required')}`;
+      html = `${reg === 'invite' ? field('Код приглашения', 'invite', 'text', invite, 'autocomplete="off" required') : ''}${field('Логин', 'login', 'text', '', 'autocomplete="username" required')}${field('Имя и фамилия', 'name')}${field('Почта (необязательно)', 'email', 'email')}${field('Пароль (от 8 символов)', 'password', 'password', '', 'autocomplete="new-password" required')}`;
     } else {
       html = `${field('Логин', 'login', 'text', '', 'autocomplete="username" required')}${field('Пароль', 'password', 'password', '', 'autocomplete="current-password" required')}`;
     }
@@ -48,7 +47,7 @@
       <span class="spacer"></span>${locked ? '' : '<button type="button" class="btn" data-cancel>Работать без входа</button>'}${mode !== 'setup' || st.setupAllowed ? `<button class="btn primary">${mode === 'setup' ? 'Создать администратора' : mode === 'register' ? 'Зарегистрироваться' : 'Войти'}</button>` : ''}</div>
       ${mode === 'login' ? '<p class="muted small">Без входа проекты хранятся только в этом браузере. В аккаунте они доступны с любого компьютера, есть версии, корзина и совместная работа.</p>' : ''}</form>`;
     const form = body.querySelector('form');
-    form.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => authDialog(b.dataset.mode, {locked}); });
+    form.querySelectorAll('[data-mode]').forEach(b => { b.onclick = () => authDialog(b.dataset.mode, {locked, invite}); });
     form.querySelector('[data-cancel]')?.addEventListener('click', () => d.close());
     form.onsubmit = async e => {
       e.preventDefault();
@@ -61,13 +60,22 @@
       } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     };
     show();
-    setTimeout(() => form.querySelector('input')?.focus(), 30);
+    setTimeout(() => (invite ? form.querySelector('[name=login]') : form.querySelector('input'))?.focus(), 30);
+  }
+  /* Ссылка-приглашение #/invite/<код>: сразу регистрация с кодом. */
+  function openInvite(code) {
+    history.replaceState(null, '', '#/');
+    if (!Api.available) return;
+    if (Api.user()) { UI.toast('Вы уже вошли как ' + Api.user().login + '. Чтобы зарегистрировать другого человека, сначала выйдите.'); return; }
+    if (Api.state?.registration === 'closed') { UI.toast('Регистрация на сайте сейчас закрыта.', true); return; }
+    authDialog('register', {invite: code});
   }
 
   async function afterLogin() {
     await loadSettings();
-    if (!S.doc) await UI.Home.render();
+    if (!S.doc && !UI.Admin?.isOpen()) await UI.Home.render();
     paint();
+    forcePassword();
   }
   async function logout() {
     await UI.flush?.();
@@ -105,12 +113,16 @@
       btn.title = u ? 'Аккаунт: ' + u.login + (u.role === 'admin' ? ' (администратор)' : '') : 'Войти: проекты на сервере, версии, совместная работа';
     });
     document.querySelectorAll('[data-server-only]').forEach(el => { el.hidden = !u; });
+    document.querySelectorAll('[data-admin-only]').forEach(el => { el.hidden = u?.role !== 'admin'; });
     UI.Settings?.redraw && $('settingsDialog')?.open && UI.Settings.redraw();
   }
   function paintNotice() {
     const n = $('siteNotice'); if (!n) return;
-    const text = Api.state?.system?.notice || '';
+    const sys = Api.state?.system || {};
+    const maint = sys.maintenance ? (sys.maintenanceText || 'На сайте идут технические работы: изменения временно не сохраняются.') : '';
+    const text = [maint, sys.notice || ''].filter(Boolean).join(' · ');
     n.hidden = !text; n.textContent = text;
+    n.classList.toggle('maintenance', !!maint);
   }
   function accountClick(e) {
     if (!Api.user()) return authDialog('login');
@@ -119,12 +131,12 @@
     menu.style.top = (r.bottom + 6) + 'px'; menu.style.right = Math.max(8, innerWidth - r.right) + 'px';
     const u = Api.user();
     menu.innerHTML = `<div class="menu-head"><b>${esc(u.name || u.login)}</b><span class="muted small">${esc(u.login)}${u.role === 'admin' ? ' · администратор' : ''}</span></div>
-      <button data-a="account">${I('settings')}Аккаунт и настройки</button>${u.role === 'admin' ? `<button data-a="users">${I('users')}Пользователи</button><button data-a="site">${I('shield')}Настройки сайта</button>` : ''}<hr><button data-a="logout">${I('logout')}Выйти</button>`;
+      <button data-a="account">${I('settings')}Аккаунт и настройки</button>${u.role === 'admin' ? `<button data-a="admin">${I('shield')}Админка</button><button data-a="admin/users">${I('users')}Пользователи</button>` : ''}<hr><button data-a="logout">${I('logout')}Выйти</button>`;
     menu.hidden = false;
     menu.onclick = UI.safe(async ev => {
       const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return;
       menu.hidden = true;
-      if (a === 'logout') await logout(); else UI.Settings.open(a);
+      if (a === 'logout') await logout(); else if (a.startsWith('admin')) location.hash = '#/' + a; else UI.Settings.open(a);
     });
     e.stopPropagation();
   }
@@ -140,56 +152,36 @@
     form.querySelector('[data-logout]').onclick = UI.safe(async () => { $('settingsDialog').close(); await logout(); });
     form.onsubmit = UI.safe(async e => { e.preventDefault(); const v = formData(form); delete v.login; await Api.call('PATCH', 'v1/auth/me', v); paint(); UI.toast('Сохранено.'); accountTab(body); });
   }
-  async function siteTab(body) {
-    const sys = (await Api.call('GET', 'v1/settings')).system;
-    const stats = await Api.call('GET', 'v1/admin/stats');
-    const mb = n => (n / 1048576).toFixed(1) + ' МБ';
-    body.innerHTML = `<form class="stack">
-      <label class="f wide"><span>Регистрация</span><select name="registration"><option value="invite">по приглашению</option><option value="open">открытая</option><option value="closed">закрыта (учётные записи создаёт админ)</option></select></label>
-      <label class="check"><input type="checkbox" name="localMode" ${sys.localMode ? 'checked' : ''}> Можно работать без входа (проекты в браузере)</label>
-      ${field('Срок хранения корзины, дней', 'trashDays', 'number', sys.trashDays, 'min="1" max="365"')}
-      ${field('Название сайта', 'siteName', 'text', sys.siteName)}
-      <label class="f wide"><span>Объявление на главной</span><textarea name="notice" rows="2" maxlength="500">${esc(sys.notice)}</textarea></label>
-      <div class="dialog-actions"><span class="spacer"></span><button class="btn primary">Сохранить</button></div></form>
-      <h3>Сервер</h3><div class="stats">${[['Пользователей', stats.users], ['Проектов', stats.projects], ['В корзине', stats.trash], ['Версий', stats.revisions], ['Файлов', stats.assets + ' · ' + mb(stats.assetBytes)], ['Документы', mb(stats.docBytes)], ['Версия', stats.version], ['PHP', stats.php], ['База', stats.db], ['Схема', stats.schema]].map(([k, v]) => `<div><span class="muted small">${k}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
+  /* Управление сайтом переехало на отдельный экран — здесь только вход в него. */
+  function adminTab(body) {
+    body.innerHTML = `<div class="adm-tab-teaser"><p>Пользователи и приглашения, все проекты и гостевые ссылки, журнал, квоты, настройки сайта и состояние сервера — в админке.</p>
+      <button class="btn primary" type="button" data-go>${I('shield')}Открыть админку</button></div>`;
+    body.querySelector('[data-go]').onclick = () => { $('settingsDialog').close(); location.hash = '#/admin'; };
+  }
+
+  /* Временный пароль от администратора: пока не задан свой, работать нельзя (сервер тоже не даст сохранять). */
+  function forcePassword() {
+    const u = Api.user();
+    if (!u || !u.mustChangePassword) return false;
+    const {d, body, show} = dialog('mustChangeDialog', 'Задайте свой пароль');
+    d.dataset.locked = '1';
+    body.innerHTML = `<form class="auth-form"><p class="note">Администратор выдал вам временный пароль. Придумайте свой — не короче 8 символов.</p>
+      ${field('Временный пароль', 'password', 'password', '', 'autocomplete="current-password" required')}${field('Новый пароль', 'newPassword', 'password', '', 'autocomplete="new-password" minlength="8" required')}${field('Новый пароль ещё раз', 'again', 'password', '', 'autocomplete="new-password" minlength="8" required')}
+      <p class="auth-error error-text" hidden></p><div class="dialog-actions"><button type="button" class="link" data-out>Выйти</button><span class="spacer"></span><button class="btn primary">Сохранить пароль</button></div></form>`;
     const form = body.querySelector('form');
-    form.registration.value = sys.registration;
-    form.onsubmit = UI.safe(async e => {
+    form.querySelector('[data-out]').onclick = UI.safe(async () => { delete d.dataset.locked; d.close(); await logout(); });
+    form.onsubmit = async e => {
       e.preventDefault();
-      const v = formData(form); v.trashDays = Math.round(+v.trashDays);
-      const r = await Api.call('PUT', 'v1/settings/system', v);
-      Api.state.system = r.system; Api.state.registration = r.system.registration; paintNotice();
-      UI.toast('Настройки сайта сохранены.');
-    });
-  }
-  async function usersTab(body) {
-    const [{users}, {invites}] = await Promise.all([Api.call('GET', 'v1/admin/users'), Api.call('GET', 'v1/admin/invites')]);
-    const me = Api.user();
-    body.innerHTML = `<table class="data-table users-table"><thead><tr><th>Логин</th><th>Имя</th><th>Роль</th><th>Проекты</th><th>Последний вход</th><th></th></tr></thead><tbody>${users.map(u => `<tr data-id="${u.id}" class="${u.status === 'blocked' ? 'muted' : ''}">
-      <td>${esc(u.login)}</td><td>${esc(u.name)}</td><td><select data-role ${u.id === me.id ? 'disabled' : ''}><option value="user">пользователь</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>администратор</option></select></td>
-      <td>${u.projects}</td><td>${u.lastLoginAt ? fmt(u.lastLoginAt) : '—'}</td>
-      <td class="nowrap"><button class="btn small" data-pass title="Задать новый пароль">Пароль…</button> ${u.id === me.id ? '' : `<button class="btn small ${u.status === 'blocked' ? '' : 'danger'}" data-block>${u.status === 'blocked' ? 'Разблокировать' : 'Заблокировать'}</button>`}</td></tr>`).join('')}</tbody></table>
-      <h3>Добавить пользователя</h3><form class="row-form-inline" data-new>${field('Логин', 'login', 'text', '', 'required')}${field('Имя', 'name')}${field('Пароль', 'password', 'text', newPassword(), 'required')}<button class="btn primary">Добавить</button></form>
-      <h3>Приглашения</h3><div class="row-form-inline"><input type="text" placeholder="Для кого (заметка)" data-note><button class="btn" data-invite>${I('plus', 14)}Создать код</button></div><div data-code></div>
-      <ul class="plain-list">${invites.map(i => `<li>${esc(i.note || 'без заметки')} · ${i.usedBy ? 'использовано: ' + esc(i.usedBy) : i.expiresAt && new Date(i.expiresAt) < new Date() ? 'истекло' : 'действует до ' + fmt(i.expiresAt)}${!i.usedBy ? ` <button class="link" data-del-invite="${i.id}">отозвать</button>` : ''}</li>`).join('') || '<li class="muted">Пока нет.</li>'}</ul>`;
-    body.querySelectorAll('tr[data-id]').forEach(tr => {
-      const id = tr.dataset.id, u = users.find(x => String(x.id) === id);
-      tr.querySelector('[data-role]').onchange = UI.safe(async e => { await Api.call('PATCH', 'v1/admin/users/' + id, {role: e.target.value}); UI.toast('Роль изменена.'); });
-      tr.querySelector('[data-pass]').onclick = UI.safe(async () => { const p = prompt('Новый пароль для ' + u.login + ' (от 8 символов):'); if (!p) return; await Api.call('PATCH', 'v1/admin/users/' + id, {password: p}); UI.toast('Пароль изменён. Передайте его пользователю.'); });
-      tr.querySelector('[data-block]')?.addEventListener('click', UI.safe(async () => { await Api.call('PATCH', 'v1/admin/users/' + id, {status: u.status === 'blocked' ? 'active' : 'blocked'}); await usersTab(body); }));
-    });
-    body.querySelector('[data-new]').onsubmit = UI.safe(async e => { e.preventDefault(); const v = formData(e.target); await Api.call('POST', 'v1/admin/users', v); UI.toast('Пользователь ' + v.login + ' добавлен. Пароль: ' + v.password); await usersTab(body); });
-    body.querySelector('[data-invite]').onclick = UI.safe(async () => {
-      const r = await Api.call('POST', 'v1/admin/invites', {note: body.querySelector('[data-note]').value});
-      await usersTab(body);
-      body.querySelector('[data-code]').innerHTML = `<p class="note">Код приглашения: <b class="code">${esc(r.code)}</b> — действует 14 дней, один раз. Человек вводит его в «Войти → Регистрация».</p>`;
-    });
-    body.querySelectorAll('[data-del-invite]').forEach(b => { b.onclick = UI.safe(async () => { await Api.call('DELETE', 'v1/admin/invites/' + b.dataset.delInvite); await usersTab(body); }); });
-  }
-  const ACTIONS = {'login': 'вход', 'setup': 'установка', 'register': 'регистрация', 'password': 'смена пароля', 'settings': 'настройки сайта', 'project.create': 'создан проект', 'project.trash': 'в корзину', 'project.restore': 'восстановлен', 'project.purge': 'удалён навсегда', 'project.share': 'доступ', 'project.unshare': 'доступ отозван', 'project.link': 'ссылка', 'project.version': 'версия', 'user.create': 'новый пользователь', 'user.update': 'изменён пользователь', 'invite.create': 'приглашение'};
-  async function auditTab(body) {
-    const {events} = await Api.call('GET', 'v1/admin/audit', undefined, {query: {limit: 300}});
-    body.innerHTML = `<table class="data-table"><thead><tr><th>Когда</th><th>Кто</th><th>Действие</th><th>Объект</th><th>IP</th></tr></thead><tbody>${events.map(e => `<tr><td class="nowrap">${fmt(e.at)}</td><td>${esc(e.actor || '—')}</td><td>${esc(ACTIONS[e.action] || e.action)}</td><td>${esc(e.target)}${e.detail ? ' <span class="muted small">' + esc(JSON.stringify(e.detail)) + '</span>' : ''}</td><td class="muted small">${esc(e.ip)}</td></tr>`).join('')}</tbody></table>`;
+      const v = formData(form), err = form.querySelector('.auth-error'); err.hidden = true;
+      try {
+        if (v.newPassword !== v.again) throw new Error('Пароли не совпадают.');
+        await Api.call('PATCH', 'v1/auth/me', {password: v.password, newPassword: v.newPassword});
+        delete d.dataset.locked; d.close(); paint();
+        UI.toast('Пароль сохранён. Добро пожаловать!', false, {seal: true});
+      } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+    };
+    show();
+    return true;
   }
 
   /* ---------- конфликт сохранения ---------- */
@@ -320,17 +312,16 @@
     document.addEventListener('click', e => { const m = $('accountMenu'); if (m && !m.contains(e.target)) m.hidden = true; });
     UI.Prefs.onChange(() => { if (!applying) pushPrefs(); });
     UI.Settings.addTab({id: 'account', title: 'Аккаунт', visible: () => !!Api.user(), render: accountTab});
-    UI.Settings.addTab({id: 'site', title: 'Сайт', visible: () => Api.user()?.role === 'admin', render: siteTab});
-    UI.Settings.addTab({id: 'users', title: 'Пользователи', visible: () => Api.user()?.role === 'admin', render: usersTab});
-    UI.Settings.addTab({id: 'audit', title: 'Журнал', visible: () => Api.user()?.role === 'admin', render: auditTab});
+    UI.Settings.addTab({id: 'admin', title: 'Админка', visible: () => Api.user()?.role === 'admin', render: adminTab});
     const st = await Api.init();
     paint();
     if (!st) return;
     await loadSettings();
     paint();
+    if (forcePassword()) return;
     if (st.setupNeeded && st.setupAllowed) authDialog('setup');
-    else if (!st.user && Api.state.system?.localMode === false && !/^#\/(link|form)\//.test(location.hash)) authDialog('login', {locked: true});
+    else if (!st.user && Api.state.system?.localMode === false && !/^#\/(link|form|invite)\//.test(location.hash)) authDialog('login', {locked: true});
   }
 
-  const Account = UI.Account = {init, authDialog, conflict, versions, share, openLink, paint, saveUserSetting, userSettings: {}, user: () => Api.user()};
+  const Account = UI.Account = {init, authDialog, conflict, versions, share, openLink, openInvite, paint, paintNotice, saveUserSetting, userSettings: {}, user: () => Api.user()};
 })(typeof window !== 'undefined' ? window : globalThis);

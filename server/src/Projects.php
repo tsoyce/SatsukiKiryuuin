@@ -118,6 +118,7 @@ final class Projects
         // Номер проекта выдаёт сервер: если такой уже есть (например, тот же файл открыли двое), даём новый.
         $id = ($want && !App::one('SELECT id FROM projects WHERE id = ?', [$want])) ? $want : 'doc-' . strtolower(App::token(12));
         [$json, $doc, $hashes] = self::validateDoc($b['doc'] ?? null, $id);
+        Quota::check((int)$u['id'], $id, strlen($json), $hashes);
         $m = self::meta($doc);
         App::db()->beginTransaction();
         try {
@@ -152,7 +153,7 @@ final class Projects
         $userId = isset(App::$user['id']) ? (int)App::$user['id'] : null;
         App::db()->beginTransaction();
         try {
-            $cur = App::one('SELECT revision, doc, updated_at, updated_by, updated_by_label, deleted_at FROM projects WHERE id = ? FOR UPDATE', [$id]);
+            $cur = App::one('SELECT owner_id, revision, doc, updated_at, updated_by, updated_by_label, deleted_at FROM projects WHERE id = ? FOR UPDATE', [$id]);
             if (!$cur || $cur['deleted_at']) throw new HttpError(404, 'Проект не найден.');
             $base = (int)($b['revision'] ?? 0);
             if ($base !== (int)$cur['revision']) {
@@ -160,6 +161,7 @@ final class Projects
                 throw new HttpError(409, 'Проект уже изменён в другом окне или другим человеком.', ['revision' => (int)$cur['revision'], 'updatedAt' => App::iso($cur['updated_at']), 'updatedBy' => $who]);
             }
             [$json, $doc, $hashes] = self::validateDoc($b['doc'] ?? null, $id);
+            Quota::check((int)$cur['owner_id'], $id, strlen($json), $hashes);
             $m = self::meta($doc);
             $rev = $base + 1;
             $thumb = self::thumb($b['thumb'] ?? null);

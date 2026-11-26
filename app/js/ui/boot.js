@@ -68,6 +68,15 @@
     const form = /^#\/form\/(.+)$/.exec(location.hash);
     if (form) { if (S.doc) await UI.goHome(); await UI.Forms.openPublic(decodeURIComponent(form[1])); return; }
     UI.Forms?.closePublic();
+    // Админка: отдельный экран. Открытый проект сначала сохраняем и закрываем (адрес не трогаем).
+    if (/^#\/admin(\/|$)/.test(location.hash)) {
+      if (S.doc) { S.doc.data.current = S.row; await UI.flush(); S.doc = null; S.readOnly = false; S.link = ''; document.body.classList.remove('read-only'); UI.Mobile?.close(); }
+      await UI.Admin.route(location.hash);
+      return;
+    }
+    UI.Admin?.close();
+    const invite = /^#\/invite\/([A-Za-z0-9]+)$/.exec(location.hash);
+    if (invite) UI.Account.openInvite(invite[1]);
     const link = /^#\/link\/(.+)$/.exec(location.hash);
     if (link) { if (S.link !== link[1]) await UI.Account.openLink(decodeURIComponent(link[1])); return; }
     const m = /^#\/doc\/(.+)$/.exec(location.hash);

@@ -46,6 +46,8 @@
       });
       add('Навигация', 'На главную', () => UI.goHome(), {icon: 'chevronLeft'});
     }
+    if (XS.Api?.user()?.role === 'admin') for (const [id, t] of [['', 'Админка'], ['users', 'Админка: пользователи'], ['invites', 'Админка: новое приглашение', 'new'], ['audit', 'Админка: журнал'], ['server', 'Админка: сервер'], ['settings', 'Админка: настройки сайта']])
+      add('Навигация', t, () => { location.hash = '#/admin' + (id ? '/' + id : '') + (t.includes('новое') ? '/new' : ''); }, {icon: 'shield'});
     for (const p of XS.Presets.LIST) add('Создать', 'Новый проект: ' + p.title, async () => UI.create(await UI.busy('Создаём «' + p.title + '»…', p.make)), {icon: 'plus', hint: p.hint});
     add('Создать', 'Новый проект из PDF-шаблона', () => { const i = document.createElement('input'); i.type = 'file'; i.accept = '.pdf'; i.onchange = UI.safe(async () => { if (i.files[0]) await UI.create(await UI.busy('Открываем PDF…', () => XS.Presets.fromPdf(i.files[0]))); }); i.click(); }, {icon: 'pdf'});
     add('Настройки', 'Настройки', () => document.querySelector('[data-open-settings]').click(), {icon: 'settings'});

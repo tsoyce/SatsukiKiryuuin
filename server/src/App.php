@@ -16,7 +16,7 @@ final class HttpError extends \RuntimeException
 
 final class App
 {
-    public const VERSION = '4.1.0';
+    public const VERSION = '4.2.0';
     public static array $config = [];
     private static ?PDO $pdo = null;
     public static ?array $user = null;        // текущий пользователь (после Auth::current)
@@ -141,7 +141,7 @@ final class App
                 $allowed = true;
                 if ($m !== $method) continue;
                 $params = array_filter($mm, 'is_string', ARRAY_FILTER_USE_KEY);
-                if ($method !== 'GET' && $method !== 'HEAD') Auth::checkWriteRequest();
+                if ($method !== 'GET' && $method !== 'HEAD') { Auth::checkWriteRequest(); Auth::guardTempPassword($path); Maintenance::guard($method, $path); }
                 $result = $fn($params);
                 if ($result !== null) self::send(200, $result);
                 return;
