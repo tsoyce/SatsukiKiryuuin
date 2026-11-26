@@ -12,6 +12,15 @@
   }
 
   async function drawPicture(ctx, op, k) {
+    // Файл не пришёл с сервера — рисуем заметную заглушку, остальной макет (текст, поля) остаётся виден.
+    if (!op.asset.data) {
+      ctx.save(); shapePath(ctx, op, k); ctx.clip();
+      ctx.fillStyle = 'rgba(148, 163, 184, .16)'; ctx.fillRect(op.x * k, op.y * k, op.w * k, op.h * k);
+      ctx.strokeStyle = 'rgba(148, 163, 184, .55)'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.5; ctx.strokeRect(op.x * k + 1, op.y * k + 1, op.w * k - 2, op.h * k - 2);
+      ctx.fillStyle = '#64748b'; ctx.font = Math.max(10, Math.min(16, op.w * k / 22)) + 'px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('«' + (op.asset.name || 'файл') + '» не загрузился', (op.x + op.w / 2) * k, op.y * k + Math.min(op.h * k / 2, 22));
+      ctx.restore(); return;
+    }
     const isPdf = XS.Assets.isPdf(op.asset);
     let srcW = op.asset.width, srcH = op.asset.height;
     if (isPdf) { const p = op.asset.pages?.[(op.page || 1) - 1] || op.asset.pages?.[0]; if (p) { srcW = p.width; srcH = p.height; } }

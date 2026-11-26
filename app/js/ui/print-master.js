@@ -48,7 +48,7 @@
     if (!d) {
       d = document.createElement('dialog');
       d.id = 'printMaster'; d.className = 'dialog wide';
-      d.innerHTML = `<header class="dialog-head"><h2>Мастер печати</h2><div class="tabs pm-tabs"></div><span class="spacer"></span><button class="btn icon" data-close aria-label="Закрыть">${I('close')}</button></header>
+      d.innerHTML = `<header class="dialog-head"><h2>Мастер печати</h2><div class="tabs inline-tabs pm-tabs"></div><span class="spacer"></span><button class="btn icon" data-close aria-label="Закрыть">${I('close')}</button></header>
         <div class="dialog-body pm-body"></div>
         <footer class="dialog-foot"><div class="progress" hidden><div class="bar"></div><span class="label"></span></div><span class="spacer"></span><button type="button" class="btn" data-stop hidden>Остановить</button></footer>`;
       d.querySelector('[data-close]').onclick = () => d.close();

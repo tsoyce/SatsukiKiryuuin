@@ -7,7 +7,7 @@
   /* ---------- конструктор полей ---------- */
   const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   function section(title) { box.append(h('h3', '', XS.esc(title))); }
-  function row(label, ...controls) { const l = h('label', 'f'); l.append(h('span', '', XS.esc(label))); const r = h('div', 'row'); r.append(...controls); l.append(r); box.append(l); return l; }
+  function row(label, ...controls) { const l = h('label', 'f'); if (controls.some(c => c?.classList?.contains('long'))) l.classList.add('f-stack'); l.append(h('span', '', XS.esc(label))); const r = h('div', 'row'); r.append(...controls); l.append(r); box.append(l); return l; }
   function apply(fn, key) { UI.edit(fn, key, {skip: ['inspector']}); }
   function numInput(value, set, key, {step = 0.5, min = -9999, max = 9999, width} = {}) {
     const i = h('input'); i.type = 'number'; i.step = step; i.min = min; i.max = max; i.value = +(+value).toFixed(2);
@@ -37,6 +37,8 @@
   }
   function seg(options, value, set, key, {multi = false} = {}) {
     const s = h('div', 'seg');
+    // Переключатель со словами («как есть / линии / скрыть») не влезает рядом с подписью — ставим его под неё на всю ширину.
+    if (options.reduce((n, [, label]) => n + (/^</.test(String(label)) ? 2 : String(label).length + 2), 0) > 16) s.classList.add('long');
     for (const [v, label, title] of options) {
       const b = h('button', '', label); b.type = 'button'; if (title) b.title = title;
       const on = multi ? !!value[v] : value === v;

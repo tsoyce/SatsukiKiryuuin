@@ -55,7 +55,17 @@
   .panel.left > .tab-body > *, .panel.right > .inspector > * { flex-shrink: 0; }
   .row-list { max-height: 30dvh; }
   .menu button .muted.small { display: none; }
-  .add-bar button { height: 34px; padding: 0 10px; font-size: 13px; }
+  .add-bar { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+  .add-bar button { padding: 8px 2px 6px; font-size: 12px; }
+  .title-input { text-overflow: ellipsis; }
+  .inline-tabs { scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+  .inline-tabs::-webkit-scrollbar { display: none; }
+  .inline-tabs .tab { flex: 1 0 auto; padding: 0 5px; font-size: 12.5px; }
+
+  /* На планшете в портрете лист не растягиваем на всю ширину. */
+  @media (min-width: 640px) {
+    .panel.left, .panel.right { left: 50%; right: auto; width: min(640px, calc(100vw - 32px)); margin-left: calc(min(640px, calc(100vw - 32px)) / -2); }
+  }
 
   /* ---------- нижняя панель ---------- */
   .mobile-nav { display: flex !important; position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; height: calc(58px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);

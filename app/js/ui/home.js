@@ -116,7 +116,7 @@
         <div class="info"><b data-open title="${XS.esc(p.title)}">${XS.esc(p.title)}</b>
         <span class="muted small">${XS.esc(XS.Model.KINDS[p.kind]?.label || '')} · записей: ${p.rows} · ${Math.round(p.page?.width || 0)}×${Math.round(p.page?.height || 0)} мм</span>
         <span class="muted small">${scope === 'trash' ? 'удалён' : 'изменён'} ${isNaN(date) ? '' : date.toLocaleString('ru-RU', {dateStyle: 'short', timeStyle: 'short'})}</span></div>
-        <div class="acts">${acts.map(([act, icon, title], i) => title ? `${i === acts.length - 1 ? '<span class="spacer"></span>' : ''}<button class="btn small${['del', 'purge'].includes(act) ? ' danger' : ''}" data-act="${act}" title="${title}">${XS.Icons.icon(icon, 15)}</button>` : `<button class="btn small" data-act="${act}">${icon}</button>`).join('')}</div>`;
+        <div class="acts">${acts.map(([act, icon, title], i) => title ? `${i === acts.length - 1 ? '<span class="spacer"></span>' : ''}<button class="btn small${['del', 'purge'].includes(act) ? ' danger' : ''}" data-act="${act}" title="${title}">${XS.Icons.icon(icon, 15)}</button>` : `<button class="btn small main" data-act="${act}" title="${icon}">${XS.Icons.icon(act === 'restore' ? 'restore' : 'folderOpen', 15)}<span>${icon}</span></button>`).join('')}</div>`;
       card.addEventListener('click', UI.safe(async e => {
         const act = e.target.closest('[data-act]')?.dataset.act || (e.target.closest('[data-open]') && scope !== 'trash' ? 'open' : '');
         if (!act) return;
@@ -128,7 +128,7 @@
           else { await XS.Store.remote.remove(p.id); UI.toast(scope === 'shared' ? 'Проект убран из списка.' : 'Проект в корзине. Восстановить — «Корзина».'); }
           return render();
         }
-        const doc = scope === 'local' ? await XS.Store.local.get(p.id) : await UI.busy('Загружаем проект…', () => XS.Store.remote.get(p.id));
+        const doc = scope === 'local' ? await XS.Store.local.get(p.id) : await UI.busy('Загружаем проект…', () => XS.Store.remote.get(p.id, {progress: UI.busyText}));
         if (!doc) throw new Error('Проект не найден.');
         if (act === 'copy') { doc.id = XS.uid('doc'); doc.title += ' (копия)'; await UI.busy('Копируем…', () => scope === 'local' ? XS.Store.local.save(doc, p.thumb) : XS.Store.remote.create(doc, p.thumb)); if (scope === 'shared') { scope = 'mine'; } await render(); }
         if (act === 'file') XS.download(XS.Store.toFile(doc), XS.Zip.sanitizeFilename(doc.title) + '.xsatsu.json');
@@ -158,10 +158,11 @@
   }
   async function openId(id, from) {
     let doc = null;
-    if (from === 'mine' || from === 'shared') doc = await UI.busy('Загружаем проект…', () => XS.Store.remote.get(id));
+    if (from === 'mine' || from === 'shared') doc = await UI.busy('Загружаем проект…', () => XS.Store.remote.get(id, {progress: UI.busyText}));
     else doc = await XS.Store.get(id).catch(e => { UI.toast(e.message, true); return null; });
     if (!doc) { UI.toast('Проект не найден.', true); return UI.goHome(); }
     await UI.open(doc);
+    UI.warnMissingFiles(doc);
   }
 
   function init() {

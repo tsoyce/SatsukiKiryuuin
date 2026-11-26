@@ -29,7 +29,7 @@
   /* Какой файл будет использован для семейства и начертания. */
   function pick(doc, family, bold, italic) {
     const wanted = variantName(bold, italic);
-    const user = (doc?.fonts || []).filter(f => f.family === family);
+    const user = (doc?.fonts || []).filter(f => f.family === family && f.data);
     if (user.length) {
       for (const v of FALLBACK[wanted]) { const f = user.find(x => x.variant === v); if (f) return {key: 'u:' + f.id, source: f.data, variant: v, exact: v === wanted}; }
     }

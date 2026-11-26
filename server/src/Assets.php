@@ -92,6 +92,12 @@ final class Assets
         $row = $ok ? App::one('SELECT mime, bytes FROM assets WHERE sha256 = ?', [$sha]) : null;
         $file = self::path($sha);
         if (!$row || !is_file($file)) throw new HttpError(404, 'Файл не найден.');
+        // Сжатие и буферы PHP ломают ответ с Content-Length (браузер ждёт недостающие байты и «висит») — отключаем.
+        if (function_exists('ini_set')) @ini_set('zlib.output_compression', '0');
+        while (ob_get_level() > 0) @ob_end_clean();
+        if (function_exists('apache_setenv')) @apache_setenv('no-gzip', '1');
+        header('X-Accel-Buffering: no');
+        header('Content-Encoding: identity');
         // Отдаём как двоичные данные: клиент сам превращает их в картинку/шрифт, браузер ничего не исполняет (SVG в том числе).
         header('Content-Type: application/octet-stream');
         header('X-XS-Mime: ' . $row['mime']);

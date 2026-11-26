@@ -13,21 +13,39 @@
 
   /* route: 'v1/projects/abc', query: {scope: 'shared'} */
   Api.url = (route, query) => BASE + route + (query ? '&' + new URLSearchParams(query).toString() : '');
-  Api.call = async function (method, route, body, {query, raw, signal} = {}) {
+  /* Сколько ждать ответа сервера: обычные запросы — 45 с, файлы — 3 мин. Без этого обрыв связи
+   * (или прокси, который не закрывает ответ) оставлял Студию висеть на «Загружаем…» навсегда. */
+  Api.TIMEOUT = 45000; Api.FILE_TIMEOUT = 180000;
+  Api.call = async function (method, route, body, {query, raw, signal, timeout} = {}) {
     const headers = {};
     if (Api.csrf && method !== 'GET') headers['X-XS-CSRF'] = Api.csrf;
     let payload;
     if (raw) { payload = raw; headers['Content-Type'] = 'application/octet-stream'; }
     else if (body !== undefined) { payload = JSON.stringify(body); headers['Content-Type'] = 'application/json'; }
     let r;
-    try { r = await fetch(Api.url(route, query), {method, headers, body: payload, credentials: 'same-origin', signal}); }
-    catch (e) { const err = new ApiError(0, {error: 'Нет связи с сервером.'}); err.offline = true; throw err; }
-    const type = r.headers.get('content-type') || '';
-    if (!type.includes('json')) {
-      if (!r.ok) throw new ApiError(r.status, {error: r.status === 404 ? 'Сервер Студии не установлен.' : 'Ошибка сервера (' + r.status + ').'});
-      return {bytes: new Uint8Array(await r.arrayBuffer()), mime: r.headers.get('x-xs-mime') || 'application/octet-stream'};
-    }
-    const data = await r.json();
+    const ctl = new AbortController();
+    const ms = timeout || (raw || /^v1\/assets\/[0-9a-f]{64}$/.test(route) ? Api.FILE_TIMEOUT : Api.TIMEOUT);
+    const timer = setTimeout(() => ctl.abort('timeout'), ms);
+    if (signal) signal.aborted ? ctl.abort(signal.reason) : signal.addEventListener('abort', () => ctl.abort(signal.reason), {once: true});
+    const fail = e => {
+      if (ctl.signal.aborted && ctl.signal.reason === 'timeout') { const err = new ApiError(0, {error: 'Сервер не ответил за ' + Math.round(ms / 1000) + ' с. Проверьте интернет и попробуйте ещё раз.'}); err.offline = true; err.timeout = true; return err; }
+      if (signal?.aborted) return e;
+      const err = new ApiError(0, {error: 'Нет связи с сервером.'}); err.offline = true; return err;
+    };
+    let data;
+    try {
+      try { r = await fetch(Api.url(route, query), {method, headers, body: payload, credentials: 'same-origin', signal: ctl.signal}); }
+      catch (e) { throw fail(e); }
+      const type = r.headers.get('content-type') || '';
+      if (!type.includes('json')) {
+        if (!r.ok) throw new ApiError(r.status, {error: r.status === 404 ? 'Сервер Студии не установлен.' : 'Ошибка сервера (' + r.status + ').'});
+        let buf;
+        try { buf = await r.arrayBuffer(); } catch (e) { throw fail(e); }
+        return {bytes: new Uint8Array(buf), mime: r.headers.get('x-xs-mime') || 'application/octet-stream'};
+      }
+      try { data = await r.json(); }
+      catch (e) { if (ctl.signal.aborted) throw fail(e); throw new ApiError(r.status, {error: 'Сервер прислал повреждённый ответ (' + r.status + ').'}); }
+    } finally { clearTimeout(timer); }
     if (!r.ok) throw new ApiError(r.status, data);
     if (data && typeof data === 'object' && 'csrf' in data && 'user' in data) setState(data);
     return data;

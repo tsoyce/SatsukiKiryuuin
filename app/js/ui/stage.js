@@ -11,8 +11,10 @@
   function fit() {
     if (!S.doc) return;
     const vp = $('viewport'), W = S.doc.page.width, H = S.doc.page.height;
-    const pad = vp.clientWidth < 600 ? 32 : 80;
-    const kk = Math.max(0.2, Math.min((vp.clientWidth - pad) / W, (vp.clientHeight - pad) / H));
+    // Поля берём из CSS области (на телефоне они меньше) + небольшой запас, чтобы макет не прилипал к краям.
+    const cs = getComputedStyle(vp), gap = vp.clientWidth < 600 ? 4 : 16;
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + gap, padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + gap;
+    const kk = Math.max(0.2, Math.min((vp.clientWidth - padX) / W, (vp.clientHeight - padY) / H));
     S.zoom = kk / BASE; autoFit = true;
     render();
   }
@@ -346,7 +348,11 @@
     document.addEventListener('keydown', e => { if (e.code === 'Space' && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target.tagName) && !$('editor').hidden) { if (!spaceDown) vp.classList.add('pan-ready'); spaceDown = true; e.preventDefault(); } });
     document.addEventListener('keyup', e => { if (e.code === 'Space') { spaceDown = false; vp.classList.remove('pan-ready'); } });
     let resizeTimer;
-    global.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.doc) { if (autoFit) fit(); else render(); } }, 150); });
+    const onResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.doc) { if (autoFit) fit(); else render(); } }, 120); };
+    global.addEventListener('resize', onResize);
+    // Размер области макета меняется не только с окном: панели, листы на телефоне, полоса предупреждений.
+    // Следим за самой областью — макет всегда вписан, пока пользователь не менял масштаб сам.
+    if (global.ResizeObserver) { let last = ''; new ResizeObserver(() => { const vp = $('viewport'); const k = vp.clientWidth + 'x' + vp.clientHeight; if (k !== last && vp.clientWidth) { last = k; onResize(); } }).observe($('viewport')); }
   }
 
   UI.Stage = {init, render, fit, setZoom, zoom: () => S.zoom || 1};

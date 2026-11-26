@@ -18,6 +18,13 @@
       t.classList.add('leaving'); toastTimer = setTimeout(() => { t.hidden = true; t.classList.remove('leaving'); }, 190);
     }, error ? 7000 : 3500);
   };
+  UI.busyText = text => { $('busyText').textContent = text; };
+  /* Проект открылся, но часть файлов (фон, картинки, шрифты) не пришла с сервера — говорим об этом прямо. */
+  UI.warnMissingFiles = doc => {
+    const m = doc && doc._missingFiles;
+    if (!m || !m.length) return;
+    UI.toast('Не загрузились файлы: ' + m.map(x => '«' + x.name + '»').join(', ') + '. ' + m[0].error + ' Откройте проект ещё раз позже — файлы на сервере не пропали.', true);
+  };
   UI.busy = async (text, fn) => {
     $('busyText').textContent = text; $('busy').hidden = false;
     try { return await fn(); } finally { $('busy').hidden = true; }
