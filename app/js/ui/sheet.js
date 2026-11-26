@@ -35,6 +35,12 @@
       if (a && a.data && !XS.Assets.isPdf(a)) return `<img src="${a.data}" alt="">`;
       return XS.esc(a ? a.name : v);
     }
+    if (col.type === 'image' && XS.RemoteImages?.isUrl(v)) {
+      // ссылка остаётся в ячейке, а рисуется копия из проекта
+      const st = UI.Photos.urlStatus(v);
+      if (st.asset?.data) return `<img src="${st.asset.data}" alt="" title="${XS.esc(v)}">`;
+      return `<span class="${st.error ? 'cell-bad' : 'muted'}" title="${XS.esc(st.error || v)}">${st.error ? '⚠ ' : '… '}${XS.esc(v.replace(/^https?:\/\//, '').slice(0, 30))}</span>`;
+    }
     return XS.esc(v);
   }
 
@@ -47,7 +53,7 @@
     const head = `<thead><tr><th class="corner" data-corner title="Выделить всё (Ctrl+A)"><input type="checkbox" class="row-check" data-all ${allChecked ? 'checked' : ''} title="Отметить все записи"></th>`
       + cs.map((c, ci) => c.id === COPIES
         ? `<th class="colh copies" data-ch="${ci}" title="Сколько экземпляров печатать">Экз.</th>`
-        : `<th class="colh" data-ch="${ci}"><div class="colh-in"><input type="text" class="col-name" data-col="${c.id}" value="${XS.esc(c.name)}" title="Название столбца = имя поля {…}" spellcheck="false">`
+        : `<th class="colh" data-ch="${ci}"><div class="colh-in"><span class="col-grip" data-grip="${ci}" title="Перетащите, чтобы переставить столбец">${XS.Icons.icon('grip', 14)}</span><input type="text" class="col-name" data-col="${c.id}" value="${XS.esc(c.name)}" title="Название столбца = имя поля {…}" spellcheck="false">`
           + `<select data-type="${c.id}" title="Тип столбца"><option value="text">текст</option><option value="image" ${c.type === 'image' ? 'selected' : ''}>картинка</option></select>`
           + `<button type="button" class="col-del" data-del="${c.id}" title="Удалить столбец">${XS.Icons.icon('close', 13)}</button></div></th>`).join('') + '</tr></thead>';
     const body = rs.map((r, ri) => `<tr data-ri="${ri}"><th class="rowh" data-rh="${ri}"><input type="checkbox" class="row-check" data-sel="${r.id}" ${S.selectedRows.has(r.id) ? 'checked' : ''}><span>${ri + 1}</span></th>`
@@ -146,6 +152,22 @@
     if (!data.length || (data.length === 1 && data[0].length === 1 && data[0][0] === '' )) return;
     const b = box();
     const single = data.length === 1 && data[0].length === 1;
+    // Вставили таблицу вместе со строкой заголовков («ФИО, Email…») — это импорт: показываем, куда что ляжет,
+    // иначе заголовки стали бы записью, а столбцы легли бы по позиции, а не по смыслу.
+    if (!single && data.length > 1 && XS.ImportMap) {
+      const head = data[0].map(h => String(h).trim());
+      // один столбец («Участник / Спикер / …») — только если первая строка в точности название столбца проекта и ниже не повторяется
+      const width0 = head.filter(Boolean).length;
+      const repeats = h => data.slice(1).some(l => l.some(c => XS.key(c) === XS.key(h)));
+      const named = head.filter(h => h && !repeats(h) && (XS.Model.columnByName(S.doc, h) || (width0 > 1 && XS.ImportMap.group(h)))).length;
+      if (named && named >= Math.ceil(width0 / 2)) {
+        const width = Math.max(...data.map(l => l.length));
+        const headers = Array.from({length: width}, (_, i) => head[i] || 'Столбец ' + (i + 1));
+        const table = {headers, first: headers.map((_, i) => head[i] || ''), rows: data.slice(1).filter(l => l.some(c => String(c).trim())).map(l => headers.map((_, i) => String(l[i] ?? '').trim()))};
+        UI.ImportDialog.open(table, {source: 'вставка с заголовками'});
+        return;
+      }
+    }
     let added = 0, newCols = 0;
     change(d => {
       // одно значение в выделенный диапазон — заполнить весь диапазон (как Excel)
@@ -214,6 +236,7 @@
     if (e.target.closest('thead')) return; // названия столбцов — обычные поля ввода
     const R = lastRow(), C = cols().length - 1;
     const step = (dr, dc) => { e.preventDefault(); if (e.shiftKey) select(sel.r1 + dr, sel.c1 + dc, true); else move(dr, dc); };
+    if (mod && e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); return moveColumn(e.key === 'ArrowLeft' ? -1 : 1); }
     switch (e.key) {
       case 'ArrowUp': return mod ? (e.preventDefault(), select(0, sel.c1, e.shiftKey)) : step(-1, 0);
       case 'ArrowDown': return mod ? (e.preventDefault(), select(Math.max(0, R - 1), sel.c1, e.shiftKey)) : step(1, 0);
@@ -249,7 +272,7 @@
   }
   function onDown(e) {
     if (e.button !== 0) return;
-    if (e.target.closest('input.row-check, select, .col-del, input.col-name, input.cell-edit')) return;
+    if (e.target.closest('input.row-check, select, .col-del, input.col-name, input.cell-edit, .col-grip')) return;
     const at = cellFromEvent(e);
     const rh = e.target.closest('th[data-rh]'), ch = e.target.closest('th[data-ch]'), corner = e.target.closest('th[data-corner]');
     if (!at && !rh && !ch && !corner) return;
@@ -286,6 +309,10 @@
     keys.addEventListener('input', () => { const v = keys.value; keys.value = ''; if (v && !editing) startEdit(v); });
     wrap.addEventListener('keydown', onKey);
     wrap.addEventListener('mousedown', onDown);
+    t.addEventListener('pointerdown', colDragStart);
+    document.addEventListener('pointermove', colDragMove);
+    document.addEventListener('pointerup', colDragEnd);
+    document.addEventListener('pointercancel', colDragEnd);
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', () => { dragging = false; });
     wrap.addEventListener('dblclick', e => { const at = cellFromEvent(e); if (at) { select(at.r, at.c); startEdit(); } });
@@ -310,6 +337,49 @@
       render();
     });
   }
+  /* ---------- перестановка столбцов перетаскиванием (за «ручку» в заголовке, как в Excel) ---------- */
+  let colDrag = null;
+  function colDragStart(e) {
+    const grip = e.target.closest('.col-grip'); if (!grip || S.readOnly) return;
+    e.preventDefault(); e.stopPropagation();
+    commit();
+    colDrag = {from: +grip.dataset.grip, to: +grip.dataset.grip, id: e.pointerId};
+    grip.setPointerCapture?.(e.pointerId);
+    $('dataTable').classList.add('col-dragging');
+    $('dataTable').querySelector(`thead th[data-ch="${colDrag.from}"]`)?.classList.add('col-moving');
+  }
+  function colDragMove(e) {
+    if (!colDrag) return;
+    const ths = [...$('dataTable').querySelectorAll('thead th.colh:not(.copies)')];
+    let to = ths.length;
+    for (let i = 0; i < ths.length; i++) { const r = ths[i].getBoundingClientRect(); if (e.clientX < r.left + r.width / 2) { to = i; break; } }
+    colDrag.to = to;
+    ths.forEach((th, i) => { th.classList.toggle('drop-before', i === to && to !== colDrag.from && to !== colDrag.from + 1); th.classList.toggle('drop-after', i === ths.length - 1 && to === ths.length && colDrag.from !== ths.length - 1); });
+    // край окна — прокрутка таблицы
+    const wrap = $('dataTable').parentElement, wr = wrap.getBoundingClientRect();
+    if (e.clientX > wr.right - 40) wrap.scrollLeft += 18; else if (e.clientX < wr.left + 60) wrap.scrollLeft -= 18;
+  }
+  function colDragEnd() {
+    if (!colDrag) return;
+    const {from, to} = colDrag; colDrag = null;
+    $('dataTable').classList.remove('col-dragging');
+    let target = to > from ? to - 1 : to;
+    if (target === from) return render();
+    const activeId = cols()[sel.c1]?.id;
+    change(d => { const [c] = d.data.columns.splice(from, 1); d.data.columns.splice(target, 0, c); });
+    // выделение едет вместе со столбцом
+    const ci = cols().findIndex(c => c.id === activeId);
+    if (ci >= 0) select(sel.r1, ci);
+    UI.Data.renderList();
+  }
+  /* Ctrl+Shift+← / → — сдвинуть столбец с активной ячейкой. */
+  function moveColumn(dir) {
+    const C = S.doc.data.columns.length, from = sel.c1, to = from + dir;
+    if (from >= C || to < 0 || to >= C) return;
+    change(d => { const [c] = d.data.columns.splice(from, 1); d.data.columns.splice(to, 0, c); });
+    select(sel.r1, to);
+  }
+
   const countSel = () => { const b = box(); return (b.bottom - b.top + 1) * (b.right - b.left + 1); };
   /* Записи, которых касается выделение (для «Удалить строки»). */
   function selectedRowIds() {

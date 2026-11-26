@@ -645,3 +645,56 @@ b.accent { color: var(--accent); }
   .fp-actions { width: 100%; justify-content: flex-end; }
   .fp-name { font-size: 18px; }
 }
+
+/* ---------- импорт со сопоставлением столбцов (ui/import-dialog.js) ---------- */
+.import-dialog .im-h { margin: 14px 0 6px; font-size: 13px; }
+.im-map { display: grid; gap: 6px; }
+.im-row { display: grid; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.im-row.off { opacity: .55; }
+.im-src { min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; }
+.im-src .muted { flex-basis: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.im-kind { font-size: 11px; padding: 1px 6px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); }
+.im-arrow { color: var(--muted); display: grid; place-items: center; }
+.im-dst { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; min-width: 0; }
+.im-dst select { flex: 1 1 150px; min-width: 0; }
+.im-dst input { flex: 1 1 140px; min-width: 0; }
+.im-why { flex-basis: 100%; }
+.im-modes { display: grid; gap: 6px; }
+.im-mode { display: flex; gap: 8px; align-items: flex-start; padding: 8px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.im-mode.on { border-color: var(--accent); background: var(--accent-soft); }
+.im-mode.disabled { opacity: .5; cursor: default; }
+.im-mode select { height: 26px; font-size: 12px; margin-left: 4px; }
+.im-summary { display: flex; gap: 6px; align-items: center; margin: 12px 0 4px; font-weight: 600; }
+.im-prev { margin-top: 6px; }
+.im-prev .table-wrap { max-height: 220px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+.im-table th, .im-table td { padding: 4px 8px; white-space: nowrap; font-size: 12px; }
+@media (max-width: 640px) { .im-row { grid-template-columns: 1fr; } .im-arrow { display: none; } }
+
+/* ---------- фото для записей пачкой (ui/photos.js) ---------- */
+.ph-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 22px 12px; border: 2px dashed var(--line-strong); border-radius: 12px; color: var(--muted); }
+.ph-drop b { color: var(--text); }
+.ph-drop.over, .drop-over { outline: 2px dashed var(--accent); outline-offset: -4px; background: var(--accent-soft); }
+.ph-opts { margin: 10px 0; flex-wrap: wrap; }
+.ph-list { display: grid; gap: 6px; max-height: 46vh; overflow: auto; }
+.ph-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) minmax(140px, 240px); gap: 8px; align-items: center; padding: 4px 6px; border: 1px solid var(--line); border-radius: 8px; }
+.ph-item.off { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+.ph-item img, .ph-noimg { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; background: var(--stage); display: grid; place-items: center; }
+.ph-meta { min-width: 0; display: flex; flex-direction: column; font-size: 12px; }
+.ph-meta b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-bad { color: var(--danger); font-size: 12px; }
+@media (max-width: 640px) { .ph-item { grid-template-columns: 40px minmax(0, 1fr); } .ph-item select { grid-column: 1 / -1; } }
+
+/* форма записи: фото — файл, ссылка, убрать */
+.asset-card .meta .muted { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asset-card { flex-wrap: wrap; }
+.asset-card .meta { min-width: 110px; }
+.asset-acts { display: flex; gap: 4px; flex: none; margin-left: auto; }
+.cell-bad { color: var(--danger); }
+
+/* таблица: перестановка столбцов */
+.col-grip { flex: none; display: grid; place-items: center; width: 16px; height: 26px; cursor: grab; color: var(--muted); border-radius: 4px; touch-action: none; }
+.col-grip:hover { background: var(--line); color: var(--text); }
+.col-dragging, .col-dragging * { cursor: grabbing !important; user-select: none; }
+.data-table thead th.col-moving { background: var(--accent-soft); }
+.data-table thead th.drop-before { box-shadow: inset 3px 0 0 var(--accent); }
+.data-table thead th.drop-after { box-shadow: inset -3px 0 0 var(--accent); }

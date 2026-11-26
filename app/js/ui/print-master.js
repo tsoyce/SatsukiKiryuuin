@@ -213,6 +213,7 @@
     try {
       const o = {...XS.Model.defaultOutput(S.doc.kind), ...S.doc.output, scope: 'all', packaging: 'sheets', layer: pass.layer, laserBlack: pass.laserBlack, pageList: pass.pages};
       const r = await XS.Export.run(S.doc, o, {progress, cancelled: () => cancel});
+      if (r.localized && !S.readOnly) UI.changed({skip: ['layers', 'inspector']});
       const name = XS.Export.archiveName(S.doc, o, ' — проход ' + pass.step + (pass.batchCount > 1 ? ' пакет ' + pass.batch : '') + '.pdf');
       show(r.blob, name, win);
       UI.toast(print ? 'PDF открыт в новой вкладке. Печать: 100%, 1 экземпляр. После печати отметьте «Проход напечатан».' : 'Скачан ' + name, !!r.warnings.length);

@@ -74,32 +74,11 @@
     });
   }
 
-  /* ---------- фото по именам файлов ---------- */
+  /* ---------- фото по именам файлов: всё делает окно «Фото для записей» (ui/photos.js) ---------- */
   function renderPhotos(body) {
-    const cols = textCols(), imgCols = S.doc.data.columns.filter(c => c.type === 'image');
-    body.innerHTML = `<p class="note">Выберите сразу много фотографий: «Иванов Иван.jpg», «ivanov_ivan.png» или «003.jpg» (номер записи). Студия сама разложит их по записям. Подходит для бейджей и закладок с портретами.</p>
-      <div class="row-form-inline"><span class="muted small">Искать по столбцу</span><select id="tpKey">${colOptions(cols, cols[0]?.id)}</select>
-        <span class="muted small">класть в</span><select id="tpCol">${imgCols.map(c => `<option value="${c.id}">${XS.esc(c.name)}</option>`).join('')}<option value="">новый столбец «Фото»</option></select></div>
-      <label class="btn primary" style="margin-top:10px">${XS.Icons.icon('camera', 15)}Выбрать фотографии…<input type="file" id="tpFiles" accept="image/*" multiple hidden></label>
-      <div id="tpResult"></div>`;
-    $('tpFiles').onchange = UI.safe(async e => {
-      const files = [...e.target.files]; e.target.value = '';
-      if (!files.length) return;
-      const loaded = await UI.busy('Читаем фотографии: ' + files.length + '…', async () => {
-        const out = [];
-        for (const f of files) { out.push({name: f.name, asset: await XS.Assets.fromFile(f)}); await XS.pause(); }
-        return out;
-      });
-      const {matched, unmatched} = T().matchPhotos(S.doc, loaded, $('tpKey').value);
-      let colId = $('tpCol').value;
-      if (matched.length) UI.edit(d => {
-        if (!colId) { const c = XS.Model.addColumn(d, d.data.columns.some(x => XS.key(x.name) === 'фото') ? 'Фото ' + (d.data.columns.length + 1) : 'Фото', 'image'); c.type = 'image'; colId = c.id; }
-        T().applyPhotos(d, matched, colId);
-      });
-      $('tpResult').innerHTML = `<p class="ok-line">${XS.Icons.icon('check', 16)} Разложено фото: <b>${matched.length}</b> из ${loaded.length}.</p>` +
-        (unmatched.length ? `<p class="muted small">Не нашлось записи для: ${unmatched.slice(0, 30).map(XS.esc).join(', ')}${unmatched.length > 30 ? '…' : ''}. Переименуйте файлы как в столбце или выберите их в форме записи.</p>` : '') +
-        (matched.length ? '<p class="note">В макете: картинка → «Источник: из столбца» → нужный столбец.</p>' : '');
-    });
+    body.innerHTML = `<p class="note">Фото для всех записей сразу: выберите много файлов или ZIP-архив — «Иванов Иван.jpg», «Долгих Е.С.png», «ivanov_ivan.jpg», «003.jpg» (номер записи) или имя файла, записанное в таблице. Перед применением видно, какое фото к какой записи, — можно поправить.</p>
+      <button class="btn primary" id="tpOpen" type="button" style="margin-top:10px">${XS.Icons.icon('camera', 15)}Фото для записей…</button>`;
+    $('tpOpen').onclick = UI.safe(() => { $('toolsDialog').close(); return UI.Photos.open(); });
   }
 
   /* ---------- Google Таблица по ссылке ---------- */
@@ -123,9 +102,8 @@
       });
       const table = XS.Import.parseTable(text);
       if (!table.rows.length) throw new Error('В таблице нет строк с данными.');
-      UI.edit(d => { XS.Import.applyTable(d, table, {replace: $('tgReplace').checked}); d.output.sheetUrl = url; });
-      $('tgInfo').textContent = 'Загружено записей: ' + table.rows.length + ' · столбцы: ' + table.headers.join(', ');
-      UI.toast('Список обновлён из Google Таблицы.');
+      const res = await UI.ImportDialog.open(table, {source: 'Google Таблица', replace: $('tgReplace').checked, onApply: d => { d.output.sheetUrl = url; }});
+      if (res && $('tgInfo')) $('tgInfo').textContent = 'Загружено строк: ' + table.rows.length + ' · столбцы: ' + table.headers.join(', ');
     });
   }
 

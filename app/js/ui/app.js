@@ -59,6 +59,7 @@
     setSaveState('Изменения…');
     scheduleSave();
     UI.refresh(opts);
+    UI.Photos?.schedule(); // картинки по ссылкам — скачать в проект
   };
   UI.refresh = (opts = {}) => {
     const skip = new Set(opts.skip || []);
@@ -174,7 +175,7 @@
   };
   /* Новый фон текущей стороны: картинка или PDF. */
   UI.setBackground = async (file, {resizePage} = {}) => {
-    const a = await UI.busy('Загружаем ' + file.name + '…', () => XS.Assets.fromFile(file));
+    const a = await UI.busy('Загружаем ' + file.name + '…', () => XS.Assets.fromFile(file, {maxPx: 8000}));
     const doc = S.doc;
     const first = !doc.sides.some(s => s.background);
     UI.edit(d => {

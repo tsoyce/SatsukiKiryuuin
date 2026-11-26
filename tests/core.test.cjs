@@ -8,7 +8,7 @@ global.fontkit = require(path.join(app, 'vendor/fontkit.umd.min.js'));
 global.fflate = require(path.join(app, 'vendor/fflate.min.js'));
 global.petrovich = require(path.join(app, 'vendor/petrovich.min.js'));
 global.qrcode = require(path.join(app, 'vendor/qrcode.js'));
-for (const f of ['util', 'guest-data', 'model', 'formats', 'names', 'fields', 'fonts', 'layout', 'qr', 'barcode', 'scene', 'assets', 'render-canvas', 'render-pdf', 'zip', 'impose', 'check', 'export', 'print-plan', 'presets', 'importers', 'data-tools']) require(path.join(app, 'js/core', f + '.js'));
+for (const f of ['util', 'guest-data', 'model', 'formats', 'names', 'fields', 'fonts', 'layout', 'qr', 'barcode', 'scene', 'assets', 'render-canvas', 'render-pdf', 'zip', 'impose', 'check', 'export', 'print-plan', 'presets', 'importers', 'data-tools', 'import-map', 'remote-images']) require(path.join(app, 'js/core', f + '.js'));
 const XS = global.XS;
 XS.fetchBytes = async url => new Uint8Array(fs.readFileSync(path.join(app, url)));
 XS.fetchDataUrl = async url => XS.bytesToDataUrl(new Uint8Array(fs.readFileSync(path.join(app, url))), {jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf'}[url.split('.').pop()]);
@@ -114,9 +114,9 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   assert.deepStrictEqual(xt.rows, [['Иванов Иван', '09.12.2025', '0.3'], ['A&B', '', '']]);
   const ods = fflate.zipSync({'content.xml': enc('<office:document-content><table:table table:name="Л1"><table:table-row><table:table-cell office:value-type="string"><text:p>ФИО</text:p></table:table-cell><table:table-cell><text:p>Место</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Петрова<text:s/>Анна</text:p></table:table-cell><table:table-cell office:value-type="float" office:value="1"><text:p>1</text:p></table:table-cell></table:table-row><table:table-row table:number-rows-repeated="1000"><table:table-cell table:number-columns-repeated="1000"/></table:table-row></table:table></office:document-content>')});
   const ot = XS.Import.readTableFile(ods, 'a.ods');
-  assert.deepStrictEqual(ot, {headers: ['ФИО', 'Место'], rows: [['Петрова Анна', '1']]});
+  assert.deepStrictEqual(ot, {headers: ['ФИО', 'Место'], first: ['ФИО', 'Место'], rows: [['Петрова Анна', '1']]});
   const cp = new Uint8Array([0xd4, 0xc8, 0xce, 0x0a, 0xc8, 0xe2, 0xe0, 0xed, 0xee, 0xe2]); // «ФИО\nИванов» в cp1251
-  assert.deepStrictEqual(XS.Import.readTableFile(cp, 'a.csv'), {headers: ['ФИО'], rows: [['Иванов']]});
+  assert.deepStrictEqual(XS.Import.readTableFile(cp, 'a.csv'), {headers: ['ФИО'], first: ['ФИО'], rows: [['Иванов']]});
   // 11. Проверка списка
   const ck = XS.Model.blankDoc('diploma');
   ck.sides[0].elements.push(XS.Model.element('text', {text: 'Награждается {ФИО:твор} {Место}'}));
@@ -286,5 +286,84 @@ const out = path.join(__dirname, 'out'); fs.mkdirSync(out, {recursive: true});
   assert.ok(tnrFace && tnrFace.fk.hasGlyphForCodePoint(0x0416) && /Bold Italic/.test(tnrFace.fk.subfamilyName), 'жирный курсив с кириллицей');
   const tnrPdf = await XS.Export.run(tnr, {...tnr.output, packaging: 'single', format: 'pdf'});
   fs.writeFileSync(path.join(out, 'times-bold-italic.pdf'), Buffer.from(await tnrPdf.blob.arrayBuffer()));
+
+  // 21. Импорт с сопоставлением: список ФИО без заголовка ложится в существующий «ФИО», а не в новый столбец
+  const im = XS.Model.blankDoc('custom');
+  im.data.columns.push({id: 'c-role', name: 'Роль'}, {id: 'c-ph', name: 'Фото', type: 'image'});
+  XS.Model.addRow(im, {'ФИО': 'Долгих Елизавета Сергеевна', 'Роль': 'Участник'});
+  XS.Model.addRow(im, {'ФИО': 'Кривцова Валерия Вячеславовна', 'Роль': 'Участник'});
+  let it = XS.Import.parseTable('Петров Сергей Александрович\nПуртова Мария Владимировна\nДолгих Елизавета Сергеевна');
+  let mp = XS.ImportMap.guess(im, it);
+  assert.strictEqual(mp.hasHeader, false, 'первая строка — тоже ФИО, не заголовок');
+  assert.strictEqual(mp.columns[0].target, 'c-name', 'ФИО → существующий столбец ФИО');
+  assert.strictEqual(mp.mode, 'update', 'одна фамилия уже есть — обновляем по ключу, без повторов');
+  let mres = XS.ImportMap.apply(im, it, mp);
+  assert.deepStrictEqual([mres.added, mres.updated, mres.created], [2, 1, 0]);
+  assert.strictEqual(im.data.columns.length, 3, 'новых столбцов нет');
+  assert.strictEqual(im.data.rows.length, 4);
+  // с заголовками-синонимами: «Ф.И.О.» → ФИО, «E-mail» и «пол» — новые; Экз. → экземпляры
+  it = XS.Import.parseTable('Ф.И.О.\tE-mail\tпол\tЭкз.\nДолгих Елизавета Сергеевна\ta@b.ru\tж\t2\nИванов Иван Иванович\tx@y.ru\tм\t1');
+  mp = XS.ImportMap.guess(im, it);
+  assert.ok(mp.hasHeader);
+  assert.deepStrictEqual(mp.columns.map(c => c.target), ['c-name', 'new', 'new', XS.ImportMap.COPIES]);
+  mres = XS.ImportMap.apply(im, it, mp);
+  assert.deepStrictEqual([mres.added, mres.updated], [1, 1]);
+  const dolg = im.data.rows.find(r => r.cells['c-name'] === 'Долгих Елизавета Сергеевна');
+  assert.strictEqual(dolg.copies, 2);
+  assert.strictEqual(dolg.cells[XS.Model.columnByName(im, 'E-mail').id], 'a@b.ru');
+  assert.strictEqual(im.greeting.genderField, 'Пол', 'столбец «пол» подхвачен для {Обращение} (без учёта регистра)');
+  // «вписать по порядку»: бланки без ФИО
+  const blank = XS.Model.blankDoc('custom');
+  for (let i = 0; i < 3; i++) XS.Model.addRow(blank, {});
+  it = XS.Import.parseTable('Иванов Иван\nПетров Пётр');
+  mp = XS.ImportMap.guess(blank, it);
+  assert.strictEqual(mp.mode, 'fill');
+  mres = XS.ImportMap.apply(blank, it, mp);
+  assert.strictEqual(blank.data.rows.length, 3); assert.strictEqual(blank.data.rows[1].cells['c-name'], 'Петров Пётр');
+  // повторы в «добавить»
+  it = XS.Import.parseTable('ФИО\nИванов Иван\nИванов  иван\nНовиков Олег');
+  mp = XS.ImportMap.guess(XS.Model.blankDoc('custom'), it);
+  const fresh = XS.Model.blankDoc('custom');
+  mres = XS.ImportMap.apply(fresh, it, {...mp, mode: 'append'});
+  assert.deepStrictEqual([mres.added, mres.skipped], [2, 1], 'повтор внутри файла пропущен');
+
+  // 22. Картинка по ссылке: рисуется только сохранённая копия, без копии — заглушка (холст не «загрязняется»)
+  const ri = XS.Model.blankDoc('custom');
+  ri.data.columns.push({id: 'c-ph', name: 'Фото', type: 'image'});
+  ri.sides[0].elements = [XS.Model.element('image', {src: '{Фото}', x: 0, y: 0, w: 30, h: 40})];
+  XS.Model.addRow(ri, {'ФИО': 'Иванов', 'Фото': 'https://example.com/a.jpg'});
+  assert.deepStrictEqual(XS.RemoteImages.needed(ri), ['https://example.com/a.jpg']);
+  let sc = XS.Scene.build(ri, 0, ri.data.rows[0], 0);
+  const op = sc.ops.find(o => o.op === 'image');
+  assert.ok(op.asset.pending && !op.asset.data, 'без копии — заглушка');
+  assert.ok(sc.warnings.some(w => /ещё не скачана/.test(w.msg)));
+  const png = fs.readFileSync(path.join(app, 'img/favicon-32.png'));
+  XS.Model.addAsset(ri, {name: 'a.jpg', mime: 'image/png', data: XS.bytesToDataUrl(new Uint8Array(png), 'image/png'), width: 32, height: 32, urls: ['https://example.com/a.jpg']});
+  sc = XS.Scene.build(ri, 0, ri.data.rows[0], 0);
+  assert.ok(/^data:image\/png/.test(sc.ops.find(o => o.op === 'image').asset.data), 'рисуется копия из проекта');
+  XS.Model.pruneAssets(ri);
+  assert.strictEqual(Object.keys(ri.assets).length, 1, 'копия по ссылке не считается мусором');
+  assert.deepStrictEqual(XS.Model.normalizeDoc(JSON.parse(JSON.stringify(ri))).assets[Object.keys(ri.assets)[0]].urls, ['https://example.com/a.jpg'], 'ссылка сохраняется в файле проекта');
+  r = await XS.Export.run(ri, {...ri.output, packaging: 'single', format: 'pdf'});
+  assert.strictEqual(r.pages, 1);
+  // без копии выгрузка честно скачивает или объясняет, а не падает на toDataURL
+  ri.data.rows[0].cells['c-ph'] = 'https://example.com/b.jpg';
+  XS.RemoteImages.download = async () => { throw new Error('сайт ответил 404.'); };
+  await assert.rejects(() => XS.Export.run(ri, {...ri.output, packaging: 'single', format: 'pdf'}), /Не скачались картинки по ссылкам: 1/);
+  XS.Model.pruneAssets(ri);
+  assert.strictEqual(Object.keys(ri.assets).length, 0, 'ссылки больше нет — копия удаляется');
+  assert.strictEqual(XS.RemoteImages.directUrl('https://drive.google.com/file/d/1AbCdEfGhIjKlMn/view?usp=sharing'), 'https://drive.google.com/uc?export=download&id=1AbCdEfGhIjKlMn');
+  // EXIF-поворот и тип по сигнатуре
+  assert.strictEqual(XS.Assets.sniff(new Uint8Array(png)), 'image/png');
+  const exif = new Uint8Array([0xFF, 0xD8, 0xFF, 0xE1, 0x00, 0x22, 0x45, 0x78, 0x69, 0x66, 0, 0, 0x4D, 0x4D, 0x00, 0x2A, 0, 0, 0, 8, 0x00, 0x01, 0x01, 0x12, 0x00, 0x03, 0, 0, 0, 1, 0x00, 0x06, 0, 0, 0, 0, 0, 0, 0xFF, 0xDA]);
+  assert.strictEqual(XS.Assets.exifOrientation(exif), 6);
+
+  // 23. Фото пачкой: ФИО, фамилия+инициалы, транслит, номер, имя файла из таблицы
+  const pd = XS.Model.blankDoc('custom');
+  for (const n of ['Долгих Елизавета Сергеевна', 'Кривцова Валерия Вячеславовна', 'Петров Сергей Александрович', 'Петров Иван Ильич']) XS.Model.addRow(pd, {'ФИО': n});
+  pd.data.rows[3].cells.ph = 'IMG_0042.JPG';
+  const phm = XS.DataTools.matchPhotos(pd, ['Долгих Е.С.jpg', 'kriVtsova_valeriya.png', 'img_0042.jpg', '003.jpg', 'Петров.jpg'].map(name => ({name})), 'c-name', {imageColumnId: 'ph'});
+  assert.deepStrictEqual(phm.matched.map(m => [m.file.name, m.index, m.how]), [['Долгих Е.С.jpg', 0, 'initials'], ['kriVtsova_valeriya.png', 1, 'name'], ['img_0042.jpg', 3, 'file'], ['003.jpg', 2, 'number']]);
+  assert.deepStrictEqual(phm.unmatched, ['Петров.jpg'], 'двое Петровых — по одной фамилии не угадываем');
   console.log('Все проверки ядра пройдены. Файлы:', fs.readdirSync(out).join(', '));
 })().catch(e => { console.error(e); process.exit(1); });

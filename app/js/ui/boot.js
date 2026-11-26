@@ -80,7 +80,7 @@
     if (!global.PDFLib || !global.fontkit) { document.body.innerHTML = '<p style="padding:24px;font:16px sans-serif">Не загрузились библиотеки из папки vendor/. Проверьте, что скопирована вся папка приложения.</p>'; return; }
     XS.Icons.hydrate();
     initTopbar();
-    UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
+    UI.Stage.init(); UI.Layers.init(); UI.Data.init(); UI.Photos.init(); UI.ExportDialog.init(); UI.Home.init(); UI.Keys.init(); UI.Settings.init();
     UI.PrintMaster?.init();
     UI.Tools?.init(); UI.Palette?.init(); UI.WhatsNew?.init(); UI.Forms?.init();
     UI.Motion?.init(); UI.Mobile?.init();

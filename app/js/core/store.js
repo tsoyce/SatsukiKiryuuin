@@ -83,7 +83,7 @@
       if (!a.data) { if (a.sha256) out.assets[a.id] = {...a, data: ''}; continue; }
       const sha = await shaOf(a);
       files.set(sha, a.data);
-      out.assets[a.id] = {id: a.id, name: a.name, mime: a.mime, width: a.width, height: a.height, pages: a.pages, sha256: sha, data: ''};
+      out.assets[a.id] = {id: a.id, name: a.name, mime: a.mime, width: a.width, height: a.height, pages: a.pages, ...(a.urls?.length ? {urls: a.urls} : {}), sha256: sha, data: ''};
     }
     for (const f of doc.fonts) {
       if (!f.data) { if (f.sha256) out.fonts.push({...f, data: ''}); continue; }

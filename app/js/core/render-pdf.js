@@ -51,7 +51,9 @@
     for (const op of scene.ops) {
       const opacity = op.opacity ?? 1;
       if (op.rot) page.pushOperators(P.pushGraphicsState(), P.concatTransformationMatrix(...rotation(op.rot, X(op.cx), Y(op.cy))));
-      if (op.op === 'bg' || op.op === 'image') {
+      if ((op.op === 'bg' || op.op === 'image') && !op.asset.data) {
+        // файла нет (не пришёл с сервера / ссылка не скачана) — пропускаем; предупреждение уже в сцене
+      } else if (op.op === 'bg' || op.op === 'image') {
         const pic = await picture(cache, op.asset, op.page || 1);
         const src = pic.kind === 'pdf' ? {w: pic.obj.width, h: pic.obj.height} : {w: pic.obj.width, h: pic.obj.height};
         const r = XS.Assets.fitRect(src.w, src.h, op, op.fit || 'stretch');

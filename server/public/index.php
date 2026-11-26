@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/src/bootstrap.php';
 
-use XSatsu\{App, Auth, Projects, Assets, Settings, Admin, Migrate, Forms, Fonts, HttpError};
+use XSatsu\{App, Auth, Projects, Assets, Settings, Admin, Migrate, Forms, Fonts, RemoteImage, HttpError};
 
 App::route('GET', '/v1/health', function () {
     $db = false; $schema = null; $pending = null;
@@ -51,6 +51,7 @@ App::route('GET', '/v1/assets/{sha}', fn($p) => Assets::download($p));
 
 // Шрифты Google Fonts целым файлом (для вёрстки и PDF), без входа: Студия работает и без аккаунта
 App::route('GET', '/v1/fonts/google', fn() => Fonts::google());
+App::route('GET', '/v1/images/fetch', fn() => RemoteImage::fetch());
 
 App::route('GET', '/v1/settings', fn() => Settings::get());
 App::route('PUT', '/v1/settings/user', fn() => Settings::putUser());

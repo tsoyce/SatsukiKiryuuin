@@ -43,6 +43,11 @@ const ok = (r, status = 200) => { assert.strictEqual(r.status, status, JSON.stri
   assert.ok(st.setupNeeded && st.setupAllowed && !st.user);
   ok(await a.call('POST', 'v1/auth/setup', {token: 'wrong', login: 'admin', password: 'password1'}), 403);
   st = ok(await a.call('POST', 'v1/auth/setup', {token: 'setup-123', login: 'Admin', name: 'Артём', password: 'password1'}));
+  // Картинка по ссылке: только после входа и только на публичные адреса (защита от SSRF, без обращения в интернет)
+  ok(await anon.call('GET', 'v1/images/fetch&url=' + encodeURIComponent('https://example.com/a.jpg')), 401);
+  for (const bad of ['ftp://example.com/a.jpg', 'file:///etc/passwd', 'http://127.0.0.1/a.png', 'http://localhost/a.png', 'http://10.0.0.5/a.png', 'http://192.168.1.1/a.png',
+    'http://169.254.169.254/latest/meta-data/', 'http://100.108.243.219/a.png', 'http://[::1]/a.png', 'http://[::ffff:127.0.0.1]/a.png', 'https://example.com:22/a.png', 'http://user:pw@example.com/a.png', 'http://intranet.local/a.png', 'http://2130706433/a.png'])
+    ok(await a.call('GET', 'v1/images/fetch&url=' + encodeURIComponent(bad)), 422);
   assert.strictEqual(st.user.role, 'admin'); assert.strictEqual(st.user.login, 'admin'); assert.ok(st.csrf);
   ok(await anon.call('POST', 'v1/auth/setup', {token: 'setup-123', login: 'x2', password: 'password1'}), 409);
   // CSRF и чужой Origin

@@ -4,7 +4,7 @@
   const XS = global.XS, UI = XS.UI, S = UI.S, $ = UI.$;
   const LIST_LIMIT = 1500;
 
-  function labelColumn() { return S.doc.data.columns.find(c => c.type !== 'image'); }
+  function labelColumn() { return XS.Model.labelColumn(S.doc); }
   function rowLabel(row) { const c = labelColumn(); return c ? String(row.cells[c.id] ?? '').trim() : ''; }
 
   function render(opts = {}) {
@@ -47,17 +47,23 @@
     h.querySelector('[data-act=del]').onclick = () => UI.edit(d => { d.data.rows.splice(S.row, 1); S.selectedRows.delete(row.id); });
     form.append(h);
     for (const col of S.doc.data.columns) {
-      const wrap = document.createElement('label');
+      const wrap = document.createElement(col.type === 'image' ? 'div' : 'label'); // в label клик по подписи «нажимал» бы первую кнопку
       wrap.className = 'f wide';
       wrap.innerHTML = `<span>${XS.esc(col.name)}</span>`;
       if (col.type === 'image') {
-        const v = row.cells[col.id] || '';
-        const asset = /^asset:/.test(v) ? S.doc.assets[v.slice(6)] : null;
+        const v = String(row.cells[col.id] || '').trim();
+        const isUrl = XS.RemoteImages?.isUrl(v);
+        const st = isUrl ? UI.Photos.urlStatus(v) : {};
+        const asset = /^asset:/.test(v) ? S.doc.assets[v.slice(6)] : st.asset || null;
         const card = document.createElement('div');
         card.className = 'asset-card';
-        card.innerHTML = (asset && !XS.Assets.isPdf(asset) ? `<img src="${asset.data}" alt="">` : '<div class="pdf">' + (asset ? 'PDF' : '—') + '</div>') +
-          `<div class="meta"><b>${asset ? XS.esc(asset.name) : 'нет картинки'}</b></div><button class="btn small" type="button">Выбрать…</button>`;
-        card.querySelector('button').onclick = () => pickImage(row, col);
+        const title = asset ? XS.esc(asset.name) : isUrl ? (st.error ? 'ссылка не скачалась' : 'скачиваем по ссылке…') : v ? XS.esc(v) + ' (нет файла)' : 'нет картинки';
+        const sub = isUrl ? `<span class="muted small" title="${XS.esc(v)}">${st.error ? XS.esc(st.error) : 'по ссылке · копия хранится в проекте'}</span>` : '';
+        card.innerHTML = (asset && asset.data && !XS.Assets.isPdf(asset) ? `<img src="${asset.data}" alt="">` : '<div class="pdf">' + (asset ? 'PDF' : '—') + '</div>') +
+          `<div class="meta"><b>${title}</b>${sub}</div><span class="asset-acts"><button class="btn small" type="button" data-pick>Файл…</button><button class="btn small" type="button" data-url title="Скачать картинку по ссылке и сохранить в проекте">Ссылка…</button>${v ? `<button class="btn small" type="button" data-clear title="Убрать картинку из записи">${XS.Icons.icon('close', 12)}</button>` : ''}</span>`;
+        card.querySelector('[data-pick]').onclick = () => pickImage(row, col);
+        card.querySelector('[data-url]').onclick = UI.safe(() => UI.Photos.fromUrl(row, col));
+        const clr = card.querySelector('[data-clear]'); if (clr) clr.onclick = () => UI.edit(() => { delete row.cells[col.id]; });
         wrap.append(card);
       } else {
         const v = String(row.cells[col.id] ?? '');
@@ -88,7 +94,7 @@
     input.type = 'file'; input.accept = 'image/*,.pdf';
     input.onchange = UI.safe(async () => {
       const f = input.files[0]; if (!f) return;
-      const a = await XS.Assets.fromFile(f);
+      const a = await UI.busy('Загружаем ' + f.name + '…', () => XS.Assets.fromFile(f, {maxPx: 2400}));
       UI.edit(d => { row.cells[col.id] = 'asset:' + XS.Model.addAsset(d, a).id; });
       if ($('tableDialog').open) UI.Sheet.render();
     });
@@ -130,9 +136,9 @@
 
   async function importFile(file) {
     const table = XS.Import.readTableFile(new Uint8Array(await file.arrayBuffer()), file.name);
-    if (!table.rows.length) throw new Error('В файле нет строк с данными.');
-    UI.edit(d => XS.Import.applyTable(d, table));
-    UI.toast('Добавлено записей: ' + table.rows.length + '.');
+    if (!table.rows.length && !(table.first || []).some(Boolean)) throw new Error('В файле нет строк с данными.');
+    // Столбцы файла сопоставляются со столбцами проекта в окне импорта (а не добавляются рядом новыми).
+    return UI.ImportDialog.open(table, {source: 'файл «' + file.name + '»'});
   }
 
   function init() {
@@ -146,19 +152,23 @@
     $('selectAllRows').onchange = e => { const q = XS.key($('rowSearch').value); for (const r of S.doc.data.rows) if (!q || Object.values(r.cells).some(v => XS.key(v).includes(q))) e.target.checked ? S.selectedRows.add(r.id) : S.selectedRows.delete(r.id); renderList(); };
     $('addRowBtn').onclick = () => UI.edit(d => { d.data.rows.push({id: XS.uid('r'), cells: {}, copies: 1}); S.row = d.data.rows.length - 1; });
     $('importTableFile').onchange = UI.safe(async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importFile(f); });
+    $('tImportFile').onchange = UI.safe(async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importFile(f); });
+    $('photosBtn').onclick = UI.safe(() => UI.Photos.open());
+    $('tPhotos').onclick = UI.safe(() => UI.Photos.open());
     // вставка из Excel
     $('pasteBtn').onclick = () => { $('pasteArea').value = ''; $('pastePreview').textContent = ''; $('pasteDialog').showModal(); $('pasteArea').focus(); };
     $('pasteClose').onclick = () => $('pasteDialog').close();
     $('pasteArea').oninput = () => {
       const t = XS.Import.parseTable($('pasteArea').value);
-      $('pastePreview').textContent = t.rows.length ? 'Записей: ' + t.rows.length + ' · столбцы: ' + t.headers.join(', ') : '';
+      const n = t.rows.length + ((t.first || []).some(Boolean) ? 1 : 0);
+      $('pastePreview').textContent = n ? 'Строк: ' + n + ' · столбцов: ' + t.headers.length + '. Дальше — выбрать, куда их положить.' : '';
     };
     $('pasteGo').onclick = UI.safe(() => {
       const t = XS.Import.parseTable($('pasteArea').value);
-      if (!t.rows.length) throw new Error('Нет строк. Первая строка — заголовки столбцов, дальше — данные.');
-      UI.edit(d => XS.Import.applyTable(d, t, {replace: $('pasteReplace').checked}));
+      if (!t.rows.length && !(t.first || []).some(Boolean)) throw new Error('Нет строк: вставьте ячейки из Excel или просто список (по строке на запись).');
+      const replace = $('pasteReplace').checked;
       $('pasteDialog').close();
-      UI.toast('Добавлено записей: ' + t.rows.length + '. Используйте поля ' + t.headers.map(h => '{' + h + '}').join(', ') + ' в текстах.');
+      UI.ImportDialog.open(t, {source: 'вставка', replace});
     });
     // таблица
     $('tableBtn').onclick = () => { $('tableDialog').showModal(); UI.Sheet.open(); };
