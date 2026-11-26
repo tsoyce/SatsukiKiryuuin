@@ -27,7 +27,8 @@ if [ -z "$PHP" ]; then
 fi
 [ -n "$PHP" ] || { echo "Не найден PHP 8.4 (CLI)."; exit 1; }
 echo "$PHP ($("$PHP" -r 'echo PHP_VERSION;'))"
-"$PHP" -m | grep -qi pdo_mysql || { echo "В PHP 8.4 нет pdo_mysql — включите расширение в BrainyCP."; exit 1; }
+# не grep -q: при pipefail ранний выход grep обрывает php (SIGPIPE) и проверка ложно падает
+"$PHP" -m | grep -i pdo_mysql >/dev/null || { echo "В PHP 8.4 нет pdo_mysql — включите расширение в BrainyCP."; exit 1; }
 
 say "Код $REF"
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
@@ -88,7 +89,7 @@ say "Сайт"
 build_site
 swap_site
 sleep 1; H=$(health); echo "$H"
-echo "$H" | grep -q '"ok":true' && echo "Готово: Студия и API работают." || { echo "ВНИМАНИЕ: API не отвечает. Студия работает без сервера (проекты в браузере)."; grep -rh "open_basedir" /etc/php* /opt/brainycp 2>/dev/null | grep -i tsoy | head -3 || true; }
+echo "$H" | grep '"ok":true' >/dev/null && echo "Готово: Студия и API работают." || { echo "ВНИМАНИЕ: API не отвечает. Студия работает без сервера (проекты в браузере)."; grep -rh "open_basedir" /etc/php* /opt/brainycp 2>/dev/null | grep -i tsoy | head -3 || true; }
 curl -fsS -o /dev/null -w "Главная: %{http_code}\n" "$URL/"
 
 if [ "$WITH_CRON" = "--with-cron" ]; then
