@@ -90,6 +90,7 @@
       const f = input.files[0]; if (!f) return;
       const a = await XS.Assets.fromFile(f);
       UI.edit(d => { row.cells[col.id] = 'asset:' + XS.Model.addAsset(d, a).id; });
+      if ($('tableDialog').open) UI.Sheet.render();
     });
     input.click();
   }
@@ -124,38 +125,8 @@
     }, '', {skip: ['data']});
   }
 
-  /* ---------- таблица целиком ---------- */
-  function renderTable() {
-    const t = $('dataTable'), doc = S.doc, cols = doc.data.columns;
-    const head = `<thead><tr><th class="n"><input type="checkbox" data-all></th><th class="n">№</th>${cols.map(c => `<th><div style="display:flex"><input type="text" data-col="${c.id}" value="${XS.esc(c.name)}" title="Название столбца = имя поля {…}"><select data-type="${c.id}" title="Тип"><option value="text">текст</option><option value="image" ${c.type === 'image' ? 'selected' : ''}>картинка</option></select><button class="col-del" data-del="${c.id}" title="Удалить столбец">✕</button></div></th>`).join('')}<th class="n">Экз.</th></tr></thead>`;
-    const body = doc.data.rows.map((r, i) => `<tr data-r="${r.id}"><td class="n"><input type="checkbox" data-sel ${S.selectedRows.has(r.id) ? 'checked' : ''}></td><td class="n">${i + 1}</td>${cols.map(c => {
-      const v = String(r.cells[c.id] ?? '');
-      if (c.type === 'image') { const a = /^asset:/.test(v) ? doc.assets[v.slice(6)] : null; return `<td>${a && !XS.Assets.isPdf(a) ? `<img src="${a.data}" alt="">` : XS.esc(a ? a.name : v)}</td>`; }
-      return `<td><input type="text" data-cell="${c.id}" value="${XS.esc(v)}"></td>`;
-    }).join('')}<td class="copies"><input type="number" min="0" max="999" data-copies value="${r.copies}"></td></tr>`).join('');
-    t.innerHTML = head + '<tbody>' + body + '</tbody>';
-  }
-  function tableEvents() {
-    const t = $('dataTable');
-    t.addEventListener('change', UI.safe(e => {
-      const el = e.target, tr = el.closest('tr'), row = tr && S.doc.data.rows.find(r => r.id === tr.dataset.r);
-      if (el.dataset.col) { const col = S.doc.data.columns.find(c => c.id === el.dataset.col); try { renameColumn(col, el.value); } catch (err) { el.value = col.name; throw err; } }
-      else if (el.dataset.type) UI.edit(() => { S.doc.data.columns.find(c => c.id === el.dataset.type).type = el.value; }, '', {skip: []});
-      else if (el.dataset.cell && row) UI.edit(() => { row.cells[el.dataset.cell] = el.value; }, '', {skip: ['inspector']});
-      else if ('copies' in el.dataset && row) UI.edit(() => { row.copies = Math.round(XS.num(el.value, 1, 0, 999)); }, '', {skip: ['inspector']});
-      else if ('sel' in el.dataset && row) { el.checked ? S.selectedRows.add(row.id) : S.selectedRows.delete(row.id); renderList(); }
-      else if ('all' in el.dataset) { for (const r of S.doc.data.rows) el.checked ? S.selectedRows.add(r.id) : S.selectedRows.delete(r.id); renderTable(); renderList(); }
-      if (el.dataset.type) renderTable();
-    }));
-    t.addEventListener('click', e => {
-      const id = e.target.dataset.del;
-      if (!id) return;
-      const col = S.doc.data.columns.find(c => c.id === id);
-      if (!confirm('Удалить столбец «' + col.name + '» вместе с данными?')) return;
-      UI.edit(d => { d.data.columns = d.data.columns.filter(c => c.id !== id); for (const r of d.data.rows) delete r.cells[id]; });
-      renderTable();
-    });
-  }
+  /* ---------- таблица целиком — ui/sheet.js (UI.Sheet) ---------- */
+  const renderTable = () => UI.Sheet.render();
 
   async function importFile(file) {
     const table = XS.Import.readTableFile(new Uint8Array(await file.arrayBuffer()), file.name);
@@ -190,9 +161,9 @@
       UI.toast('Добавлено записей: ' + t.rows.length + '. Используйте поля ' + t.headers.map(h => '{' + h + '}').join(', ') + ' в текстах.');
     });
     // таблица
-    $('tableBtn').onclick = () => { renderTable(); $('tableDialog').showModal(); };
+    $('tableBtn').onclick = () => { $('tableDialog').showModal(); UI.Sheet.open(); };
     $('tableClose').onclick = () => $('tableDialog').close();
-    $('tAddRow').onclick = () => { UI.edit(d => { d.data.rows.push({id: XS.uid('r'), cells: {}, copies: 1}); }); renderTable(); };
+    $('tAddRow').onclick = () => { UI.edit(d => { d.data.rows.push({id: XS.uid('r'), cells: {}, copies: 1}); }); renderTable(); UI.Sheet.select(S.doc.data.rows.length - 1, 0); };
     $('tAddCol').onclick = UI.safe(() => {
       const name = prompt('Название столбца (будет полем {Название}):', 'Новый столбец');
       if (!name) return;
@@ -201,13 +172,14 @@
       renderTable();
     });
     $('tDelRows').onclick = () => {
-      if (!S.selectedRows.size) return UI.toast('Отметьте записи галочками.', true);
-      if (!confirm('Удалить выбранные записи: ' + S.selectedRows.size + '?')) return;
-      UI.edit(d => { d.data.rows = d.data.rows.filter(r => !S.selectedRows.has(r.id)); S.selectedRows.clear(); });
+      const ids = new Set(UI.Sheet.selectedRowIds());
+      if (!ids.size) return UI.toast('Выделите строки (клик по номеру) или отметьте галочками.', true);
+      if (!confirm('Удалить записи: ' + ids.size + '?')) return;
+      UI.edit(d => { d.data.rows = d.data.rows.filter(r => !ids.has(r.id)); S.selectedRows.clear(); });
       renderTable();
     };
-    tableEvents();
+    UI.Sheet.init();
   }
 
-  UI.Data = {init, render, renderList, renameColumn, importFile};
+  UI.Data = {init, render, renderList, renameColumn, importFile, pickImage};
 })(typeof window !== 'undefined' ? window : globalThis);
