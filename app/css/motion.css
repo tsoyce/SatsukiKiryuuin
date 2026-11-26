@@ -11,7 +11,7 @@
   transition: background-color var(--dur-1) ease, border-color var(--dur-1) ease, color var(--dur-1) ease, box-shadow var(--dur-2) ease, transform var(--dur-1) var(--ease-out), opacity var(--dur-1) ease;
 }
 .btn:not(:disabled):active, .add-bar button:active, .icon-btn:not(:disabled):active, .side-tabs .side:active, .chip:active { transform: scale(.96); }
-.btn.primary:not(:disabled):hover { box-shadow: 0 4px 14px rgba(79, 70, 229, .28); }
+.btn.primary:not(:disabled):hover { box-shadow: 0 4px 14px rgba(var(--accent-rgb), .3); }
 .tab { position: relative; }
 .preset:hover { transform: translateY(-2px); }
 .preset:active { transform: translateY(0) scale(.99); }

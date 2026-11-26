@@ -56,7 +56,7 @@
       const col = S.doc.data.columns.find(c => c.type !== 'image');
       return insert(M.element('text', {...center(W * 0.8, H * 0.1), name: col ? col.name : 'Поле', text: '{' + (col ? col.name : 'ФИО') + '}', bold: true, size: Math.max(12, Math.round(W / 9))}));
     }
-    if (type === 'rect') return insert(M.element('rect', {...center(W * 0.4, H * 0.2), fill: '#eef0ff', stroke: '#4f46e5'}));
+    if (type === 'rect') return insert(M.element('rect', {...center(W * 0.4, H * 0.2), fill: '#ebf0fd', stroke: '#023bb9'}));
     if (type === 'line') return insert(M.element('line', {...center(W * 0.5, 0)}));
     if (type === 'qr') {
       const link = S.doc.data.columns.find(c => /ссылк|url|link|qr/i.test(c.name));
